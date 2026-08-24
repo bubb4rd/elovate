@@ -1,6 +1,5 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import { formatSr } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -21,10 +20,6 @@ function fillInRange(sr: number, start: number, end: number): number {
   if (sr <= start) return 0;
   if (sr >= end) return 1;
   return (sr - start) / (end - start);
-}
-
-function srDuration(from: number, to: number): number {
-  return Math.min(0.8, 0.28 + Math.abs(to - from) / 1400);
 }
 
 function DivisionBar({
@@ -63,48 +58,56 @@ function DivisionBar({
   );
 }
 
+function TimelineKey({ showCutoff }: { showCutoff: boolean }) {
+  return (
+    <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted">
+      <span className="inline-flex items-center gap-1">
+        <span className="inline-block h-1.5 w-3 rounded-[2px] bg-accent" aria-hidden />
+        Now
+      </span>
+      <span className="inline-flex items-center gap-1">
+        <span className="inline-block h-1.5 w-3 rounded-[2px] bg-accent/35" aria-hidden />
+        After
+      </span>
+      {showCutoff ? (
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2.5 w-px bg-foreground/70" aria-hidden />
+          T250
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function RankTimeline({
   currentSr,
   projectedSr,
   cutoffSr,
   rank,
-  fee,
-  showFee = true,
   skip = false,
 }: {
   currentSr: number;
   projectedSr: number;
   cutoffSr: number;
   rank: RankInfo;
-  fee: number;
-  showFee?: boolean;
   skip?: boolean;
 }) {
   const reduce = useReducedMotion();
-  const prevCurrent = useRef(currentSr);
-  const prevProjected = useRef(projectedSr);
-  const duration = Math.max(
-    srDuration(prevCurrent.current, currentSr),
-    srDuration(prevProjected.current, projectedSr),
-  );
-
-  useLayoutEffect(() => {
-    prevCurrent.current = currentSr;
-    prevProjected.current = projectedSr;
-  }, [currentSr, projectedSr]);
-
   const maxSr = displayMaxSr(cutoffSr, currentSr, projectedSr);
-  const feeLabel = fee <= 0 ? "Free" : `-${fee}`;
+  const showCutoff = cutoffSr > IRIDESCENT_SR;
   const transition =
-    skip || reduce ? "transform 0s" : `transform ${duration}s cubic-bezier(0.16, 1, 0.3, 1)`;
+    skip || reduce
+      ? "transform 0s"
+      : "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)";
 
   return (
     <section className="mt-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-medium text-foreground">Rank timeline</h2>
-        <p className="numeric text-xs text-muted">
-          {showFee ? `${rank.label} · fee ${feeLabel}` : rank.label}
-        </p>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-sm font-medium text-foreground">Rank timeline</h2>
+          <TimelineKey showCutoff={showCutoff} />
+        </div>
+        <p className="numeric text-xs text-muted">{rank.label}</p>
       </div>
 
       <ol className="mt-4 space-y-3 md:hidden">
@@ -129,9 +132,6 @@ export function RankTimeline({
           );
         })}
       </ol>
-      <p className="mt-3 text-xs text-muted md:hidden">
-        Fill is current SR. The lighter bar is projected SR after the selected result.
-      </p>
 
       <div className="mt-4 hidden md:block">
         <div className="flex gap-1">
@@ -167,10 +167,6 @@ export function RankTimeline({
             );
           })}
         </div>
-        <p className="mt-3 text-xs text-muted">
-          Fill is current SR. The lighter bar is projected SR after the selected result.
-          {cutoffSr > IRIDESCENT_SR ? ` The line on Iridescent is the live T250 cutoff (${formatSr(cutoffSr)}).` : ""}
-        </p>
       </div>
     </section>
   );

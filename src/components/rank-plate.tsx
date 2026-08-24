@@ -139,7 +139,7 @@ export function RankPlate({
         ) : null}
       </div>
 
-      <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted">
+      <p className="mt-3 w-full max-w-[16.5rem] text-center text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-600">
         {mode === "wz" ? "Ranked play: resurgence" : "Ranked play: multiplayer"}
       </p>
     </div>

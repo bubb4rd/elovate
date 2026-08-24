@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RankPlate } from "@/components/rank-plate";
 import { RankTimeline } from "@/components/rank-timeline";
+import { SessionPanel } from "@/components/session-panel";
 import { SrTicket } from "@/components/sr-ticket";
 import { TickerNumeral } from "@/components/ticker-numeral";
 import { formatDelta, formatSr } from "@/lib/format";
@@ -33,9 +34,38 @@ import {
   type WzPlacementId,
 } from "@/lib/ranked";
 import type { Mode } from "@/lib/data/types";
+import {
+  appendMatch,
+  endSession,
+  openSession,
+  undoLastMatch,
+  type NewMatch,
+} from "@/lib/history";
+import { useHistory } from "@/lib/history/use-history";
 
-const STORAGE_KEY = "elovate-calc-sr";
-const STORAGE_EVENT = "elovate-calc-sr";
+const LEGACY_CALC_KEY = "elovate-calc-sr";
+
+function calcKey(mode: Mode) {
+  return `elovate-calc-sr-${mode}`;
+}
+
+function calcEvent(mode: Mode) {
+  return `elovate-calc-sr-${mode}`;
+}
+
+function migrateLegacyCalc() {
+  try {
+    const legacy = localStorage.getItem(LEGACY_CALC_KEY);
+    if (legacy == null) return;
+    for (const mode of ["wz", "mp"] as const) {
+      if (localStorage.getItem(calcKey(mode)) == null) {
+        localStorage.setItem(calcKey(mode), legacy);
+      }
+    }
+  } catch {
+    /* quota / private mode */
+  }
+}
 
 const TARGETS: { id: ClimbTarget; label: string }[] = [
   { id: "nextTier", label: "Next tier" },
@@ -64,17 +94,23 @@ type StoredCalc = {
   placement?: WzPlacementId | null;
 };
 
-function subscribe(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener(STORAGE_EVENT, onStoreChange);
+function subscribeCalc(mode: Mode, onStoreChange: () => void) {
+  const key = calcKey(mode);
+  const event = calcEvent(mode);
+  function onStorage(e: StorageEvent) {
+    if (e.key === key || e.key === null) onStoreChange();
+  }
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(event, onStoreChange);
   return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener(STORAGE_EVENT, onStoreChange);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(event, onStoreChange);
   };
 }
 
-function getSnapshot() {
-  return localStorage.getItem(STORAGE_KEY) ?? "";
+function getSnapshot(mode: Mode) {
+  migrateLegacyCalc();
+  return localStorage.getItem(calcKey(mode)) ?? "";
 }
 
 function getServerSnapshot() {
@@ -90,9 +126,9 @@ function parseStored(raw: string): StoredCalc {
   }
 }
 
-function writeStored(next: StoredCalc) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+function writeStored(mode: Mode, next: StoredCalc) {
+  localStorage.setItem(calcKey(mode), JSON.stringify(next));
+  window.dispatchEvent(new Event(calcEvent(mode)));
 }
 
 function asRankDelta(value: number | undefined): RankDelta {
@@ -146,7 +182,11 @@ export function SrCalculator({
   cutoffSr: number;
   ladder: BoardRung[];
 }) {
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const raw = useSyncExternalStore(
+    (onChange) => subscribeCalc(mode, onChange),
+    () => getSnapshot(mode),
+    getServerSnapshot,
+  );
   const stored = parseStored(raw);
 
   const srInput = stored.srInput ?? (stored.sr != null ? String(stored.sr) : "0");
@@ -166,10 +206,13 @@ export function SrCalculator({
   const placementId = asPlacement(stored.placement);
 
   const [editingSr, setEditingSr] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const [historySaveFailed, setHistorySaveFailed] = useState(false);
+  const { doc: historyDoc, store: historyStore } = useHistory(mode);
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const sr = clampSr(Number(srInput) || 0);
   const yourElimsClamped = Math.min(yourElims, squadElims);
@@ -177,7 +220,7 @@ export function SrCalculator({
   const srPerLoss = Math.max(0, Math.floor(Number(srPerLossInput) || 0));
 
   function patch(next: Partial<StoredCalc>) {
-    writeStored({
+    writeStored(mode, {
       ...stored,
       sr,
       squadElims,
@@ -252,6 +295,37 @@ export function SrCalculator({
         placementId != null
       : srPerWinInput.trim() !== "";
 
+  const hasElimInputs =
+    mode === "wz" &&
+    (squadElimsInput.trim() !== "" || yourElimsInput.trim() !== "" || squadElims > 0 || yourElimsClamped > 0);
+  const progressivePreview = mode === "wz" && !hasElimInputs && placementId == null;
+  const canApplyWz = placementId != null && headlineNet !== 0;
+  const canApply = mode === "wz" ? canApplyWz : headlineNet !== 0;
+
+  const applyBarState = hydrated
+    ? {
+        net: headlineNet,
+        canCancel,
+        canApply,
+        selected: placementId != null,
+        progressive: progressivePreview,
+      }
+    : mode === "wz"
+      ? {
+          net: 0,
+          canCancel: false,
+          canApply: false,
+          selected: false,
+          progressive: true,
+        }
+      : {
+          net: 0,
+          canCancel: false,
+          canApply: false,
+          selected: false,
+          progressive: false,
+        };
+
   function clearedGame(): Partial<StoredCalc> {
     if (mode === "wz") {
       return {
@@ -265,9 +339,48 @@ export function SrCalculator({
     return { srPerWin: 0, srPerWinInput: "" };
   }
 
+  const elimParts = elimSrBreakdown(squadElims, yourElimsClamped);
+  const placementSr = selectedPlacement?.placementSr ?? 0;
+  const ticketNet = placementSr + elimParts.elimSr - rank.fee;
+
   function addSr() {
     if (headlineNet === 0) return;
     const next = clampSr(sr + headlineNet);
+    const appliedNet = next - sr;
+    if (appliedNet === 0) return;
+
+    let recorded = true;
+    try {
+      let draft: NewMatch;
+      if (mode === "wz") {
+        if (placementId == null) return;
+        draft = {
+          mode: "wz",
+          srBefore: sr,
+          srAfter: next,
+          net: appliedNet,
+          placement: placementId,
+          squadElims,
+          yourElims: yourElimsClamped,
+          fee: rank.fee,
+          placementSr,
+          elimSr: elimParts.elimSr,
+          capped: elimParts.capped,
+        };
+      } else {
+        draft = {
+          mode: "mp",
+          srBefore: sr,
+          srAfter: next,
+          net: appliedNet,
+          srPerWin,
+        };
+      }
+      recorded = historyStore.save(appendMatch(historyStore.load(), draft).doc);
+    } catch {
+      recorded = false;
+    }
+    setHistorySaveFailed(!recorded);
     patch({ sr: next, srInput: String(next), ...clearedGame() });
   }
 
@@ -280,16 +393,33 @@ export function SrCalculator({
     patch({ srInput: value, sr: clampSr(Number(value) || 0) });
   }
 
-  const elimParts = elimSrBreakdown(squadElims, yourElimsClamped);
-  const placementSr = selectedPlacement?.placementSr ?? 0;
-  const ticketNet = placementSr + elimParts.elimSr - rank.fee;
+  function undoLast() {
+    const result = undoLastMatch(historyStore.load(), sr);
+    if (!result) return;
+    const ok = historyStore.save(result.doc);
+    setHistorySaveFailed(!ok);
+    patch({ sr: result.restoredSr, srInput: String(result.restoredSr) });
+  }
+
+  function endOpenSession() {
+    const open = openSession(historyDoc);
+    if (!open) return;
+    const ok = historyStore.save(endSession(historyDoc, open.id));
+    setHistorySaveFailed(!ok);
+  }
+
   const ticketOpen =
     hydrated &&
     mode === "wz" &&
     (placementId != null || squadElimsInput.trim() !== "" || yourElimsInput.trim() !== "");
 
   return (
-    <div className={cn("mt-4", ticketOpen && "max-md:pb-[14.5rem] md:pb-8")}>
+    <div
+      className={cn(
+        "mt-4 max-md:pb-[16rem] md:pb-8",
+        ticketOpen && "max-md:pb-[31rem]",
+      )}
+    >
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(280px,0.85fr)_minmax(360px,1.15fr)]">
         <div className="space-y-5">
           <RankPlate
@@ -359,12 +489,7 @@ export function SrCalculator({
               <span id="win-help" className="text-[11px] text-muted">
                 Typical Warzone nets at your rank. Edit if your lobby pays differently.
               </span>
-              <ApplyGameBar
-                net={headlineNet}
-                canCancel={canCancel}
-                onAdd={addSr}
-                onCancel={cancel}
-              />
+              <ApplyGameBar {...applyBarState} onAdd={addSr} onCancel={cancel} />
             </div>
           ) : null}
         </div>
@@ -420,8 +545,11 @@ export function SrCalculator({
           {mode === "wz" ? (
             <div className="mt-6 space-y-4">
               <div>
-                <p className="text-xs text-muted">Squad elims</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                <p className="text-xs text-muted">Eliminations</p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-2">
+                  <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted">
+                    Squad
+                  </span>
                   {COMMON_SQUAD_ELIMS.map((n) => (
                     <Button
                       key={n}
@@ -440,7 +568,7 @@ export function SrCalculator({
                     min={0}
                     max={80}
                     inputMode="numeric"
-                    placeholder="e.g. 40"
+                    placeholder="40"
                     value={squadElimsInput}
                     onChange={(e) =>
                       patch({
@@ -449,13 +577,14 @@ export function SrCalculator({
                       })
                     }
                     aria-label="Custom squad elims"
-                    className="h-8 w-[5.5rem] px-2 text-center"
+                    className="h-8 w-[3.25rem] px-1.5 text-center"
                   />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-muted">Your elims</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="hidden text-border sm:inline" aria-hidden>
+                    |
+                  </span>
+                  <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted">
+                    You
+                  </span>
                   {COMMON_YOUR_ELIMS.map((n) => (
                     <Button
                       key={n}
@@ -476,7 +605,7 @@ export function SrCalculator({
                     min={0}
                     max={80}
                     inputMode="numeric"
-                    placeholder="e.g. 8"
+                    placeholder="8"
                     value={yourElimsInput}
                     onChange={(e) =>
                       patch({
@@ -485,29 +614,41 @@ export function SrCalculator({
                       })
                     }
                     aria-label="Custom your elims"
-                    className="h-8 w-[5.5rem] px-2 text-center"
+                    className="h-8 w-[3.25rem] px-1.5 text-center"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
               {wzScenarios.map((row) => {
                 const selected = row.placement.id === placementId;
+                const mutedNegative = progressivePreview && row.net < 0;
+                const subline =
+                  resolved.reached
+                    ? "At target"
+                    : row.games != null
+                      ? `${row.games} game${row.games === 1 ? "" : "s"}`
+                      : row.breakEvenElims != null
+                        ? `${row.breakEvenElims} elim${row.breakEvenElims === 1 ? "" : "s"} to go positive`
+                        : "Cannot climb";
+
                 return (
                   <button
                     key={row.placement.id}
                     type="button"
                     onClick={() => patch({ placement: row.placement.id })}
                     className={cn(
-                      "rounded-[6px] border px-3 py-3 text-left transition-[transform,background-color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                      "rounded-[6px] border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                       selected
-                        ? "border-accent bg-surface-elevated"
+                        ? "relative z-10 -translate-y-0.5 border-accent bg-surface-elevated shadow-[0_6px_24px_rgb(0_0_0/0.28)] ring-1 ring-accent/25"
                         : "border-border bg-surface hover:border-border/80",
                     )}
                   >
                     <p
                       className={cn(
-                        "text-xs font-medium",
-                        row.placement.highlight ? "text-accent" : "text-muted",
+                        "text-sm font-semibold leading-tight",
+                        row.placement.highlight && !mutedNegative
+                          ? "text-accent"
+                          : "text-muted",
                       )}
                     >
                       {row.placement.label}
@@ -516,31 +657,20 @@ export function SrCalculator({
                       className={cn(
                         "numeric mt-2 text-lg leading-none",
                         row.net > 0 && "text-accent",
-                        row.net < 0 && "text-negative",
+                        row.net < 0 && (mutedNegative ? "text-muted" : "text-negative"),
                         row.net === 0 && "text-muted",
                       )}
                     >
                       {formatDelta(row.net)}
                     </p>
-                    <p className="mt-2 text-[11px] text-muted">
-                      {resolved.reached
-                        ? "At target"
-                        : row.games != null
-                          ? `${row.games} game${row.games === 1 ? "" : "s"}`
-                          : row.breakEvenElims != null
-                            ? `${row.breakEvenElims} elim${row.breakEvenElims === 1 ? "" : "s"} to go positive`
-                            : "Cannot climb"}
-                    </p>
+                    {subline ? (
+                      <p className="mt-2 text-[11px] text-muted">{subline}</p>
+                    ) : null}
                   </button>
                 );
               })}
               </div>
-              <ApplyGameBar
-                net={headlineNet}
-                canCancel={canCancel}
-                onAdd={addSr}
-                onCancel={cancel}
-              />
+              <ApplyGameBar {...applyBarState} onAdd={addSr} onCancel={cancel} />
             </div>
           ) : (
             <div className="panel-elevated mt-6 px-4 py-4">
@@ -565,9 +695,15 @@ export function SrCalculator({
         projectedSr={projectedSr}
         cutoffSr={cutoffSr}
         rank={displayRank}
-        fee={rank.fee}
-        showFee={mode === "wz"}
         skip={editingSr || !hydrated}
+      />
+      <SessionPanel
+        doc={historyDoc}
+        currentSr={sr}
+        ticketOpen={ticketOpen}
+        saveFailed={historySaveFailed}
+        onUndo={undoLast}
+        onEnd={endOpenSession}
       />
       <SrTicket
         open={ticketOpen}
@@ -586,56 +722,48 @@ export function SrCalculator({
 function ApplyGameBar({
   net,
   canCancel,
+  canApply = net !== 0,
+  selected = false,
+  progressive = false,
   onAdd,
   onCancel,
 }: {
   net: number;
   canCancel: boolean;
+  canApply?: boolean;
+  selected?: boolean;
+  progressive?: boolean;
   onAdd: () => void;
   onCancel: () => void;
 }) {
+  const label =
+    progressive && !selected
+      ? "Select a result"
+      : selected && net !== 0
+        ? `Add ${formatDelta(net)} SR`
+        : net !== 0
+          ? `Add ${formatDelta(net)} SR`
+          : "Add 0 SR";
+
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      <Button type="button" disabled={net === 0} onClick={onAdd}>
-        Add {formatDelta(net)} SR
+    <div className={cn("flex gap-2", selected && canApply ? "flex-col sm:flex-row" : "flex-wrap")}>
+      <Button
+        type="button"
+        className={cn(selected && canApply && "w-full sm:flex-1")}
+        disabled={!canApply}
+        onClick={onAdd}
+      >
+        {label}
       </Button>
-      <Button type="button" variant="outline" disabled={!canCancel} onClick={onCancel}>
+      <Button
+        type="button"
+        variant="outline"
+        className={cn(selected && canApply && "w-full sm:w-auto")}
+        disabled={!canCancel}
+        onClick={onCancel}
+      >
         Cancel
       </Button>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  tone,
-  primary = false,
-  numeric = true,
-}: {
-  label: string;
-  value: string;
-  tone: "accent" | "neg" | "muted" | "plain";
-  primary?: boolean;
-  numeric?: boolean;
-}) {
-  return (
-    <div className="px-3 first:pl-0 last:pr-0">
-      <dd
-        className={cn(
-          "leading-none",
-          numeric && "numeric",
-          primary ? "text-3xl font-semibold tracking-tight" : "text-base",
-          tone === "accent" && "accent-glow text-accent",
-          tone === "neg" && "text-negative",
-          tone === "muted" && "text-muted",
-        )}
-      >
-        {value}
-      </dd>
-      <dt className={cn("mt-1 text-muted", primary ? "text-xs font-medium" : "text-[11px]")}>
-        {label}
-      </dt>
     </div>
   );
 }

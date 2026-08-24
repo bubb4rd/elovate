@@ -20,10 +20,6 @@ export function CalcPage({ mode }: { mode: Mode }) {
       <SiteNav mode={mode} seasons={seasons} tool="calc" />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5">
         <SrCalculator mode={mode} cutoffSr={cutoffSr} ladder={ladder} />
-        <p className="mt-6 max-w-[65ch] text-xs leading-relaxed text-muted">
-          Placement, elimination, and deployment numbers match the current Ranked overlay
-          and can change mid-season. Multiplayer SR per win is an estimate you set.
-        </p>
       </main>
       <SiteFooter
         calcHref={`/${mode}/calc`}

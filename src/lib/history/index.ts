@@ -1,0 +1,29 @@
+export {
+  appendMatch,
+  canUndoLast,
+  emptyDocument,
+  endSession,
+  enforceCap,
+  isSessionIdle,
+  openSession,
+  openSummary,
+  parseDocument,
+  pastSummaries,
+  sessionMatches,
+  summarizeSession,
+  undoLastMatch,
+} from "./sessions";
+export { createLocalHistoryStore, historyKey } from "./store";
+export {
+  HISTORY_VERSION,
+  MAX_MATCHES_PER_MODE,
+  SESSION_IDLE_MS,
+  type HistoryDocument,
+  type HistoryMatch,
+  type HistorySession,
+  type HistoryStore,
+  type MpHistoryMatch,
+  type NewMatch,
+  type SessionSummary,
+  type WzHistoryMatch,
+} from "./types";

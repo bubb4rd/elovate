@@ -46,3 +46,17 @@ export function daysBetween(aIso: string, bIso: string): number {
   const b = Date.parse(bIso);
   return Math.max(1, Math.round(Math.abs(b - a) / 86_400_000));
 }
+
+export function formatLocalTime(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+export function formatLocalDay(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(iso));
+}
