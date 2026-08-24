@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { RankPlate } from "@/components/rank-plate";
 import { RankTimeline } from "@/components/rank-timeline";
 import { SessionPanel } from "@/components/session-panel";
+import { SrInputMode, type EntryMode } from "@/components/sr-input-mode";
+import { SrScreenshotUpload } from "@/components/sr-screenshot-upload";
 import { SrTicket } from "@/components/sr-ticket";
 import { TickerNumeral } from "@/components/ticker-numeral";
 import { formatDelta, formatSr } from "@/lib/format";
@@ -206,6 +208,7 @@ export function SrCalculator({
   const placementId = asPlacement(stored.placement);
 
   const [editingSr, setEditingSr] = useState(false);
+  const [entryMode, setEntryMode] = useState<EntryMode>("manual");
   const [historySaveFailed, setHistorySaveFailed] = useState(false);
   const { doc: historyDoc, store: historyStore } = useHistory(mode);
   const hydrated = useSyncExternalStore(
@@ -544,6 +547,11 @@ export function SrCalculator({
 
           {mode === "wz" ? (
             <div className="mt-6 space-y-4">
+              <SrInputMode value={entryMode} onChange={setEntryMode} />
+              {entryMode === "photo" ? (
+                <SrScreenshotUpload />
+              ) : (
+                <>
               <div>
                 <p className="text-xs text-muted">Eliminations</p>
                 <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-2">
@@ -671,6 +679,8 @@ export function SrCalculator({
               })}
               </div>
               <ApplyGameBar {...applyBarState} onAdd={addSr} onCancel={cancel} />
+                </>
+              )}
             </div>
           ) : (
             <div className="panel-elevated mt-6 px-4 py-4">
