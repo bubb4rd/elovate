@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  --geebung-50: #fdfbe9;
+  --geebung-100: #fcf8c5;
+  --geebung-200: #faed8e;
+  --geebung-300: #f7dd4d;
+  --geebung-400: #f2c81d;
+  --geebung-500: #e2b010;
+  --geebung-600: #ca8d0b;
+  --geebung-700: #9c620c;
+  --geebung-800: #814d12;
+  --geebung-900: #6e4015;
+  --geebung-950: #402008;
+
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --surface: #fafafa;
+  --surface-elevated: #f4f4f5;
+  --muted: #71717a;
+  --border: #d4d4d8;
+  --accent: var(--geebung-600);
+  --accent-fg: var(--geebung-50);
+  --negative: #9f4d4d;
+  --radius: 6px;
+  --nav: 40;
+  --overlay: 50;
+}
+
+.dark {
+  --background: #0a0a0b;
+  --foreground: #f4f4f5;
+  --surface: #131314;
+  --surface-elevated: #19191b;
+  --muted: #a1a1aa;
+  --border: #2a2a2e;
+  --accent: var(--geebung-400);
+  --accent-fg: #201b12;
+  --negative: #e8a0a0;
+}
+
+@theme inline {
+  --color-geebung-50: var(--geebung-50);
+  --color-geebung-100: var(--geebung-100);
+  --color-geebung-200: var(--geebung-200);
+  --color-geebung-300: var(--geebung-300);
+  --color-geebung-400: var(--geebung-400);
+  --color-geebung-500: var(--geebung-500);
+  --color-geebung-600: var(--geebung-600);
+  --color-geebung-700: var(--geebung-700);
+  --color-geebung-800: var(--geebung-800);
+  --color-geebung-900: var(--geebung-900);
+  --color-geebung-950: var(--geebung-950);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-negative: var(--negative);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: 6px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+}
+
+html {
+  color-scheme: dark;
+}
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.numeric {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.accent-glow {
+  filter: drop-shadow(0 0 10px color-mix(in oklab, var(--geebung-500) 25%, transparent));
+}
+
+.dark .accent-glow {
+  filter: drop-shadow(0 0 12px color-mix(in oklab, var(--geebung-400) 35%, transparent));
+}
+
+.panel-elevated {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.16),
+    0 10px 30px rgb(0 0 0 / 0.2);
+}
+
+.dark .panel-elevated {
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.45),
+    0 14px 38px rgb(0 0 0 / 0.48);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
