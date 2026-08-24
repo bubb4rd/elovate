@@ -2,9 +2,7 @@ import Link from "next/link";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
 import { SeasonSelect } from "@/components/season-select";
-import { T250Counter } from "@/components/t250-counter";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getActiveSeason, getBoardMetrics } from "@/lib/data/queries";
 import { zIndex } from "@/lib/z-index";
 import { cn } from "@/lib/utils";
 import type { Mode, Season } from "@/lib/data/types";
@@ -21,7 +19,6 @@ export function SiteNav({
   tool?: "board" | "calc";
 }) {
   const liveMode = mode ?? "wz";
-  const liveMetrics = getBoardMetrics(liveMode, getActiveSeason().id);
   const activeSeason = seasons.find((s) => s.isActive);
   const onArchivedBoard = Boolean(
     mode && seasonId && activeSeason && seasonId !== activeSeason.id,
@@ -58,7 +55,7 @@ export function SiteNav({
               |
             </span>
             <ToolLink href={calcHref} active={tool === "calc"}>
-              Calc
+              Climb
             </ToolLink>
           </nav>
         ) : null}
@@ -66,9 +63,6 @@ export function SiteNav({
           <SeasonSelect mode={mode} seasonId={seasonId} seasons={seasons} />
         ) : null}
         <div className="ml-auto flex items-center gap-3">
-          {liveMetrics ? (
-            <T250Counter cutoffSr={liveMetrics.cutoffSr} mode={liveMode} />
-          ) : null}
           <ThemeToggle />
         </div>
       </div>

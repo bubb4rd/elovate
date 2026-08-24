@@ -22,7 +22,7 @@ export function SiteFooter({
             Multiplayer
           </Link>
           <Link href={calcHref} className="hover:text-foreground">
-            Calculator
+            Climb
           </Link>
         </nav>
       </div>

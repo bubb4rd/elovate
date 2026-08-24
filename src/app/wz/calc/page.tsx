@@ -2,7 +2,7 @@ import { CalcPage } from "@/components/calc-page";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "WZ climb calculator",
+  title: "WZ Climb",
 };
 
 export default function WarzoneCalc() {
