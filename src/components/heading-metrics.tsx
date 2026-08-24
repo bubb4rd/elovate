@@ -34,7 +34,6 @@ export function HeadingMetrics({ metrics }: { metrics: BoardMetrics }) {
               item.primary ? "text-3xl font-semibold tracking-tight" : "text-base",
               item.tone === "accent" && "accent-glow text-accent",
               item.tone === "neg" && "text-negative",
-              item.tone === "muted" && "text-muted",
             )}
           >
             {item.value}
