@@ -9,21 +9,30 @@ function subscribe(onChange: () => void) {
   return () => window.removeEventListener("storage", onChange);
 }
 
-function getSnapshot() {
-  const stored = localStorage.getItem("t250-mode");
-  return stored === "mp" ? "/mp" : "/wz";
+function getModeSnapshot() {
+  return localStorage.getItem("t250-mode") === "mp" ? "mp" : "wz";
 }
 
 function getServerSnapshot() {
-  return "/wz";
+  return "wz";
 }
 
 export function OpenBoardLink() {
-  const href = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const mode = useSyncExternalStore(subscribe, getModeSnapshot, getServerSnapshot);
+  const boardHref = `/${mode}`;
+  const climbHref = `/${mode}/calc`;
 
   return (
-    <Button asChild>
-      <Link href={href}>Open board</Link>
-    </Button>
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+      <Button asChild>
+        <Link href={boardHref}>Open board</Link>
+      </Button>
+      <Link
+        href={climbHref}
+        className="text-sm font-medium text-accent transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        See your climb
+      </Link>
+    </div>
   );
 }
