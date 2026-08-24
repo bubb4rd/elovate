@@ -146,7 +146,7 @@ export function SrTicket({
                       net === 0 && "text-zinc-400",
                     )}
                   >
-                    <TickerNumeral value={net} format={formatDelta} step={0.5} />
+                    <TickerNumeral value={net} format={formatDelta} />
                   </dd>
                 </motion.div>
               </motion.dl>
@@ -228,7 +228,7 @@ function TicketRow({
           maxed && "accent-glow text-accent",
         )}
       >
-        {free ? "Free" : <TickerNumeral value={value} format={formatDelta} step={0.5} />}
+        {free ? "Free" : <TickerNumeral value={value} format={formatDelta} />}
       </dd>
     </motion.div>
   );

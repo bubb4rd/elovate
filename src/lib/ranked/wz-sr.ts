@@ -64,12 +64,12 @@ export function elimSrBreakdown(
   const squad = Math.max(0, Math.floor(squadElims));
   const yours = Math.max(0, Math.floor(yourElims));
   const squadRaw = squad * WZ_SQUAD_ELIM_SR;
-  const yourRaw = yours * WZ_PLAYER_ELIM_SR;
+  const yourRaw = Math.ceil(yours * WZ_PLAYER_ELIM_SR);
   const raw = squadRaw + yourRaw;
   if (raw <= WZ_ELIM_CAP) {
     return { yourSr: yourRaw, squadSr: squadRaw, elimSr: raw, capped: false };
   }
-  const yourSr = Math.round((yourRaw / raw) * WZ_ELIM_CAP * 2) / 2;
+  const yourSr = Math.min(WZ_ELIM_CAP, Math.ceil((yourRaw / raw) * WZ_ELIM_CAP));
   const squadSr = WZ_ELIM_CAP - yourSr;
   return { yourSr, squadSr, elimSr: WZ_ELIM_CAP, capped: true };
 }
@@ -113,7 +113,7 @@ export function breakEvenElims(args: {
   if (args.placement.placementSr - fee > 0) return 0;
   const yours = Math.max(0, Math.floor(args.yourElims));
   const needFromElims = fee - args.placement.placementSr + 1;
-  const coveredByPlayer = yours * WZ_PLAYER_ELIM_SR;
+  const coveredByPlayer = Math.ceil(yours * WZ_PLAYER_ELIM_SR);
   if (coveredByPlayer >= needFromElims) return 0;
   const needFromSquad = needFromElims - coveredByPlayer;
   const squadNeeded = Math.ceil(needFromSquad / WZ_SQUAD_ELIM_SR);

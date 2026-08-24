@@ -34,8 +34,8 @@ import {
 } from "@/lib/ranked";
 import type { Mode } from "@/lib/data/types";
 
-const STORAGE_KEY = "t250-calc-sr";
-const STORAGE_EVENT = "t250-calc-sr";
+const STORAGE_KEY = "elovate-calc-sr";
+const STORAGE_EVENT = "elovate-calc-sr";
 
 const TARGETS: { id: ClimbTarget; label: string }[] = [
   { id: "nextTier", label: "Next tier" },
@@ -105,27 +105,27 @@ function asTarget(value: ClimbTarget | string | undefined): ClimbTarget {
 }
 
 function asPlacement(value: WzPlacementId | null | undefined): WzPlacementId | null {
-  if (value === null) return null;
-  if (value && WZ_PLACEMENTS.some((item) => item.id === value)) return value;
-  return "first";
+  if (value == null) return null;
+  if (WZ_PLACEMENTS.some((item) => item.id === value)) return value;
+  return null;
 }
 
 const COMMON_SQUAD_ELIMS = [5, 10, 15, 20, 25] as const;
 const COMMON_YOUR_ELIMS = [0, 2, 5, 8, 10] as const;
 
 function readSquadElims(stored: StoredCalc): { value: number; input: string } {
-  const input =
-    stored.squadElimsInput ??
-    stored.elimsInput ??
-    (stored.squadElims != null
-      ? String(stored.squadElims)
-      : stored.elims != null
-        ? String(stored.elims)
-        : "20");
-  return { input, value: Math.max(0, Math.floor(Number(input) || 0)) };
+  if (stored.squadElimsInput != null || stored.squadElims != null) {
+    const input = stored.squadElimsInput ?? String(stored.squadElims);
+    return { input, value: Math.max(0, Math.floor(Number(input) || 0)) };
+  }
+  if (stored.elimsInput != null || stored.elims != null) {
+    const input = stored.elimsInput ?? String(stored.elims);
+    return { input, value: Math.max(0, Math.floor(Number(input) || 0)) };
+  }
+  return { input: "", value: 0 };
 }
 
-function readYourElims(stored: StoredCalc, squadElims: number): { value: number; input: string } {
+function readYourElims(stored: StoredCalc): { value: number; input: string } {
   if (stored.yourElimsInput != null || stored.yourElims != null) {
     const input = stored.yourElimsInput ?? String(stored.yourElims);
     return { input, value: Math.max(0, Math.floor(Number(input) || 0)) };
@@ -134,8 +134,7 @@ function readYourElims(stored: StoredCalc, squadElims: number): { value: number;
     const legacy = Math.max(0, Math.floor(Number(stored.elimsInput ?? stored.elims) || 0));
     return { input: String(legacy), value: legacy };
   }
-  const average = Math.round(squadElimBaseline(squadElims));
-  return { input: String(average), value: average };
+  return { input: "", value: 0 };
 }
 
 export function SrCalculator({
@@ -154,7 +153,7 @@ export function SrCalculator({
   const squadElimsState = readSquadElims(stored);
   const squadElimsInput = squadElimsState.input;
   const squadElims = squadElimsState.value;
-  const yourElimsState = readYourElims(stored, squadElims);
+  const yourElimsState = readYourElims(stored);
   const yourElimsInput = yourElimsState.input;
   const yourElims = yourElimsState.value;
   const srPerWinInput =
@@ -428,7 +427,9 @@ export function SrCalculator({
                       key={n}
                       type="button"
                       size="sm"
-                      variant={squadElims === n ? "default" : "outline"}
+                      variant={
+                        squadElimsInput.trim() !== "" && squadElims === n ? "default" : "outline"
+                      }
                       onClick={() => patch({ squadElims: n, squadElimsInput: String(n) })}
                     >
                       {n}
@@ -460,7 +461,11 @@ export function SrCalculator({
                       key={n}
                       type="button"
                       size="sm"
-                      variant={yourElimsClamped === n ? "default" : "outline"}
+                      variant={
+                        yourElimsInput.trim() !== "" && yourElimsClamped === n
+                          ? "default"
+                          : "outline"
+                      }
                       onClick={() => patch({ yourElims: n, yourElimsInput: String(n) })}
                     >
                       {n}
