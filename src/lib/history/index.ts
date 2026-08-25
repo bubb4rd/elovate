@@ -16,6 +16,14 @@ export {
 } from "./sessions";
 export { createLocalHistoryStore, historyKey } from "./store";
 export {
+  SESSION_SHARE_HEIGHT,
+  SESSION_SHARE_WIDTH,
+  formatShareDay,
+  shareCardCopy,
+  shareFilename,
+  shareModeLabel,
+} from "./share";
+export {
   HISTORY_VERSION,
   MAX_MATCHES_PER_MODE,
   SESSION_IDLE_MS,

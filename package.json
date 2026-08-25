@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx src/lib/history/sessions.test.ts && node --import tsx src/lib/ocr/parse-sr-breakdown.test.ts && node --import tsx src/lib/ocr/error-matrix.test.ts"
+    "test": "node --import tsx src/lib/history/sessions.test.ts && node --import tsx src/lib/history/share.test.ts && node --import tsx src/lib/ocr/parse-sr-breakdown.test.ts && node --import tsx src/lib/ocr/error-matrix.test.ts"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.7",
@@ -16,6 +16,7 @@
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "html-to-image": "^1.11.13",
     "motion": "^13.1.0",
     "next": "16.3.1",
     "react": "19.2.8",

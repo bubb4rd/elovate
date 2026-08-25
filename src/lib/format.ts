@@ -70,3 +70,14 @@ export function formatLocalDay(iso: string): string {
     day: "numeric",
   }).format(new Date(iso));
 }
+
+export function formatShareCardDay(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+    .format(new Date(iso))
+    .replaceAll(",", "");
+}

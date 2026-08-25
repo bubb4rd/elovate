@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowCounterClockwise, CaretDown, Fire } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, CaretDown, Export, Fire } from "@phosphor-icons/react";
 import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { formatDelta, formatLocalDay, formatLocalTime, formatSr } from "@/lib/format";
@@ -13,6 +13,7 @@ import {
   type SessionSummary,
 } from "@/lib/history";
 import { ClimbSessionIcon } from "@/components/icons";
+import { SessionShareDialog } from "@/components/session-share-dialog";
 import { WZ_PLACEMENTS } from "@/lib/ranked";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
@@ -154,10 +155,12 @@ function PastSessionRow({
   summary,
   open,
   onOpenChange,
+  onShare,
 }: {
   summary: SessionSummary;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onShare: () => void;
 }) {
   const matches = [...summary.matches].reverse();
   return (
@@ -181,6 +184,19 @@ function PastSessionRow({
         <span className={cn("numeric shrink-0 text-[12px]", netClass(summary.net))}>
           {formatDelta(summary.net)}
         </span>
+        <button
+          type="button"
+          aria-label="Share session"
+          disabled={summary.games === 0}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onShare();
+          }}
+          className="flex size-5 shrink-0 items-center justify-center rounded-[4px] text-zinc-500 transition-colors hover:text-zinc-100 disabled:pointer-events-none disabled:opacity-40"
+        >
+          <Export weight="bold" className="size-3" />
+        </button>
       </summary>
       <ul className="pb-1 pl-4">
         {matches.map((match) => (
@@ -208,6 +224,7 @@ export function SessionPanel({
 }) {
   const [pastSectionOpen, setPastSectionOpen] = useState(false);
   const [expandedPastId, setExpandedPastId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState<SessionSummary | null>(null);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -223,6 +240,7 @@ export function SessionPanel({
   if (!mounted) return null;
 
   return createPortal(
+    <>
     <div
       className={cn(
         "pointer-events-none fixed inset-x-3 md:inset-x-auto md:w-[min(20rem,calc(100vw-2rem))]",
@@ -256,15 +274,27 @@ export function SessionPanel({
               </span>{" "}
               Session
             </p>
-            {current && !browsingPast ? (
-              <button
-                type="button"
-                onClick={onEnd}
-                className="rounded-[4px] border border-white/12 px-2 py-0.5 text-[10px] font-medium text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100"
-              >
-                End
-              </button>
-            ) : null}
+            <div className="flex items-center gap-1.5">
+              {current && current.games > 0 ? (
+                <button
+                  type="button"
+                  aria-label="Share session"
+                  onClick={() => setSharing(current)}
+                  className="flex size-5 items-center justify-center rounded-[4px] text-zinc-500 transition-colors hover:text-zinc-100"
+                >
+                  <Export weight="bold" className="size-3" />
+                </button>
+              ) : null}
+              {current && !browsingPast ? (
+                <button
+                  type="button"
+                  onClick={onEnd}
+                  className="rounded-[4px] border border-white/12 px-2 py-0.5 text-[10px] font-medium text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-100"
+                >
+                  End
+                </button>
+              ) : null}
+            </div>
           </div>
           {current ? (
             <SessionStats summary={current} compact={browsingPast} />
@@ -317,6 +347,7 @@ export function SessionPanel({
                     onOpenChange={(open) =>
                       setExpandedPastId(open ? summary.session.id : null)
                     }
+                    onShare={() => setSharing(summary)}
                   />
                 </li>
               ))}
@@ -330,7 +361,11 @@ export function SessionPanel({
           </p>
         ) : null}
       </aside>
-    </div>,
+    </div>
+    {sharing ? (
+      <SessionShareDialog summary={sharing} onClose={() => setSharing(null)} />
+    ) : null}
+    </>,
     document.body,
   );
 }
