@@ -6,8 +6,9 @@ import {
 export const SHARE_CARD_PIXEL_RATIO = 3;
 
 export const SHARE_ASSET_URLS = [
-  "/share/grid.png",
-  "/textures/share-noise.png",
+  "/share/bg.png",
+  "/share/mark.svg",
+  "/share/peak.svg",
 ] as const;
 
 function waitForImages(root: HTMLElement): Promise<void> {
