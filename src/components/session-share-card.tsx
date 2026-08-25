@@ -117,7 +117,7 @@ export function SessionShareCard({
             <span className="font-normal">vate</span>
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           <p className="text-[18px] leading-none text-[#d9d9d9]">{copy.modeLabel}</p>
           <p
             className="flex h-[26px] w-[76px] items-center justify-center rounded-[8px] border border-geebung-100 text-[18px] leading-none"
