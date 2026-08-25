@@ -1,5 +1,6 @@
 import {
   SESSION_SHARE_HEIGHT,
+  SESSION_SHARE_RADIUS,
   SESSION_SHARE_WIDTH,
 } from "./share";
 
@@ -37,24 +38,62 @@ export function preloadShareAssets(): Promise<void> {
   return Promise.all(SHARE_ASSET_URLS.map(preload)).then(() => undefined);
 }
 
+function clipCanvasToRadius(source: HTMLCanvasElement, radiusPx: number): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = source.width;
+  out.height = source.height;
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Could not export session image.");
+
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(0, 0, out.width, out.height, radiusPx);
+  } else {
+    const r = Math.min(radiusPx, out.width / 2, out.height / 2);
+    ctx.moveTo(r, 0);
+    ctx.lineTo(out.width - r, 0);
+    ctx.quadraticCurveTo(out.width, 0, out.width, r);
+    ctx.lineTo(out.width, out.height - r);
+    ctx.quadraticCurveTo(out.width, out.height, out.width - r, out.height);
+    ctx.lineTo(r, out.height);
+    ctx.quadraticCurveTo(0, out.height, 0, out.height - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+  }
+  ctx.clip();
+  ctx.drawImage(source, 0, 0);
+  return out;
+}
+
 export async function captureShareCard(node: HTMLElement): Promise<Blob> {
   await document.fonts.ready;
   await preloadShareAssets();
   await waitForImages(node);
-  const { toBlob } = await import("html-to-image");
-  const blob = await toBlob(node, {
+  const { toCanvas } = await import("html-to-image");
+  const source = await toCanvas(node, {
     pixelRatio: SHARE_CARD_PIXEL_RATIO,
     width: SESSION_SHARE_WIDTH,
     height: SESSION_SHARE_HEIGHT,
     canvasWidth: SESSION_SHARE_WIDTH * SHARE_CARD_PIXEL_RATIO,
     canvasHeight: SESSION_SHARE_HEIGHT * SHARE_CARD_PIXEL_RATIO,
-    backgroundColor: "#0a0a0b",
     cacheBust: true,
     skipAutoScale: true,
     style: {
       transform: "none",
       transformOrigin: "top left",
+      borderRadius: `${SESSION_SHARE_RADIUS}px`,
+      overflow: "hidden",
     },
+  });
+
+  const clipped = clipCanvasToRadius(
+    source,
+    SESSION_SHARE_RADIUS * SHARE_CARD_PIXEL_RATIO,
+  );
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    clipped.toBlob((next) => resolve(next), "image/png");
   });
   if (!blob) throw new Error("Could not export session image.");
   return blob;

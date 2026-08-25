@@ -3,6 +3,7 @@ import type { SessionSummary } from "./types";
 
 export const SESSION_SHARE_WIDTH = 600;
 export const SESSION_SHARE_HEIGHT = 209;
+export const SESSION_SHARE_RADIUS = 20;
 
 export type SessionShareCopy = {
   netLabel: string;

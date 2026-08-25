@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SessionShareCard } from "@/components/session-share-card";
 import {
   SESSION_SHARE_HEIGHT,
+  SESSION_SHARE_RADIUS,
   SESSION_SHARE_WIDTH,
   shareFilename,
 } from "@/lib/history/share";
@@ -97,7 +98,11 @@ export function SessionShareDialog({
         <div
           aria-hidden
           className="pointer-events-none fixed top-0"
-          style={{ left: -10000, width: SESSION_SHARE_WIDTH, height: SESSION_SHARE_HEIGHT }}
+          style={{
+            left: -10000,
+            width: SESSION_SHARE_WIDTH,
+            height: SESSION_SHARE_HEIGHT,
+          }}
         >
           <SessionShareCard ref={captureRef} summary={summary} />
         </div>
@@ -116,8 +121,11 @@ export function SessionShareDialog({
         </div>
         <div className="@container w-full">
           <div
-            className="relative w-full overflow-hidden rounded-[16px]"
-            style={{ aspectRatio: `${SESSION_SHARE_WIDTH} / ${SESSION_SHARE_HEIGHT}` }}
+            className="relative w-full overflow-hidden"
+            style={{
+              aspectRatio: `${SESSION_SHARE_WIDTH} / ${SESSION_SHARE_HEIGHT}`,
+              borderRadius: SESSION_SHARE_RADIUS,
+            }}
           >
             <div
               className="absolute top-0 left-0 origin-top-left"

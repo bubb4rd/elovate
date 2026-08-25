@@ -17,6 +17,7 @@ export {
 export { createLocalHistoryStore, historyKey } from "./store";
 export {
   SESSION_SHARE_HEIGHT,
+  SESSION_SHARE_RADIUS,
   SESSION_SHARE_WIDTH,
   formatShareDay,
   shareCardCopy,

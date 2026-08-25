@@ -4,6 +4,7 @@ import type { ComponentProps, CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import {
   SESSION_SHARE_HEIGHT,
+  SESSION_SHARE_RADIUS,
   SESSION_SHARE_WIDTH,
   shareCardCopy,
 } from "@/lib/history/share";
@@ -48,7 +49,7 @@ export function SessionShareCard({
         width: SESSION_SHARE_WIDTH,
         height: SESSION_SHARE_HEIGHT,
         backgroundColor: "#0b0b0b",
-        borderRadius: 20,
+        borderRadius: SESSION_SHARE_RADIUS,
         ...style,
       }}
       {...props}
@@ -128,9 +129,9 @@ export function SessionShareCard({
         </div>
       </div>
 
-      <div className="absolute top-[50px] left-[10px] flex items-end gap-0">
+      <div className="absolute top-[50px] left-[10px] isolate flex items-end gap-0">
         <p
-          className="text-[97.28px] leading-[1.21] font-bold tracking-tight whitespace-nowrap"
+          className="relative z-0 text-[97.28px] leading-[1.21] font-bold tracking-tight whitespace-nowrap"
           style={netStyle}
         >
           {copy.netLabel}
