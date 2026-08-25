@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { parseServiceAccountJson } from "./vision-client.ts";
+import { parseServiceAccountJson } from "./vision-client";
 
 const valid = JSON.stringify({
   type: "service_account",
