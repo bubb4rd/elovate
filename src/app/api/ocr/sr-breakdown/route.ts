@@ -66,6 +66,10 @@ export async function POST(request: Request) {
     if (message.includes("credentials") || message.includes("GOOGLE_CLOUD")) {
       return jsonError(503, "Scan unavailable right now");
     }
+    if (/billing|PERMISSION_DENIED|CLOUD_BILLING/i.test(message)) {
+      console.error("[ocr] vision billing", message);
+      return jsonError(503, "Scan unavailable right now");
+    }
     console.error("[ocr] vision failed", message);
     return jsonError(502, "Couldn’t read the screenshot. Try again.");
   }

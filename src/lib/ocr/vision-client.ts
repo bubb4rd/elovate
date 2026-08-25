@@ -9,14 +9,30 @@ export function visionCredentialsConfigured(): boolean {
   );
 }
 
+/**
+ * Parse service-account JSON from env. Dotenv (and Next) turn `\n` in
+ * double-quoted values into real newlines, which breaks JSON.parse on the
+ * private_key PEM — repair that case.
+ */
+export function parseServiceAccountJson(raw: string): object {
+  const trimmed = raw.trim();
+  try {
+    return JSON.parse(trimmed) as object;
+  } catch {
+    // Single-line JSON whose only newlines are dotenv-expanded PEM breaks.
+    const repaired = trimmed.replace(/\r?\n/g, "\\n");
+    try {
+      return JSON.parse(repaired) as object;
+    } catch {
+      throw new Error("GOOGLE_CLOUD_CREDENTIALS is not valid JSON");
+    }
+  }
+}
+
 function credentialsFromEnv(): object | undefined {
   const json = process.env.GOOGLE_CLOUD_CREDENTIALS?.trim();
   if (!json) return undefined;
-  try {
-    return JSON.parse(json) as object;
-  } catch {
-    throw new Error("GOOGLE_CLOUD_CREDENTIALS is not valid JSON");
-  }
+  return parseServiceAccountJson(json);
 }
 
 export function getVisionClient(): ImageAnnotatorClient {
