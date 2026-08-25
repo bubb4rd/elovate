@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import icon from "@/app/icon.png";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
 import { NavCutoff } from "@/components/nav-cutoff";
@@ -44,12 +46,20 @@ export function SiteNav({
       style={{ zIndex: zIndex.nav }}
     >
       <div className="mx-auto flex min-h-16 max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 md:h-16 md:flex-nowrap md:py-0">
-        <div className="flex shrink-0 items-baseline gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/"
             aria-label="elovate"
-            className="text-base font-semibold tracking-tight text-foreground"
+            className="inline-flex items-center gap-1.5 text-base font-semibold tracking-tight text-foreground"
           >
+            <Image
+              src={icon}
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 shrink-0 rounded-[3px]"
+              priority
+            />
             <BrandWordmark />
           </Link>
           <ModeSelect mode={liveMode} tool={tool} />
