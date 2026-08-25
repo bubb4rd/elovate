@@ -34,7 +34,7 @@ export function HomeHeroCopy() {
           transition={{ duration: 0.55, delay: 0.05, ease }}
         >
           {" "}
-          never stops growing.
+          never stop growing.
         </motion.span>
       </h1>
       <motion.p
