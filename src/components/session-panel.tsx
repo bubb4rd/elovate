@@ -27,10 +27,7 @@ function SessionStreak({ streak, size }: { streak: number; size: "lg" | "sm" }) 
   if (streak < 2) return null;
   return (
     <span
-      className={cn(
-        "inline-flex items-center gap-0.5 text-[#f97316]",
-        size === "lg" ? "ml-1.5" : "ml-1",
-      )}
+      className="inline-flex items-center gap-0.5 text-[#f97316]"
       title={`${streak}-game win streak`}
       aria-label={`${streak}-game win streak`}
     >
@@ -110,11 +107,14 @@ function SessionStats({
       <p className="mt-1 flex items-baseline gap-2">
         <span
           className={cn(
-            "inline-flex items-baseline numeric text-sm font-semibold leading-none",
+            "inline-flex items-baseline gap-1 numeric text-sm font-semibold leading-none",
             netClass(summary.net),
           )}
         >
           {formatDelta(summary.net)}
+          <span className="text-[11px] font-medium tracking-normal text-zinc-400">
+            SR
+          </span>
           <SessionStreak streak={summary.streak} size="sm" />
         </span>
         <span className="numeric text-[10px] text-zinc-500">
@@ -128,11 +128,14 @@ function SessionStats({
     <div className="mt-2.5">
       <p
         className={cn(
-          "inline-flex items-baseline numeric text-2xl font-semibold leading-none tracking-tight",
+          "inline-flex items-baseline gap-1.5 numeric text-2xl font-semibold leading-none tracking-tight",
           netClass(summary.net),
         )}
       >
         {formatDelta(summary.net)}
+        <span className="text-sm font-medium tracking-normal text-zinc-400">
+          SR
+        </span>
         <SessionStreak streak={summary.streak} size="lg" />
       </p>
       <div className="mt-2.5 flex flex-wrap gap-1.5">
