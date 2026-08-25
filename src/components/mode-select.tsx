@@ -6,7 +6,6 @@ import type { Mode } from "@/lib/data/types";
 
 const OPTIONS: { value: Mode; label: string }[] = [
   { value: "wz", label: "WZ" },
-  { value: "mp", label: "MP" },
 ];
 
 export function ModeSelect({

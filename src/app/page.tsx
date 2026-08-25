@@ -1,10 +1,17 @@
-import { CutoffChart } from "@/components/cutoff-chart";
 import { CutoffNumeral } from "@/components/cutoff-numeral";
+import { HomeCutoffObject } from "@/components/home-cutoff-object";
+import { HomeHeroCopy } from "@/components/home-hero-copy";
 import { ModePick } from "@/components/mode-pick";
-import { OpenBoardLink } from "@/components/open-board-link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
-import { getHomeSummary, listSeasons } from "@/lib/data/queries";
+import {
+  getCutoff24hSeries,
+  getHomeSummary,
+  getLiveWzBoard,
+  listSeasons,
+  overlayLiveCutoffSeries,
+  overlayLiveMetrics,
+} from "@/lib/data/queries";
 import { formatSnapshotTime } from "@/lib/format";
 import type { Metadata } from "next";
 
@@ -12,47 +19,47 @@ export const metadata: Metadata = {
   title: "elovate",
 };
 
-export default function Home() {
-  const { wz, mp, wzSeries } = getHomeSummary();
+export const revalidate = 900;
+
+export default async function Home() {
+  const { wz: seedWz, mp, season } = getHomeSummary();
+  const live = await getLiveWzBoard();
+  const wz = seedWz && live ? overlayLiveMetrics(seedWz, live) : seedWz;
   const seasons = listSeasons();
-  const capturedAt = wz?.capturedAt ?? mp?.capturedAt;
+  const capturedAt = live?.fetchedAt ?? wz?.capturedAt ?? mp?.capturedAt;
+  const seedDaily = getCutoff24hSeries("wz", season.id);
+  const dailySeries =
+    live && wz ? overlayLiveCutoffSeries(seedDaily, live, wz.change24h) : seedDaily;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <SiteNav seasons={seasons} />
       <section className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-center gap-10 px-4 pt-16 md:grid-cols-2 md:pt-20">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
-            Top 250 cutoff
-          </p>
-          <h1 className="mt-4 max-w-[14ch] text-4xl font-semibold tracking-tighter text-foreground md:text-5xl lg:text-6xl">
-            The SR line that keeps moving
-          </h1>
-          <p className="mt-4 max-w-[36ch] text-base leading-relaxed text-muted">
-            Live Top 250 for Ranked Multiplayer and Warzone. Cutoff, daily drift, full board.
-          </p>
-          <div className="mt-8">
-            <OpenBoardLink />
-          </div>
-        </div>
-        <div>
+        <div className="text-right">
           {wz ? (
             <>
-              <CutoffNumeral sr={wz.cutoffSr} change24h={wz.change24h} />
-              <div className="mt-8">
-                <CutoffChart series={wzSeries} height={160} showRank1={false} />
-              </div>
+              <CutoffNumeral
+                sr={wz.cutoffSr}
+                change24h={wz.change24h}
+                showChange={false}
+              />
+              {dailySeries.length > 0 ? (
+                <HomeCutoffObject series={dailySeries} change24h={wz.change24h} />
+              ) : null}
             </>
           ) : (
             <p>No snapshot for this season yet.</p>
           )}
         </div>
+        <HomeHeroCopy />
       </section>
       <ModePick mp={mp} wz={wz} />
       <SiteFooter
         freshness={
           capturedAt
-            ? `Last snapshot ${formatSnapshotTime(capturedAt)}. Sample season data.`
+            ? live
+              ? `Last snapshot ${formatSnapshotTime(capturedAt)}`
+              : `Last snapshot ${formatSnapshotTime(capturedAt)}. Sample season data.`
             : "Sample snapshots for this build."
         }
       />

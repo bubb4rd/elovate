@@ -1,4 +1,4 @@
-import { CalcPage } from "@/components/calc-page";
+import { MpComingSoon } from "@/components/mp-coming-soon";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function MultiplayerCalc() {
-  return <CalcPage mode="mp" />;
+  return <MpComingSoon />;
 }

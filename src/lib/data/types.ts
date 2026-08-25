@@ -14,12 +14,14 @@ export type Player = {
   displayName: string;
 };
 
+export type SnapshotSource = "seed" | "codmunity";
+
 export type Snapshot = {
   id: string;
   seasonId: string;
   mode: Mode;
   capturedAt: string;
-  source: "seed";
+  source: SnapshotSource;
   cutoffSr: number;
   rank1Sr: number;
 };
@@ -60,4 +62,19 @@ export type BoardMetrics = {
   avgPerDay7d: number;
   playersSampled: number;
   capturedAt: string;
+};
+
+export type BoardFreshness = {
+  fetchedAt: string;
+  nextUpdateAt: string;
+  live: boolean;
+};
+
+export type LiveWzBoard = {
+  rows: BoardRow[];
+  ladder: BoardRung[];
+  cutoffSr: number;
+  rank1Sr: number;
+  fetchedAt: string;
+  nextUpdateAt: string;
 };

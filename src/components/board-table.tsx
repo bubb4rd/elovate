@@ -42,7 +42,13 @@ function RankCell({ rank, deltaRank }: { rank: number; deltaRank: number | null 
   );
 }
 
-export function BoardTable({ rows }: { rows: BoardRow[] }) {
+export function BoardTable({
+  rows,
+  linkPlayers = true,
+}: {
+  rows: BoardRow[];
+  linkPlayers?: boolean;
+}) {
   const [query, setQuery] = useState("");
 
   const columns = useMemo<ColumnDef<BoardRow>[]>(
@@ -58,14 +64,17 @@ export function BoardTable({ rows }: { rows: BoardRow[] }) {
         id: "player",
         accessorFn: (row) => row.player.displayName,
         header: "Player",
-        cell: ({ row }) => (
-          <Link
-            href={`/players/${row.original.player.slug}`}
-            className="hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {row.original.player.displayName}
-          </Link>
-        ),
+        cell: ({ row }) =>
+          linkPlayers ? (
+            <Link
+              href={`/players/${row.original.player.slug}`}
+              className="hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {row.original.player.displayName}
+            </Link>
+          ) : (
+            <span>{row.original.player.displayName}</span>
+          ),
       },
       {
         accessorKey: "sr",
@@ -92,7 +101,7 @@ export function BoardTable({ rows }: { rows: BoardRow[] }) {
         },
       },
     ],
-    [],
+    [linkPlayers],
   );
 
   /* eslint-disable react-hooks/incompatible-library -- TanStack Table v8 */

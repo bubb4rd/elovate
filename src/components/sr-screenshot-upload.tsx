@@ -3,25 +3,12 @@
 import { Image as ImageIcon, UploadSimple } from "@phosphor-icons/react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { ParsedSrBreakdown } from "@/lib/ocr";
 import { cn } from "@/lib/utils";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
 type UploadStatus = "idle" | "ready" | "uploading" | "error";
-
-// Future: POST /api/ocr/sr-breakdown
-// FormData: { image: File }
-// Response (planned): {
-//   net, placementSr, elimSr, fee,
-//   placementId?, yourElimSr?, squadElimSr?,
-//   confidence, warnings[]
-// }
-async function uploadSrScreenshot(file: File): Promise<void> {
-  // TODO: wire Google Vision OCR API route
-  const body = new FormData();
-  body.set("image", file);
-  await new Promise((resolve) => setTimeout(resolve, 700));
-}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -39,7 +26,65 @@ function validateFile(file: File): string | null {
   return null;
 }
 
-export function SrScreenshotUpload() {
+function messageForStatus(status: number, bodyError?: string): string {
+  if (bodyError?.trim()) {
+    if (status === 400 || status === 422 || status === 429 || status === 502 || status === 503) {
+      return bodyError.trim();
+    }
+  }
+  if (status === 429) return "Too many scans — try again in a minute";
+  if (status === 503) return "Scan unavailable right now";
+  if (status === 502) return "Couldn’t read the screenshot. Try again.";
+  if (status === 422) return "Couldn’t find an SR breakdown in this image";
+  if (status === 400) return "No image uploaded";
+  return "Upload failed. Try again.";
+}
+
+async function uploadSrScreenshot(
+  file: File,
+  expectedFee?: number,
+): Promise<ParsedSrBreakdown> {
+  const body = new FormData();
+  body.set("image", file);
+  if (expectedFee != null) body.set("expectedFee", String(expectedFee));
+
+  let res: Response;
+  try {
+    res = await fetch("/api/ocr/sr-breakdown", { method: "POST", body });
+  } catch {
+    throw new Error("Upload failed. Try again.");
+  }
+
+  let payload: { error?: string } & Partial<ParsedSrBreakdown> = {};
+  try {
+    payload = (await res.json()) as typeof payload;
+  } catch {
+    /* non-JSON */
+  }
+
+  if (!res.ok) {
+    throw new Error(messageForStatus(res.status, payload.error));
+  }
+
+  if (
+    typeof payload.net !== "number" ||
+    typeof payload.placementSr !== "number" ||
+    typeof payload.elimSr !== "number" ||
+    typeof payload.fee !== "number"
+  ) {
+    throw new Error("Couldn’t find an SR breakdown in this image");
+  }
+
+  return payload as ParsedSrBreakdown;
+}
+
+export function SrScreenshotUpload({
+  expectedFee,
+  onParsed,
+}: {
+  expectedFee?: number;
+  onParsed: (result: ParsedSrBreakdown) => void;
+}) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<string | null>(null);
@@ -49,7 +94,6 @@ export function SrScreenshotUpload() {
   const [dragOver, setDragOver] = useState(false);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
-  const [comingSoon, setComingSoon] = useState(false);
 
   const clearPreview = useCallback(() => {
     if (previewRef.current) {
@@ -64,7 +108,6 @@ export function SrScreenshotUpload() {
     setFile(null);
     setStatus("idle");
     setErrorMessage(undefined);
-    setComingSoon(false);
     setDragOver(false);
     if (inputRef.current) inputRef.current.value = "";
   }, [clearPreview]);
@@ -81,7 +124,6 @@ export function SrScreenshotUpload() {
       if (!next) return;
       const error = validateFile(next);
       clearPreview();
-      setComingSoon(false);
       if (error) {
         setFile(null);
         setStatus("error");
@@ -118,7 +160,7 @@ export function SrScreenshotUpload() {
 
   const uploading = status === "uploading";
   const canUpload = status === "ready" && file != null;
-  const canCancel = file != null || status === "error" || comingSoon;
+  const canCancel = file != null || status === "error";
   const stacked = canUpload;
 
   function onCancel() {
@@ -130,14 +172,14 @@ export function SrScreenshotUpload() {
   async function onUpload() {
     if (!file || status !== "ready") return;
     setStatus("uploading");
-    setComingSoon(false);
+    setErrorMessage(undefined);
     try {
-      await uploadSrScreenshot(file);
-      setComingSoon(true);
-      setStatus("ready");
-    } catch {
+      const result = await uploadSrScreenshot(file, expectedFee);
+      onParsed(result);
+      reset();
+    } catch (err) {
       setStatus("error");
-      setErrorMessage("Upload failed. Try again.");
+      setErrorMessage(err instanceof Error ? err.message : "Upload failed. Try again.");
     }
   }
 
@@ -157,8 +199,12 @@ export function SrScreenshotUpload() {
       <button
         type="button"
         aria-controls={inputId}
-        aria-label={file ? `Selected ${file.name}. Click to choose a different screenshot.` : "Drop a screenshot of your SR breakdown, or click to browse"}
-        aria-describedby={errorMessage ? `${inputId}-error` : comingSoon ? `${inputId}-status` : undefined}
+        aria-label={
+          file
+            ? `Selected ${file.name}. Click to choose a different screenshot.`
+            : "Drop a screenshot of your SR breakdown, or click to browse"
+        }
+        aria-describedby={errorMessage ? `${inputId}-error` : undefined}
         aria-busy={uploading}
         disabled={uploading}
         onClick={() => inputRef.current?.click()}
@@ -207,18 +253,13 @@ export function SrScreenshotUpload() {
               <ImageIcon className="size-8 text-muted" weight="regular" aria-hidden />
             )}
             <span className="mt-3 text-sm text-foreground">Drop a screenshot of your SR breakdown</span>
-            <span className="mt-1 text-[11px] text-muted">or click to browse</span>
+            <span className="mt-1 text-[11px] text-muted">or click to browse · paste also works</span>
           </>
         )}
       </button>
       {errorMessage ? (
         <p id={`${inputId}-error`} className="text-[11px] text-muted">
           {errorMessage}
-        </p>
-      ) : null}
-      {comingSoon && !errorMessage ? (
-        <p id={`${inputId}-status`} className="text-[11px] text-muted">
-          OCR coming soon
         </p>
       ) : null}
       <div className={cn("flex gap-2", stacked ? "flex-col sm:flex-row" : "flex-wrap")}>
@@ -228,7 +269,7 @@ export function SrScreenshotUpload() {
           disabled={!canUpload || uploading}
           onClick={onUpload}
         >
-          {uploading ? "Uploading…" : "Upload"}
+          {uploading ? "Reading screenshot…" : "Upload"}
         </Button>
         <Button
           type="button"

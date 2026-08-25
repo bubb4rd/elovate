@@ -33,9 +33,7 @@ export default async function SeasonArchive({
   if (!season) notFound();
   const seasons = listSeasons();
   const wz = getBoardMetrics("wz", season.id);
-  const mp = getBoardMetrics("mp", season.id);
   const wzSeries = getCutoffSeries("wz", season.id);
-  const mpSeries = getCutoffSeries("mp", season.id);
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -54,13 +52,7 @@ export default async function SeasonArchive({
         </p>
 
         <h2 className="text-lg font-semibold">Multiplayer</h2>
-        {mp ? <MetricStrip metrics={mp} /> : <p className="py-4">No snapshot for this season yet.</p>}
-        <CutoffChart series={mpSeries} height={220} />
-        <p className="mt-2">
-          <Link href={`/mp/s/${season.id}`} className="text-sm text-accent hover:underline">
-            Multiplayer board
-          </Link>
-        </p>
+        <p className="py-4 text-muted">elovate Multiplayer coming soon.</p>
       </main>
       <SiteFooter
         freshness={

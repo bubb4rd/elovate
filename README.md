@@ -1,5 +1,14 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## SR screenshot OCR (optional)
+
+Photo upload on the WZ climb calculator calls Google Cloud Vision. Set one of:
+
+- `GOOGLE_CLOUD_CREDENTIALS` — full service account JSON string (preferred for hosting)
+- `GOOGLE_APPLICATION_CREDENTIALS` — filesystem path to a service account JSON file (local)
+
+Enable the Vision API on the GCP project. Do not commit credential files.
+
 ## Getting Started
 
 First, run the development server:

@@ -10,11 +10,13 @@ export function CutoffNumeral({
   change24h,
   label = "cutoff SR",
   size = "hero",
+  showChange = true,
 }: {
   sr: number;
   change24h: number | null;
   label?: string;
   size?: "hero" | "panel";
+  showChange?: boolean;
 }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
@@ -47,7 +49,7 @@ export function CutoffNumeral({
     <div>
       <p
         className={cn(
-          "numeric font-medium tracking-tight text-accent",
+          "numeric font-semibold tracking-tight accent-glow text-accent",
           size === "hero"
             ? "text-6xl leading-none md:text-7xl lg:text-8xl"
             : "text-4xl leading-none",
@@ -56,9 +58,11 @@ export function CutoffNumeral({
         <span ref={ref}>{formatSr(sr)}</span>
       </p>
       <p className="mt-3 text-sm text-muted">{label}</p>
-      <p className={cn("numeric mt-1 text-sm", deltaClass)}>
-        {change24h === null ? "no 24h sample" : `${formatDelta(change24h)} 24h`}
-      </p>
+      {showChange ? (
+        <p className={cn("numeric mt-1 text-sm", deltaClass)}>
+          {change24h === null ? "no 24h sample" : `${formatDelta(change24h)} 24h`}
+        </p>
+      ) : null}
     </div>
   );
 }

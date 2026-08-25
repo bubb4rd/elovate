@@ -5,11 +5,14 @@ import type {
   BoardRow,
   BoardRung,
   CutoffPoint,
+  LiveWzBoard,
   Mode,
   Player,
   Season,
   Snapshot,
 } from "./types";
+
+export { getLiveWzBoard } from "./codmunity";
 
 export function listSeasons(): Season[] {
   return [...db().seasons].sort((a, b) => (a.startsAt < b.startsAt ? 1 : -1));
@@ -55,6 +58,55 @@ export function getCutoffSeries(mode: Mode, seasonId: string): CutoffPoint[] {
       deltaCutoff: prev ? snap.cutoffSr - prev.cutoffSr : null,
     };
   });
+}
+
+/** Two-point series spanning the same window as `change24h`. */
+export function getCutoff24hSeries(mode: Mode, seasonId: string): CutoffPoint[] {
+  const all = snapshotsFor(mode, seasonId);
+  const latest = all[all.length - 1];
+  if (!latest) return [];
+  const dayAgo = nearestAtLeastHoursAgo(all, latest, 24);
+  if (!dayAgo) {
+    return [
+      {
+        capturedAt: latest.capturedAt,
+        cutoffSr: latest.cutoffSr,
+        rank1Sr: latest.rank1Sr,
+        deltaCutoff: null,
+      },
+    ];
+  }
+  return [
+    {
+      capturedAt: dayAgo.capturedAt,
+      cutoffSr: dayAgo.cutoffSr,
+      rank1Sr: dayAgo.rank1Sr,
+      deltaCutoff: null,
+    },
+    {
+      capturedAt: latest.capturedAt,
+      cutoffSr: latest.cutoffSr,
+      rank1Sr: latest.rank1Sr,
+      deltaCutoff: latest.cutoffSr - dayAgo.cutoffSr,
+    },
+  ];
+}
+
+export function overlayLiveCutoffSeries(
+  series: CutoffPoint[],
+  live: LiveWzBoard,
+  change24h: number | null,
+): CutoffPoint[] {
+  if (series.length === 0) return series;
+  const next = series.map((point) => ({ ...point }));
+  const last = next[next.length - 1]!;
+  next[next.length - 1] = {
+    ...last,
+    capturedAt: live.fetchedAt,
+    cutoffSr: live.cutoffSr,
+    deltaCutoff: change24h,
+  };
+  return next;
 }
 
 function nearestAtLeastHoursAgo(all: Snapshot[], latest: Snapshot, hours: number): Snapshot | undefined {
@@ -130,6 +182,21 @@ export function getBoardLadder(mode: Mode, seasonId: string): BoardRung[] {
     .rows.filter((r) => r.snapshotId === snapshot.id)
     .map((r) => ({ rank: r.rank, sr: r.sr }))
     .sort((a, b) => a.rank - b.rank);
+}
+
+export function overlayLiveMetrics(seed: BoardMetrics, live: LiveWzBoard): BoardMetrics {
+  const baseline = seed.change24h != null ? seed.cutoffSr - seed.change24h : null;
+  return {
+    ...seed,
+    cutoffSr: live.cutoffSr,
+    change24h: baseline != null ? live.cutoffSr - baseline : seed.change24h,
+    playersSampled: live.rows.length,
+    capturedAt: live.fetchedAt,
+  };
+}
+
+export function isLiveWzBoard(mode: Mode, seasonId: string): boolean {
+  return mode === "wz" && getSeason(seasonId)?.isActive === true;
 }
 
 export function getHomeSummary() {

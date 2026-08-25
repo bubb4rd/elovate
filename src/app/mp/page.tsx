@@ -1,5 +1,4 @@
-import { TrackerPage } from "@/components/tracker-page";
-import { getActiveSeason } from "@/lib/data/queries";
+import { MpComingSoon } from "@/components/mp-coming-soon";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,6 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function MultiplayerBoard() {
-  const season = getActiveSeason();
-  return <TrackerPage mode="mp" seasonId={season.id} />;
+  return <MpComingSoon />;
 }

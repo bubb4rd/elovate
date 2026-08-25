@@ -45,7 +45,7 @@ export function RankPlate({
   return (
     <div className="flex flex-col items-center">
       <div
-        className="flex w-full max-w-[16.5rem] flex-col items-center rounded-[6px] border-2 bg-[#121214]/92 px-5 pt-6 pb-5"
+        className="flex w-full max-w-[16.5rem] flex-col items-center rounded-[6px] border-2 bg-[#121214]/92 px-5 pt-4 pb-5"
         style={{
           borderColor: tone.glow,
           boxShadow: `0 0 20px ${tone.glow}47`,
@@ -53,7 +53,7 @@ export function RankPlate({
       >
         <RankBadge rank={rank} />
 
-        <p className="mt-4 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-400">Rank</p>
+        <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-400">Rank</p>
         <div className="relative mt-1 w-full rounded-[6px] focus-within:ring-2 focus-within:ring-accent">
           <p
             className={cn(

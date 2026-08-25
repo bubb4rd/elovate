@@ -5,6 +5,9 @@ import type {
   Snapshot,
   SnapshotPlayer,
 } from "./types";
+import { WZ_RESURGENCE_LADDER_S5 } from "./wz-ladder-s5";
+
+const IRIDESCENT_FLOOR = 10_000;
 
 function mulberry32(seed: number) {
   return () => {
@@ -66,6 +69,54 @@ function eachDay(start: Date, count: number): string[] {
   });
 }
 
+function wzSrAtProgress(targetSr: number, progress: number, startFactor: number): number {
+  const start = IRIDESCENT_FLOOR + Math.round((targetSr - IRIDESCENT_FLOOR) * startFactor);
+  return Math.round(start + (targetSr - start) * progress);
+}
+
+function enforceDescending(srs: number[], floor: number): number[] {
+  const next = [...srs];
+  for (let i = 1; i < next.length; i += 1) {
+    if (next[i]! >= next[i - 1]!) next[i] = next[i - 1]! - 1;
+  }
+  for (let i = next.length - 2; i >= 0; i -= 1) {
+    if (next[i]! <= next[i + 1]!) next[i] = next[i + 1]! + 1;
+  }
+  return next.map((value) => Math.max(floor, value));
+}
+
+function buildWzRows(
+  roster: Player[],
+  dayIndex: number,
+  dayCount: number,
+  seasonId: string,
+  rand: () => number,
+): { rank: number; playerId: string; sr: number }[] {
+  const progress = dayCount <= 1 ? 1 : dayIndex / (dayCount - 1);
+  const atSeasonEnd = dayIndex === dayCount - 1;
+  const startFactor = seasonId === "s4" ? 0.78 : 0.82;
+  const board = roster.slice(0, 250);
+
+  const srs = WZ_RESURGENCE_LADDER_S5.map((rung) => {
+    const base = atSeasonEnd ? rung.sr : wzSrAtProgress(rung.sr, progress, startFactor);
+    const jitter = atSeasonEnd ? 0 : Math.floor(rand() * 24) - 8;
+    return base + jitter;
+  });
+
+  const stable = enforceDescending(srs, IRIDESCENT_FLOOR);
+  if (atSeasonEnd) {
+    WZ_RESURGENCE_LADDER_S5.forEach((rung, idx) => {
+      stable[idx] = rung.sr;
+    });
+  }
+
+  return stable.map((value, idx) => ({
+    rank: idx + 1,
+    playerId: board[idx]!.id,
+    sr: value,
+  }));
+}
+
 export type Database = {
   seasons: Season[];
   players: Player[];
@@ -110,13 +161,43 @@ export function generateDatabase(): Database {
     const roster = players.filter((p) => p.id.startsWith(`${plan.mode}-`));
     const rand = mulberry32(plan.seed);
     const sr = new Map<string, number>();
-    roster.forEach((p, idx) => {
-      const spread = Math.floor(rand() * 6200) + Math.floor((280 - idx) * 4);
-      sr.set(p.id, plan.base + spread);
-    });
+
+    if (plan.mode === "mp") {
+      roster.forEach((p, idx) => {
+        const spread = Math.floor(rand() * 6200) + Math.floor((280 - idx) * 4);
+        sr.set(p.id, plan.base + spread);
+      });
+    }
 
     const days = eachDay(plan.start, plan.days);
     days.forEach((capturedAt, dayIndex) => {
+      if (plan.mode === "wz") {
+        const ladderRows = buildWzRows(roster, dayIndex, plan.days, plan.seasonId, rand);
+        const snapshotId = `${plan.seasonId}-${plan.mode}-d${dayIndex}`;
+        const cutoffSr = ladderRows[249]?.sr ?? 0;
+        const rank1Sr = ladderRows[0]?.sr ?? 0;
+
+        snapshots.push({
+          id: snapshotId,
+          seasonId: plan.seasonId,
+          mode: plan.mode,
+          capturedAt,
+          source: "seed",
+          cutoffSr,
+          rank1Sr,
+        });
+
+        for (const row of ladderRows) {
+          rows.push({
+            snapshotId,
+            rank: row.rank,
+            playerId: row.playerId,
+            sr: row.sr,
+          });
+        }
+        return;
+      }
+
       for (const p of roster) {
         const drift = Math.floor(rand() * 74) - 16;
         const climb = 11 + Math.floor(rand() * 18);

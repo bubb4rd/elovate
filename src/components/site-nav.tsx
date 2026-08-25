@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
+import { NavCutoff } from "@/components/nav-cutoff";
 import { SeasonSelect } from "@/components/season-select";
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { BoardFreshnessStatus } from "@/components/live-status";
 import { zIndex } from "@/lib/z-index";
 import { cn } from "@/lib/utils";
 import type { Mode, Season } from "@/lib/data/types";
@@ -12,11 +14,17 @@ export function SiteNav({
   seasons,
   seasonId,
   tool,
+  cutoffSr,
+  nextUpdateAt,
+  boardStatus = "live",
 }: {
   mode?: Mode;
   seasons: Season[];
   seasonId?: string;
   tool?: "board" | "calc";
+  cutoffSr?: number;
+  nextUpdateAt?: string;
+  boardStatus?: BoardFreshnessStatus;
 }) {
   const liveMode = mode ?? "wz";
   const activeSeason = seasons.find((s) => s.isActive);
@@ -63,6 +71,13 @@ export function SiteNav({
           <SeasonSelect mode={mode} seasonId={seasonId} seasons={seasons} />
         ) : null}
         <div className="ml-auto flex items-center gap-3">
+          {cutoffSr != null ? (
+            <NavCutoff
+              cutoffSr={cutoffSr}
+              nextUpdateAt={nextUpdateAt}
+              boardStatus={boardStatus}
+            />
+          ) : null}
           <ThemeToggle />
         </div>
       </div>

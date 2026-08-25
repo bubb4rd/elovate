@@ -33,6 +33,16 @@ export function formatDay(iso: string): string {
   }).format(new Date(iso));
 }
 
+export function formatChartTime(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(iso));
+}
+
 export function snapshotAge(iso: string, now = Date.now()): string {
   const ms = now - new Date(iso).getTime();
   const hours = Math.max(0, Math.floor(ms / 3_600_000));

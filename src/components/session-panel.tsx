@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowCounterClockwise, CaretDown, List } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, CaretDown } from "@phosphor-icons/react";
 import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { formatDelta, formatLocalDay, formatLocalTime, formatSr } from "@/lib/format";
@@ -12,6 +12,7 @@ import {
   type HistoryMatch,
   type SessionSummary,
 } from "@/lib/history";
+import { ClimbSessionIcon } from "@/components/icons";
 import { WZ_PLACEMENTS } from "@/lib/ranked";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
@@ -208,9 +209,12 @@ export function SessionPanel({
           )}
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-400">
-              <List weight="fill" className="size-3.5 text-accent" />
-              This session
+            <p className="flex items-center gap-1.5 text-sm font-medium tracking-wide text-zinc-400">
+              <ClimbSessionIcon className="size-3.5 accent-glow" />
+              <span className="accent-glow bg-linear-to-r from-[#fcf8c5] via-[#f2c81d] to-[#ca8d0b] bg-clip-text text-transparent">
+                Climb
+              </span>{" "}
+              Session
             </p>
             {current && !browsingPast ? (
               <button

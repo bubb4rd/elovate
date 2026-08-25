@@ -1,13 +1,5 @@
-import { TrackerPage } from "@/components/tracker-page";
-import { getSeason } from "@/lib/data/queries";
-import { notFound } from "next/navigation";
+import { MpComingSoon } from "@/components/mp-coming-soon";
 
-export default async function MultiplayerSeasonBoard({
-  params,
-}: {
-  params: Promise<{ season: string }>;
-}) {
-  const { season } = await params;
-  if (!getSeason(season)) notFound();
-  return <TrackerPage mode="mp" seasonId={season} />;
+export default function MultiplayerSeasonBoard() {
+  return <MpComingSoon />;
 }

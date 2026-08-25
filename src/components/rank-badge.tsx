@@ -31,8 +31,8 @@ export function RankBadge({ rank, className }: { rank: RankInfo; className?: str
   return (
     <div className={cn("relative inline-flex", className)} aria-hidden>
       <svg
-        viewBox="0 0 120 134"
-        className="h-40 w-36 md:h-48 md:w-44"
+        viewBox="6 4 108 126"
+        className="h-36 w-32 md:h-44 md:w-40"
         style={{ filter: `drop-shadow(0 8px 18px ${tone.glow}55)` }}
       >
         <defs>
@@ -60,8 +60,8 @@ export function RankBadge({ rank, className }: { rank: RankInfo; className?: str
           {roman}
         </text>
       </svg>
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-7">
-        <Icon weight="fill" className="size-14 md:size-16" style={{ color: tone.text }} />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-6">
+        <Icon weight="fill" className="size-12 md:size-14" style={{ color: tone.text }} />
       </div>
     </div>
   );

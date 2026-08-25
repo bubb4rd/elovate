@@ -3,7 +3,7 @@ import { formatDelta, formatSr } from "@/lib/format";
 import type { BoardMetrics } from "@/lib/data/types";
 
 export function ModePick({
-  mp,
+  mp: _mp,
   wz,
 }: {
   mp: BoardMetrics | null;
@@ -11,7 +11,7 @@ export function ModePick({
 }) {
   return (
     <section className="grid grid-cols-1 gap-0 border-t border-border md:grid-cols-2">
-      <ModeCell href="/mp" title="Multiplayer" metrics={mp} />
+      <ModeCell href="/mp" title="Multiplayer" comingSoon />
       <ModeCell href="/wz" title="Warzone" metrics={wz} edge />
     </section>
   );
@@ -22,11 +22,13 @@ function ModeCell({
   title,
   metrics,
   edge,
+  comingSoon,
 }: {
   href: string;
   title: string;
-  metrics: BoardMetrics | null;
+  metrics?: BoardMetrics | null;
   edge?: boolean;
+  comingSoon?: boolean;
 }) {
   return (
     <Link
@@ -36,13 +38,17 @@ function ModeCell({
       }`}
     >
       <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
-      {metrics ? (
-        <p className="mt-4 numeric text-3xl text-accent">{formatSr(metrics.cutoffSr)}</p>
+      {comingSoon ? (
+        <p className="mt-4 text-muted">Coming soon.</p>
+      ) : metrics ? (
+        <p className="mt-4 numeric text-3xl font-semibold tracking-tight accent-glow text-accent">
+          {formatSr(metrics.cutoffSr)}
+        </p>
       ) : (
         <p className="mt-4 text-muted">No snapshot for this season yet.</p>
       )}
       <p className="mt-2 text-sm text-muted">
-        {metrics
+        {!comingSoon && metrics
           ? `${formatDelta(Math.round(metrics.avgPerDay7d))} avg / day (7d)`
           : ""}
       </p>

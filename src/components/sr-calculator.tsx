@@ -8,15 +8,18 @@ import { RankPlate } from "@/components/rank-plate";
 import { RankTimeline } from "@/components/rank-timeline";
 import { SessionPanel } from "@/components/session-panel";
 import { SrInputMode, type EntryMode } from "@/components/sr-input-mode";
+import { SrScanPreview } from "@/components/sr-scan-preview";
 import { SrScreenshotUpload } from "@/components/sr-screenshot-upload";
 import { SrTicket } from "@/components/sr-ticket";
 import { TickerNumeral } from "@/components/ticker-numeral";
 import { formatDelta, formatSr } from "@/lib/format";
+import { reverseElimKills, type ParsedSrBreakdown } from "@/lib/ocr";
 import { cn } from "@/lib/utils";
 import {
   DEFAULT_SR_PER_LOSS,
   DEFAULT_SR_PER_WIN,
   RESULT_PRESETS,
+  WZ_ELIM_CAP,
   WZ_PLACEMENTS,
   clampSr,
   boardRankLabel,
@@ -209,6 +212,7 @@ export function SrCalculator({
 
   const [editingSr, setEditingSr] = useState(false);
   const [entryMode, setEntryMode] = useState<EntryMode>("manual");
+  const [ocrResult, setOcrResult] = useState<ParsedSrBreakdown | null>(null);
   const [historySaveFailed, setHistorySaveFailed] = useState(false);
   const { doc: historyDoc, store: historyStore } = useHistory(mode);
   const hydrated = useSyncExternalStore(
@@ -392,6 +396,49 @@ export function SrCalculator({
     patch(clearedGame());
   }
 
+  function setEntryModeSafe(next: EntryMode) {
+    setEntryMode(next);
+    if (next === "manual") setOcrResult(null);
+  }
+
+  function applyOcrMatch(parsed: ParsedSrBreakdown) {
+    if (parsed.placementId == null) return;
+    if (parsed.elimSr > WZ_ELIM_CAP) return;
+
+    const next = clampSr(sr + parsed.net);
+    const appliedNet = next - sr;
+
+    const kills = reverseElimKills({
+      yourElimSr: parsed.yourElimSr,
+      squadElimSr: parsed.squadElimSr,
+    });
+    const yourElims = Math.min(kills.yourElims, Math.max(kills.squadElims, kills.yourElims));
+
+    let recorded = true;
+    try {
+      const draft: NewMatch = {
+        mode: "wz",
+        srBefore: sr,
+        srAfter: next,
+        net: appliedNet,
+        placement: parsed.placementId,
+        squadElims: kills.squadElims,
+        yourElims,
+        fee: parsed.fee,
+        placementSr: parsed.placementSr,
+        elimSr: parsed.elimSr,
+        capped: parsed.elimSr >= WZ_ELIM_CAP,
+      };
+      recorded = historyStore.save(appendMatch(historyStore.load(), draft).doc);
+    } catch {
+      recorded = false;
+    }
+    setHistorySaveFailed(!recorded);
+    patch({ sr: next, srInput: String(next), ...clearedGame() });
+    setOcrResult(null);
+    setEntryMode("manual");
+  }
+
   function patchSr(value: string) {
     patch({ srInput: value, sr: clampSr(Number(value) || 0) });
   }
@@ -547,9 +594,21 @@ export function SrCalculator({
 
           {mode === "wz" ? (
             <div className="mt-6 space-y-4">
-              <SrInputMode value={entryMode} onChange={setEntryMode} />
+              <SrInputMode value={entryMode} onChange={setEntryModeSafe} />
               {entryMode === "photo" ? (
-                <SrScreenshotUpload />
+                ocrResult ? (
+                  <SrScanPreview
+                    initial={ocrResult}
+                    expectedFee={rank.fee}
+                    onApply={applyOcrMatch}
+                    onRetry={() => setOcrResult(null)}
+                  />
+                ) : (
+                  <SrScreenshotUpload
+                    expectedFee={rank.fee}
+                    onParsed={setOcrResult}
+                  />
+                )
               ) : (
                 <>
               <div>
