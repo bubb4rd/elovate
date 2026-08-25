@@ -1,0 +1,1 @@
+-- Season rows live in the cutoff snapshots migration so hosted `db push` gets them too.

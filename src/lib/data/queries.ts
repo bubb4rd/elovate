@@ -184,12 +184,15 @@ export function getBoardLadder(mode: Mode, seasonId: string): BoardRung[] {
     .sort((a, b) => a.rank - b.rank);
 }
 
-export function overlayLiveMetrics(seed: BoardMetrics, live: LiveWzBoard): BoardMetrics {
-  const baseline = seed.change24h != null ? seed.cutoffSr - seed.change24h : null;
+export function overlayLiveMetrics(
+  seed: BoardMetrics,
+  live: LiveWzBoard,
+  change24h: number | null = null,
+): BoardMetrics {
   return {
     ...seed,
     cutoffSr: live.cutoffSr,
-    change24h: baseline != null ? live.cutoffSr - baseline : seed.change24h,
+    change24h,
     playersSampled: live.rows.length,
     capturedAt: live.fetchedAt,
   };

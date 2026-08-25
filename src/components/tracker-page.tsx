@@ -5,6 +5,7 @@ import { RememberMode } from "@/components/remember-mode";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import type { BoardFreshnessStatus } from "@/components/live-status";
+import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getBoard,
   getBoardMetrics,
@@ -35,9 +36,12 @@ export async function TrackerPage({
   const modeLabel = mode === "wz" ? "Warzone" : "Multiplayer";
   const live =
     season && isLiveWzBoard(mode, seasonId) ? await getLiveWzBoard() : null;
+  const history = await liveWzHistoryFor(live, seasonId);
   const rows = live?.rows ?? board?.rows;
   const metrics =
-    live && seedMetrics ? overlayLiveMetrics(seedMetrics, live) : seedMetrics;
+    live && seedMetrics
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      : seedMetrics;
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
 
   if (!season || !board || !metrics || !rows) {

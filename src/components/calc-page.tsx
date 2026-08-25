@@ -2,6 +2,7 @@ import { RememberMode } from "@/components/remember-mode";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { SrCalculator } from "@/components/sr-calculator";
+import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getActiveSeason,
   getBoardLadder,
@@ -19,7 +20,11 @@ export async function CalcPage({ mode }: { mode: Mode }) {
   const seedMetrics = getBoardMetrics(mode, season.id);
   const seasons = listSeasons();
   const live = mode === "wz" ? await getLiveWzBoard() : null;
-  const metrics = live && seedMetrics ? overlayLiveMetrics(seedMetrics, live) : seedMetrics;
+  const history = await liveWzHistoryFor(live, season.id);
+  const metrics =
+    live && seedMetrics
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      : seedMetrics;
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const ladder = live?.ladder ?? getBoardLadder(mode, season.id);
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;

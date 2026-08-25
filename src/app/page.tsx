@@ -4,12 +4,11 @@ import { HomeHeroCopy } from "@/components/home-hero-copy";
 import { ModePick } from "@/components/mode-pick";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
+import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
-  getCutoff24hSeries,
   getHomeSummary,
   getLiveWzBoard,
   listSeasons,
-  overlayLiveCutoffSeries,
   overlayLiveMetrics,
 } from "@/lib/data/queries";
 import { formatSnapshotTime } from "@/lib/format";
@@ -24,12 +23,11 @@ export const revalidate = 900;
 export default async function Home() {
   const { wz: seedWz, mp, season } = getHomeSummary();
   const live = await getLiveWzBoard();
-  const wz = seedWz && live ? overlayLiveMetrics(seedWz, live) : seedWz;
+  const history = await liveWzHistoryFor(live, season.id);
+  const wz = seedWz && live ? overlayLiveMetrics(seedWz, live, history.change24h) : seedWz;
   const seasons = listSeasons();
   const capturedAt = live?.fetchedAt ?? wz?.capturedAt ?? mp?.capturedAt;
-  const seedDaily = getCutoff24hSeries("wz", season.id);
-  const dailySeries =
-    live && wz ? overlayLiveCutoffSeries(seedDaily, live, wz.change24h) : seedDaily;
+  const dailySeries = history.change24h != null ? history.series : [];
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
