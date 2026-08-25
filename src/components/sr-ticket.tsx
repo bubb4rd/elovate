@@ -140,13 +140,16 @@ export function SrTicket({
                   <dt className="text-xs font-medium text-zinc-300">Total</dt>
                   <dd
                     className={cn(
-                      "numeric text-2xl font-semibold leading-none tracking-tight",
+                      "numeric inline-flex items-baseline gap-1.5 text-2xl font-semibold leading-none tracking-tight",
                       net > 0 && "accent-glow text-accent",
                       net < 0 && "text-negative",
                       net === 0 && "text-zinc-400",
                     )}
                   >
                     <TickerNumeral value={net} format={formatDelta} />
+                    <span className="text-sm font-medium tracking-normal text-zinc-400">
+                      SR
+                    </span>
                   </dd>
                 </motion.div>
               </motion.dl>
