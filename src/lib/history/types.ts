@@ -56,6 +56,8 @@ export type SessionSummary = {
   games: number;
   net: number;
   endSr: number;
+  /** Consecutive positive-net matches ending at the latest game. */
+  streak: number;
 };
 
 export type HistoryStore = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowCounterClockwise, CaretDown } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, CaretDown, Fire } from "@phosphor-icons/react";
 import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { formatDelta, formatLocalDay, formatLocalTime, formatSr } from "@/lib/format";
@@ -21,6 +21,36 @@ function netClass(net: number) {
   if (net > 0) return "accent-glow text-accent";
   if (net < 0) return "text-negative";
   return "text-zinc-500";
+}
+
+function SessionStreak({ streak, size }: { streak: number; size: "lg" | "sm" }) {
+  if (streak < 2) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-[#f97316]",
+        size === "lg" ? "ml-1.5" : "ml-1",
+      )}
+      title={`${streak}-game win streak`}
+      aria-label={`${streak}-game win streak`}
+    >
+      <Fire
+        weight="fill"
+        className={cn(
+          "shrink-0 drop-shadow-[0_0_8px_color-mix(in_oklab,#f97316_40%,transparent)]",
+          size === "lg" ? "size-4" : "size-3",
+        )}
+      />
+      <span
+        className={cn(
+          "numeric font-semibold leading-none tracking-tight",
+          size === "lg" ? "text-base" : "text-[11px]",
+        )}
+      >
+        {streak}
+      </span>
+    </span>
+  );
 }
 
 function placementLabel(match: HistoryMatch): string {
@@ -78,8 +108,14 @@ function SessionStats({
   if (compact) {
     return (
       <p className="mt-1 flex items-baseline gap-2">
-        <span className={cn("numeric text-sm font-semibold leading-none", netClass(summary.net))}>
+        <span
+          className={cn(
+            "inline-flex items-baseline numeric text-sm font-semibold leading-none",
+            netClass(summary.net),
+          )}
+        >
           {formatDelta(summary.net)}
+          <SessionStreak streak={summary.streak} size="sm" />
         </span>
         <span className="numeric text-[10px] text-zinc-500">
           {summary.games} game{summary.games === 1 ? "" : "s"}
@@ -92,11 +128,12 @@ function SessionStats({
     <div className="mt-2.5">
       <p
         className={cn(
-          "numeric text-2xl font-semibold leading-none tracking-tight",
+          "inline-flex items-baseline numeric text-2xl font-semibold leading-none tracking-tight",
           netClass(summary.net),
         )}
       >
         {formatDelta(summary.net)}
+        <SessionStreak streak={summary.streak} size="lg" />
       </p>
       <div className="mt-2.5 flex flex-wrap gap-1.5">
         <span className="numeric rounded-[4px] border border-white/10 bg-white/4 px-1.5 py-0.5 text-[10px] text-zinc-400">

@@ -12,6 +12,7 @@ export {
   sessionMatches,
   summarizeSession,
   undoLastMatch,
+  winStreak,
 } from "./sessions";
 export { createLocalHistoryStore, historyKey } from "./store";
 export {

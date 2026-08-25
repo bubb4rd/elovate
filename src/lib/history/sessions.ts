@@ -37,6 +37,17 @@ export function sessionMatches(doc: HistoryDocument, sessionId: string): History
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+/** Current win streak: consecutive games with net > 0 from the end of the list. */
+export function winStreak(matches: HistoryMatch[]): number {
+  const ordered = [...matches].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  let streak = 0;
+  for (let i = ordered.length - 1; i >= 0; i--) {
+    if (ordered[i]!.net > 0) streak += 1;
+    else break;
+  }
+  return streak;
+}
+
 export function summarizeSession(
   session: HistorySession,
   matches: HistoryMatch[],
@@ -49,6 +60,7 @@ export function summarizeSession(
     games: ordered.length,
     net: ordered.reduce((sum, match) => sum + match.net, 0),
     endSr: last?.srAfter ?? session.startSr,
+    streak: winStreak(ordered),
   };
 }
 

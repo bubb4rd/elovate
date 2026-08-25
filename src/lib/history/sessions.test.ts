@@ -5,7 +5,9 @@ import {
   emptyDocument,
   endSession,
   openSession,
+  summarizeSession,
   undoLastMatch,
+  winStreak,
 } from "./sessions";
 
 const mp = (srBefore: number, net: number) =>
@@ -45,5 +47,16 @@ assert.equal(undone.doc.sessions.length, 1);
 const closed = endSession(second.doc, second.session.id, t2.toISOString());
 assert.equal(openSession(closed), undefined);
 assert.equal(closed.sessions[0]?.endedAt, t2.toISOString());
+
+assert.equal(winStreak(second.doc.matches), 2);
+const loss = appendMatch(second.doc, mp(1090, -20), new Date("2026-08-24T12:20:00.000Z"));
+assert.equal(winStreak(loss.doc.matches), 0);
+const rebound = appendMatch(loss.doc, mp(1070, 15), new Date("2026-08-24T12:30:00.000Z"));
+assert.equal(winStreak(rebound.doc.matches), 1);
+const hot = appendMatch(rebound.doc, mp(1085, 25), new Date("2026-08-24T12:40:00.000Z"));
+assert.equal(winStreak(hot.doc.matches), 2);
+const open = openSession(hot.doc);
+assert.ok(open);
+assert.equal(summarizeSession(open, hot.doc.matches.filter((m) => m.sessionId === open.id)).streak, 2);
 
 console.log("history session rules ok");
