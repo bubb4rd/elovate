@@ -136,7 +136,7 @@ export function SessionShareCard({
           {copy.netLabel}
         </p>
         <p
-          className="-ml-3 mb-[11px] text-[34.477px] leading-none font-bold text-[#d9d9d9]"
+          className="relative z-10 -ml-3 mb-[11px] text-[34.477px] leading-none font-bold text-[#d9d9d9]"
           style={{ textShadow: "-1.077px -1.077px 11.744px black" }}
         >
           SR
