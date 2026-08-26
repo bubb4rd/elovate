@@ -77,9 +77,11 @@ export async function TrackerPage({
           <HeadingMetrics metrics={metrics} showCutoff={false} />
         </div>
         <div className="mt-6 grid grid-cols-1 gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:items-stretch lg:gap-10">
-          <BoardTable rows={rows} linkPlayers={!live} />
+          <div className="order-2 min-h-0 lg:order-none lg:h-full">
+            <BoardTable rows={rows} linkPlayers={!live} />
+          </div>
 
-          <aside className="min-h-0 lg:h-full">
+          <aside className="order-1 min-h-0 lg:order-none lg:h-full">
             <CutoffChart
               series={series}
               liveCutoffSr={metrics.cutoffSr}

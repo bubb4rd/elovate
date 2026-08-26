@@ -115,7 +115,7 @@ export function BoardTable({
   });
 
   return (
-    <div className="panel-elevated flex min-h-[28rem] min-w-0 flex-col overflow-hidden lg:h-full lg:min-h-0">
+    <div className="panel-elevated flex h-[min(22rem,48dvh)] min-h-0 min-w-0 flex-col overflow-hidden lg:h-full">
       <div className="shrink-0 border-b border-border p-4">
         <div className="flex items-center gap-2.5">
           <label className="relative min-w-0 flex-1" htmlFor="player-search">

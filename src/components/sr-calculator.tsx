@@ -634,76 +634,80 @@ export function SrCalculator({
                 <>
               <div>
                 <p className="text-xs text-muted">Eliminations</p>
-                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-2">
-                  <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted">
-                    Squad
-                  </span>
-                  {COMMON_SQUAD_ELIMS.map((n) => (
-                    <Button
-                      key={n}
-                      type="button"
-                      size="sm"
-                      variant={
-                        squadElimsInput.trim() !== "" && squadElims === n ? "default" : "outline"
+                <div className="mt-2 flex flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted">
+                      Squad
+                    </span>
+                    {COMMON_SQUAD_ELIMS.map((n) => (
+                      <Button
+                        key={n}
+                        type="button"
+                        size="sm"
+                        variant={
+                          squadElimsInput.trim() !== "" && squadElims === n ? "default" : "outline"
+                        }
+                        onClick={() => patch({ squadElims: n, squadElimsInput: String(n) })}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={80}
+                      inputMode="numeric"
+                      placeholder="40"
+                      value={squadElimsInput}
+                      onChange={(e) =>
+                        patch({
+                          squadElimsInput: e.target.value,
+                          squadElims: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                        })
                       }
-                      onClick={() => patch({ squadElims: n, squadElimsInput: String(n) })}
-                    >
-                      {n}
-                    </Button>
-                  ))}
-                  <Input
-                    type="number"
-                    min={0}
-                    max={80}
-                    inputMode="numeric"
-                    placeholder="40"
-                    value={squadElimsInput}
-                    onChange={(e) =>
-                      patch({
-                        squadElimsInput: e.target.value,
-                        squadElims: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                      })
-                    }
-                    aria-label="Custom squad elims"
-                    className="h-8 w-[3.25rem] px-1.5 text-center"
-                  />
+                      aria-label="Custom squad elims"
+                      className="h-8 w-[3.25rem] px-1.5 text-center"
+                    />
+                  </div>
                   <span className="hidden text-border sm:inline" aria-hidden>
                     |
                   </span>
-                  <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted">
-                    You
-                  </span>
-                  {COMMON_YOUR_ELIMS.map((n) => (
-                    <Button
-                      key={n}
-                      type="button"
-                      size="sm"
-                      variant={
-                        yourElimsInput.trim() !== "" && yourElimsClamped === n
-                          ? "default"
-                          : "outline"
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted">
+                      You
+                    </span>
+                    {COMMON_YOUR_ELIMS.map((n) => (
+                      <Button
+                        key={n}
+                        type="button"
+                        size="sm"
+                        variant={
+                          yourElimsInput.trim() !== "" && yourElimsClamped === n
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() => patch({ yourElims: n, yourElimsInput: String(n) })}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={80}
+                      inputMode="numeric"
+                      placeholder="8"
+                      value={yourElimsInput}
+                      onChange={(e) =>
+                        patch({
+                          yourElimsInput: e.target.value,
+                          yourElims: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                        })
                       }
-                      onClick={() => patch({ yourElims: n, yourElimsInput: String(n) })}
-                    >
-                      {n}
-                    </Button>
-                  ))}
-                  <Input
-                    type="number"
-                    min={0}
-                    max={80}
-                    inputMode="numeric"
-                    placeholder="8"
-                    value={yourElimsInput}
-                    onChange={(e) =>
-                      patch({
-                        yourElimsInput: e.target.value,
-                        yourElims: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                      })
-                    }
-                    aria-label="Custom your elims"
-                    className="h-8 w-[3.25rem] px-1.5 text-center"
-                  />
+                      aria-label="Custom your elims"
+                      className="h-8 w-[3.25rem] px-1.5 text-center"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
