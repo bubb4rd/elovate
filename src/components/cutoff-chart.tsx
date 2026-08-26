@@ -79,6 +79,36 @@ function RangeSelect() {
   );
 }
 
+function DelayedDot({
+  cx,
+  cy,
+  fill,
+  r,
+  reduce,
+}: {
+  cx?: number;
+  cy?: number;
+  fill?: string;
+  r?: number;
+  reduce: boolean;
+}) {
+  if (cx == null || cy == null) return null;
+
+  return (
+    <motion.circle
+      cx={cx}
+      cy={cy}
+      r={r}
+      fill={fill}
+      initial={reduce ? false : { opacity: 0, scale: 0.6 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={
+        reduce ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
+      }
+    />
+  );
+}
+
 function LiveCutoffAnnotation({
   point,
   yValue,
@@ -167,6 +197,7 @@ export function CutoffChart({
   valueLabel = "Cutoff",
   bare = false,
   object = false,
+  accentStroke = false,
   liveCutoffSr,
   nextUpdateAt,
   boardStatus = "live",
@@ -177,6 +208,7 @@ export function CutoffChart({
   valueLabel?: string;
   bare?: boolean;
   object?: boolean;
+  accentStroke?: boolean;
   liveCutoffSr?: number;
   nextUpdateAt?: string;
   boardStatus?: BoardFreshnessStatus;
@@ -194,8 +226,10 @@ export function CutoffChart({
   };
   const gradientId = useId().replace(/:/g, "");
   const delta = seriesDelta(series);
-  const stroke = object ? strokeForDelta(delta) : "var(--accent)";
-  const showDots = object || shortSeries;
+  const stroke = object && !accentStroke ? strokeForDelta(delta) : "var(--accent)";
+  const curveType = object ? "natural" : "monotone";
+  const showDots = (object && !accentStroke) || shortSeries;
+  const dotRadius = object ? 2.5 : 3.5;
   const framed = !bare && !object;
   const showLiveCallout = framed && data.length > 0 && liveCutoffSr != null;
   const chartData =
@@ -206,15 +240,15 @@ export function CutoffChart({
       : data;
   const lastPoint = chartData.at(-1);
   const [calloutLayer, setCalloutLayer] = useState<HTMLDivElement | null>(null);
-  const [calloutReady, setCalloutReady] = useState(() => !!reduce);
+  const [lineAnimationDone, setLineAnimationDone] = useState(() => !!reduce);
 
   useEffect(() => {
     if (reduce || duration === 0) {
-      setCalloutReady(true);
+      setLineAnimationDone(true);
       return;
     }
-    setCalloutReady(false);
-    const timeout = window.setTimeout(() => setCalloutReady(true), duration + 50);
+    setLineAnimationDone(false);
+    const timeout = window.setTimeout(() => setLineAnimationDone(true), duration + 50);
     return () => window.clearTimeout(timeout);
   }, [series, liveCutoffSr, reduce, duration]);
 
@@ -251,7 +285,7 @@ export function CutoffChart({
               ? { top: 12, right: 8, left: 8, bottom: 12 }
               : framed
                 ? { top: showLiveCallout ? 72 : 44, right: 0, left: 0, bottom: 4 }
-                : { top: 16, right: 12, left: 4, bottom: 8 }
+                : { top: 12, right: 16, left: 8, bottom: 12 }
           }
         >
           <defs>
@@ -270,7 +304,11 @@ export function CutoffChart({
           </defs>
           {!object ? (
             <>
-              <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 4" />
+              <CartesianGrid
+                stroke="var(--border)"
+                vertical={!framed}
+                strokeDasharray="3 4"
+              />
               <XAxis
                 dataKey="t"
                 type="number"
@@ -316,7 +354,7 @@ export function CutoffChart({
             cursor={object ? false : { stroke: "var(--border)" }}
           />
           <Area
-            type="monotone"
+            type={curveType}
             dataKey="cutoffSr"
             fill={`url(#${gradientId})`}
             stroke="none"
@@ -338,22 +376,30 @@ export function CutoffChart({
             />
           ) : null}
           <Line
-            type="monotone"
+            type={curveType}
             dataKey="cutoffSr"
             name={valueLabel}
             stroke={stroke}
             strokeWidth={object ? 3 : 2}
             dot={
               showDots && !showLiveCallout
-                ? { r: object ? 5 : 3.5, fill: stroke, strokeWidth: 0 }
+                ? (props) =>
+                    lineAnimationDone ? (
+                      <DelayedDot
+                        {...props}
+                        fill={stroke}
+                        r={dotRadius}
+                        reduce={reduce}
+                      />
+                    ) : null
                 : false
             }
             isAnimationActive={!reduce}
             animationDuration={duration}
             animationEasing="ease-out"
-            onAnimationEnd={() => setCalloutReady(true)}
+            onAnimationEnd={() => setLineAnimationDone(true)}
           />
-          {showLiveCallout && calloutReady && lastPoint && liveCutoffSr != null ? (
+          {showLiveCallout && lineAnimationDone && lastPoint && liveCutoffSr != null ? (
             <LiveCutoffAnnotation
               point={lastPoint}
               yValue={liveCutoffSr}
