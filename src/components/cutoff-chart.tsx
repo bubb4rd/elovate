@@ -389,7 +389,7 @@ export function CutoffChart({
                         {...props}
                         fill={stroke}
                         r={dotRadius}
-                        reduce={reduce}
+                        reduce={!!reduce}
                       />
                     ) : null
                 : false
