@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowCounterClockwise, CaretDown, Export, Fire } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, CaretDown, Export, Fire, X } from "@phosphor-icons/react";
 import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { formatDelta, formatLocalDay, formatLocalTime, formatSr } from "@/lib/format";
@@ -156,11 +156,13 @@ function PastSessionRow({
   open,
   onOpenChange,
   onShare,
+  onDelete,
 }: {
   summary: SessionSummary;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onShare: () => void;
+  onDelete: () => void;
 }) {
   const matches = [...summary.matches].reverse();
   return (
@@ -197,6 +199,18 @@ function PastSessionRow({
         >
           <Export weight="bold" className="size-3" />
         </button>
+        <button
+          type="button"
+          aria-label="Delete session"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDelete();
+          }}
+          className="flex size-5 shrink-0 items-center justify-center rounded-[4px] text-zinc-500 transition-colors hover:text-negative"
+        >
+          <X weight="bold" className="size-3" />
+        </button>
       </summary>
       <ul className="pb-1 pl-4">
         {matches.map((match) => (
@@ -214,6 +228,7 @@ export function SessionPanel({
   saveFailed,
   onUndo,
   onEnd,
+  onDelete,
 }: {
   doc: HistoryDocument;
   currentSr: number;
@@ -221,6 +236,7 @@ export function SessionPanel({
   saveFailed: boolean;
   onUndo: () => void;
   onEnd: () => void;
+  onDelete: (sessionId: string) => void;
 }) {
   const [pastSectionOpen, setPastSectionOpen] = useState(false);
   const [expandedPastId, setExpandedPastId] = useState<string | null>(null);
@@ -348,6 +364,15 @@ export function SessionPanel({
                       setExpandedPastId(open ? summary.session.id : null)
                     }
                     onShare={() => setSharing(summary)}
+                    onDelete={() => {
+                      if (expandedPastId === summary.session.id) {
+                        setExpandedPastId(null);
+                      }
+                      if (sharing?.session.id === summary.session.id) {
+                        setSharing(null);
+                      }
+                      onDelete(summary.session.id);
+                    }}
                   />
                 </li>
               ))}

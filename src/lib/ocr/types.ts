@@ -2,6 +2,23 @@ import type { WzPlacementId } from "@/lib/ranked";
 
 export type OcrConfidence = "high" | "medium" | "low";
 
+export type SrFieldKey =
+  | "fee"
+  | "placementSr"
+  | "elimSr"
+  | "yourElimSr"
+  | "squadElimSr"
+  | "net";
+
+export type SrFieldIssue =
+  | "unread"
+  | "unknown_bucket"
+  | "over_cap"
+  | "math_mismatch"
+  | "fee_mismatch";
+
+export type SrFieldIssues = Partial<Record<SrFieldKey, SrFieldIssue>>;
+
 export type ParsedSrBreakdown = {
   net: number;
   placementSr: number;
@@ -12,6 +29,7 @@ export type ParsedSrBreakdown = {
   placementId?: WzPlacementId;
   confidence: OcrConfidence;
   warnings: string[];
+  fieldIssues: SrFieldIssues;
 };
 
 export type ParseCoreFields = {

@@ -4,7 +4,6 @@ import icon from "@/app/icon.png";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
 import { NavCutoff } from "@/components/nav-cutoff";
-import { SeasonSelect } from "@/components/season-select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { zIndex } from "@/lib/z-index";
@@ -42,7 +41,7 @@ export function SiteNav({
 
   return (
     <header
-      className="sticky top-0 bg-background/95 backdrop-blur"
+      className="sticky top-0 shrink-0 bg-background/95 backdrop-blur"
       style={{ zIndex: zIndex.nav }}
     >
       <div className="mx-auto flex min-h-16 max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 md:h-16 md:flex-nowrap md:py-0">
@@ -76,9 +75,6 @@ export function SiteNav({
               Climb
             </ToolLink>
           </nav>
-        ) : null}
-        {mode && seasonId ? (
-          <SeasonSelect mode={mode} seasonId={seasonId} seasons={seasons} />
         ) : null}
         <div className="ml-auto flex items-center gap-3">
           {cutoffSr != null ? (

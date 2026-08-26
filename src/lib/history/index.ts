@@ -1,6 +1,7 @@
 export {
   appendMatch,
   canUndoLast,
+  deleteSession,
   emptyDocument,
   endSession,
   enforceCap,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { RankBadge } from "@/components/rank-badge";
 import { TickerNumeral } from "@/components/ticker-numeral";
@@ -19,6 +19,7 @@ export function RankPlate({
   onSrChange,
   onRankChange,
   onSrEditingChange,
+  cardRef,
 }: {
   rank: RankInfo;
   sr: number;
@@ -30,6 +31,7 @@ export function RankPlate({
   onSrChange: (value: string) => void;
   onRankChange: (value: string) => void;
   onSrEditingChange?: (editing: boolean) => void;
+  cardRef?: Ref<HTMLDivElement>;
 }) {
   const [editingSr, setEditingSr] = useState(false);
   const tone = DIVISION_TONE[rank.division];
@@ -45,6 +47,7 @@ export function RankPlate({
   return (
     <div className="flex flex-col items-center">
       <div
+        ref={cardRef}
         className="flex w-full max-w-[16.5rem] flex-col items-center rounded-[6px] border-2 bg-[#121214]/92 px-5 pt-4 pb-5"
         style={{
           borderColor: tone.glow,

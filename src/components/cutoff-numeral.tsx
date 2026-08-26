@@ -29,8 +29,10 @@ export function CutoffNumeral({
       return;
     }
     const controls = animate(0, sr, {
-      duration: 0.85,
-      ease: [0.16, 1, 0.3, 1],
+      type: "spring",
+      stiffness: 80,
+      damping: 22,
+      mass: 1,
       onUpdate: (v) => {
         node.textContent = formatSr(Math.round(v));
       },

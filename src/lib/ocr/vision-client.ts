@@ -1,4 +1,5 @@
 import { ImageAnnotatorClient } from "@google-cloud/vision";
+import { readingOrderText, wordsFromVisionPages } from "./reading-order";
 
 let client: ImageAnnotatorClient | null = null;
 
@@ -57,6 +58,9 @@ export async function detectDocumentText(imageBytes: Buffer): Promise<string> {
   const [result] = await visionClient.documentTextDetection({
     image: { content: imageBytes.toString("base64") },
   });
-  const text = result.fullTextAnnotation?.text ?? result.textAnnotations?.[0]?.description ?? "";
-  return text;
+  const fallback =
+    result.fullTextAnnotation?.text ?? result.textAnnotations?.[0]?.description ?? "";
+  const words = wordsFromVisionPages(result.fullTextAnnotation?.pages);
+  const ordered = readingOrderText(words);
+  return ordered.trim() || fallback;
 }

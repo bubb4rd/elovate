@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ import {
 import type { Mode } from "@/lib/data/types";
 import {
   appendMatch,
+  deleteSession,
   endSession,
   openSession,
   undoLastMatch,
@@ -214,7 +215,20 @@ export function SrCalculator({
   const [entryMode, setEntryMode] = useState<EntryMode>("manual");
   const [ocrResult, setOcrResult] = useState<ParsedSrBreakdown | null>(null);
   const [historySaveFailed, setHistorySaveFailed] = useState(false);
+  const rankCardRef = useRef<HTMLDivElement>(null);
+  const [rankCardHeight, setRankCardHeight] = useState<number | undefined>();
   const { doc: historyDoc, store: historyStore } = useHistory(mode);
+  useLayoutEffect(() => {
+    const el = rankCardRef.current;
+    if (!el) return;
+    const update = () => {
+      setRankCardHeight(el.getBoundingClientRect().height);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const hydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -458,6 +472,11 @@ export function SrCalculator({
     setHistorySaveFailed(!ok);
   }
 
+  function deletePastSession(sessionId: string) {
+    const ok = historyStore.save(deleteSession(historyStore.load(), sessionId));
+    setHistorySaveFailed(!ok);
+  }
+
   const ticketOpen =
     hydrated &&
     mode === "wz" &&
@@ -483,6 +502,7 @@ export function SrCalculator({
             onSrChange={patchSr}
             onRankChange={patchSr}
             onSrEditingChange={setEditingSr}
+            cardRef={rankCardRef}
           />
 
           {mode === "mp" ? (
@@ -607,6 +627,7 @@ export function SrCalculator({
                   <SrScreenshotUpload
                     expectedFee={rank.fee}
                     onParsed={setOcrResult}
+                    panelHeight={rankCardHeight}
                   />
                 )
               ) : (
@@ -773,6 +794,7 @@ export function SrCalculator({
         saveFailed={historySaveFailed}
         onUndo={undoLast}
         onEnd={endOpenSession}
+        onDelete={deletePastSession}
       />
       <SrTicket
         open={ticketOpen}

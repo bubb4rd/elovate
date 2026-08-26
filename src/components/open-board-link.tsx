@@ -8,7 +8,7 @@ export function OpenBoardLink() {
       <Button asChild>
         <Link href="/wz" className="gap-2">
           <BoardPodiumIcon className="size-6" />
-          Open board
+          Top 250 board
         </Link>
       </Button>
       <Link

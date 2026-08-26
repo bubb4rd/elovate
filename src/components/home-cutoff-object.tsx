@@ -31,8 +31,10 @@ export function HomeCutoffObject({
       return;
     }
     const controls = animate(0, change24h, {
-      duration: 0.85,
-      ease,
+      type: "spring",
+      stiffness: 80,
+      damping: 22,
+      mass: 1,
       onUpdate: (v) => {
         node.textContent = formatDelta(Math.round(v));
       },

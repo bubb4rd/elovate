@@ -1,6 +1,7 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useReducedMotion } from "motion/react";
 import {
   Area,
@@ -11,7 +12,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  useCartesianScale,
 } from "recharts";
+import { LiveStatus, type BoardFreshnessStatus } from "@/components/live-status";
 import { formatChartTime, formatDay, formatDelta, formatSr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CutoffPoint } from "@/lib/data/types";
@@ -64,6 +67,86 @@ function strokeForDelta(delta: number | null): string {
   return "var(--accent)";
 }
 
+function RangeSelect() {
+  return (
+    <div className="inline-flex items-center rounded-[6px] border border-border/80 bg-background/85 p-1 text-xs shadow-sm backdrop-blur-sm">
+      <span className="rounded-[4px] px-2 py-1 text-muted">Week</span>
+      <span className="rounded-[4px] px-2 py-1 text-muted">Month</span>
+      <span className="rounded-[4px] bg-surface-elevated px-2 py-1 font-medium text-accent">
+        Max
+      </span>
+    </div>
+  );
+}
+
+function LiveCutoffAnnotation({
+  point,
+  yValue,
+  cutoffSr,
+  nextUpdateAt,
+  boardStatus,
+  portalNode,
+}: {
+  point: ChartRow;
+  yValue: number;
+  cutoffSr: number;
+  nextUpdateAt?: string;
+  boardStatus: BoardFreshnessStatus;
+  portalNode: HTMLElement | null;
+}) {
+  const coords = useCartesianScale({ x: point.t, y: yValue });
+
+  if (coords == null || !Number.isFinite(coords.x) || !Number.isFinite(coords.y)) {
+    return null;
+  }
+
+  const labelTop = Math.max(8, coords.y - 78);
+  // Right-align the float with the endpoint so it shares the chart's right edge.
+  const labelLeft = coords.x;
+  const lineEndY = labelTop + 56;
+
+  return (
+    <>
+      <line
+        x1={coords.x}
+        y1={coords.y}
+        x2={labelLeft - 28}
+        y2={lineEndY}
+        stroke="var(--accent)"
+        strokeWidth={1.25}
+        strokeOpacity={0.7}
+      />
+      <circle
+        cx={coords.x}
+        cy={coords.y}
+        r={4.5}
+        fill="var(--accent)"
+        stroke="var(--background)"
+        strokeWidth={2}
+      />
+      {portalNode
+        ? createPortal(
+            <div
+              className="pointer-events-none absolute z-40 -translate-x-full pr-3 text-right"
+              style={{ left: labelLeft, top: labelTop }}
+            >
+              <p className="numeric accent-glow text-3xl font-semibold leading-none tracking-tight text-accent">
+                {formatSr(cutoffSr)}
+              </p>
+              <div className="pointer-events-auto mt-1.5 flex items-center justify-end gap-1.5 text-xs font-medium text-muted">
+                {nextUpdateAt ? (
+                  <LiveStatus nextUpdateAt={nextUpdateAt} status={boardStatus} />
+                ) : null}
+                <span>Cutoff</span>
+              </div>
+            </div>,
+            portalNode,
+          )
+        : null}
+    </>
+  );
+}
+
 export function CutoffChart({
   series,
   height,
@@ -71,6 +154,9 @@ export function CutoffChart({
   valueLabel = "Cutoff",
   bare = false,
   object = false,
+  liveCutoffSr,
+  nextUpdateAt,
+  boardStatus = "live",
 }: {
   series: CutoffPoint[];
   height?: number;
@@ -78,6 +164,9 @@ export function CutoffChart({
   valueLabel?: string;
   bare?: boolean;
   object?: boolean;
+  liveCutoffSr?: number;
+  nextUpdateAt?: string;
+  boardStatus?: BoardFreshnessStatus;
 }) {
   const reduce = useReducedMotion();
   const duration = reduce ? 0 : 800;
@@ -93,13 +182,22 @@ export function CutoffChart({
   const delta = seriesDelta(series);
   const stroke = object ? strokeForDelta(delta) : "var(--accent)";
   const showDots = object || shortSeries;
+  const framed = !bare && !object;
+  const showLiveCallout = framed && data.length > 0 && liveCutoffSr != null;
+  const chartData =
+    showLiveCallout && liveCutoffSr != null
+      ? data.map((point, index) =>
+          index === data.length - 1 ? { ...point, cutoffSr: liveCutoffSr } : point,
+        )
+      : data;
+  const lastPoint = chartData.at(-1);
+  const [calloutLayer, setCalloutLayer] = useState<HTMLDivElement | null>(null);
 
   if (series.length === 0) {
     return (
       <div
         className={cn(
           "flex items-center px-4 text-sm text-muted",
-          !bare && !object && "rounded-[6px] border border-border bg-surface",
           fill && "h-full min-h-[28rem] lg:min-h-0",
         )}
         style={height ? { height } : undefined}
@@ -111,20 +209,24 @@ export function CutoffChart({
 
   const plot = (
     <div
-      className={cn(
-        "overflow-hidden",
-        !bare && !object && "rounded-[6px] border border-border bg-background p-2",
-        fill ? "min-h-0 flex-1" : undefined,
-      )}
+      className={cn("relative overflow-hidden", fill ? "min-h-0 flex-1" : undefined)}
       style={height ? { height } : undefined}
     >
+      <div
+        ref={(node) => {
+          if (node !== calloutLayer) setCalloutLayer(node);
+        }}
+        className="pointer-events-none absolute inset-0 z-40"
+      />
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={data}
+          data={chartData}
           margin={
             object
               ? { top: 12, right: 8, left: 8, bottom: 12 }
-              : { top: 16, right: 12, left: 4, bottom: 8 }
+              : framed
+                ? { top: showLiveCallout ? 72 : 44, right: 0, left: 0, bottom: 4 }
+                : { top: 16, right: 12, left: 4, bottom: 8 }
           }
         >
           <defs>
@@ -215,13 +317,23 @@ export function CutoffChart({
             stroke={stroke}
             strokeWidth={object ? 3 : 2}
             dot={
-              showDots
+              showDots && !showLiveCallout
                 ? { r: object ? 5 : 3.5, fill: stroke, strokeWidth: 0 }
                 : false
             }
             isAnimationActive={!reduce}
             animationDuration={duration}
           />
+          {showLiveCallout && lastPoint && liveCutoffSr != null ? (
+            <LiveCutoffAnnotation
+              point={lastPoint}
+              yValue={liveCutoffSr}
+              cutoffSr={liveCutoffSr}
+              nextUpdateAt={nextUpdateAt}
+              boardStatus={boardStatus}
+              portalNode={calloutLayer}
+            />
+          ) : null}
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -238,21 +350,13 @@ export function CutoffChart({
   return (
     <div
       className={cn(
-        "flex w-full flex-col rounded-[6px] border border-border bg-surface p-4",
+        "relative flex w-full flex-col",
         fill && "h-full min-h-[28rem] lg:min-h-0",
       )}
     >
-      <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">{valueLabel} chart</h3>
-          <p className="mt-1 text-xs text-muted">Top 250 cutoff trajectory</p>
-        </div>
-        <div className="inline-flex items-center rounded-[6px] border border-border bg-surface-elevated p-1 text-xs">
-          <span className="rounded-[4px] px-2 py-1 text-muted">Week</span>
-          <span className="rounded-[4px] px-2 py-1 text-muted">Month</span>
-          <span className="rounded-[4px] bg-background px-2 py-1 font-medium text-accent">
-            Max
-          </span>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-start pr-1 pt-1">
+        <div className="pointer-events-auto">
+          <RangeSelect />
         </div>
       </div>
       {plot}

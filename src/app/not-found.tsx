@@ -11,7 +11,7 @@ export default function NotFound() {
         <h1 className="text-2xl font-semibold tracking-tight">Not found</h1>
         <p className="mt-2 text-muted">That player, season, or board does not exist.</p>
         <Link href="/wz" className="mt-6 text-accent hover:underline">
-          Open board
+          Top 250 board
         </Link>
       </main>
       <SiteFooter />

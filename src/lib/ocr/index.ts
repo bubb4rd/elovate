@@ -1,4 +1,11 @@
-export type { OcrConfidence, ParsedSrBreakdown, ParseCoreFields } from "./types";
+export type {
+  OcrConfidence,
+  ParsedSrBreakdown,
+  ParseCoreFields,
+  SrFieldIssue,
+  SrFieldIssues,
+  SrFieldKey,
+} from "./types";
 export { OcrHardFailure } from "./types";
 export { placementIdFromSr, isValidPlacementSr } from "./placement-from-sr";
 export { parseSrBreakdown, parseSrFieldsFromText, assertReadableSrText } from "./parse-sr-breakdown";

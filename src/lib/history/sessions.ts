@@ -159,6 +159,18 @@ export function endSession(
   };
 }
 
+export function deleteSession(
+  doc: HistoryDocument,
+  sessionId: string,
+): HistoryDocument {
+  if (!doc.sessions.some((session) => session.id === sessionId)) return doc;
+  return {
+    version: HISTORY_VERSION,
+    sessions: doc.sessions.filter((session) => session.id !== sessionId),
+    matches: doc.matches.filter((match) => match.sessionId !== sessionId),
+  };
+}
+
 export function appendMatch(
   doc: HistoryDocument,
   draft: NewMatch,

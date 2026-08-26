@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   appendMatch,
   canUndoLast,
+  deleteSession,
   emptyDocument,
   endSession,
   openSession,
@@ -47,6 +48,15 @@ assert.equal(undone.doc.sessions.length, 1);
 const closed = endSession(second.doc, second.session.id, t2.toISOString());
 assert.equal(openSession(closed), undefined);
 assert.equal(closed.sessions[0]?.endedAt, t2.toISOString());
+
+const deleted = deleteSession(rolled.doc, rolled.doc.sessions[0]!.id);
+assert.equal(deleted.sessions.length, 1);
+assert.equal(deleted.sessions[0]?.id, rolled.session.id);
+assert.equal(
+  deleted.matches.every((match) => match.sessionId === rolled.session.id),
+  true,
+);
+assert.equal(deleteSession(deleted, "missing").sessions.length, 1);
 
 assert.equal(winStreak(second.doc.matches), 2);
 const loss = appendMatch(second.doc, mp(1090, -20), new Date("2026-08-24T12:20:00.000Z"));
