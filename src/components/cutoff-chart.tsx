@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   Area,
   AreaChart,
@@ -94,7 +94,11 @@ function LiveCutoffAnnotation({
   boardStatus: BoardFreshnessStatus;
   portalNode: HTMLElement | null;
 }) {
+  const reduce = useReducedMotion();
   const coords = useCartesianScale({ x: point.t, y: yValue });
+  const fade = reduce
+    ? { duration: 0 }
+    : { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const };
 
   if (coords == null || !Number.isFinite(coords.x) || !Number.isFinite(coords.y)) {
     return null;
@@ -107,28 +111,37 @@ function LiveCutoffAnnotation({
 
   return (
     <>
-      <line
-        x1={coords.x}
-        y1={coords.y}
-        x2={labelLeft - 28}
-        y2={lineEndY}
-        stroke="var(--accent)"
-        strokeWidth={1.25}
-        strokeOpacity={0.7}
-      />
-      <circle
-        cx={coords.x}
-        cy={coords.y}
-        r={4.5}
-        fill="var(--accent)"
-        stroke="var(--background)"
-        strokeWidth={2}
-      />
+      <motion.g
+        initial={reduce ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={fade}
+      >
+        <line
+          x1={coords.x}
+          y1={coords.y}
+          x2={labelLeft - 28}
+          y2={lineEndY}
+          stroke="var(--accent)"
+          strokeWidth={1.25}
+          strokeOpacity={0.7}
+        />
+        <circle
+          cx={coords.x}
+          cy={coords.y}
+          r={4.5}
+          fill="var(--accent)"
+          stroke="var(--background)"
+          strokeWidth={2}
+        />
+      </motion.g>
       {portalNode
         ? createPortal(
-            <div
+            <motion.div
               className="pointer-events-none absolute z-40 -translate-x-full pr-3 text-right"
               style={{ left: labelLeft, top: labelTop }}
+              initial={reduce ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={fade}
             >
               <p className="numeric accent-glow text-3xl font-semibold leading-none tracking-tight text-accent">
                 {formatSr(cutoffSr)}
@@ -139,7 +152,7 @@ function LiveCutoffAnnotation({
                 ) : null}
                 <span>Cutoff</span>
               </div>
-            </div>,
+            </motion.div>,
             portalNode,
           )
         : null}
@@ -169,7 +182,8 @@ export function CutoffChart({
   boardStatus?: BoardFreshnessStatus;
 }) {
   const reduce = useReducedMotion();
-  const duration = reduce ? 0 : 800;
+  // Match the slower front-page cutoff numeral feel (Recharts can't use springs).
+  const duration = reduce ? 0 : 1500;
   const fill = height == null;
   const data = toChartRows(series);
   const shortSeries = data.length <= 3;
@@ -192,6 +206,17 @@ export function CutoffChart({
       : data;
   const lastPoint = chartData.at(-1);
   const [calloutLayer, setCalloutLayer] = useState<HTMLDivElement | null>(null);
+  const [calloutReady, setCalloutReady] = useState(() => !!reduce);
+
+  useEffect(() => {
+    if (reduce || duration === 0) {
+      setCalloutReady(true);
+      return;
+    }
+    setCalloutReady(false);
+    const timeout = window.setTimeout(() => setCalloutReady(true), duration + 50);
+    return () => window.clearTimeout(timeout);
+  }, [series, liveCutoffSr, reduce, duration]);
 
   if (series.length === 0) {
     return (
@@ -297,6 +322,7 @@ export function CutoffChart({
             stroke="none"
             isAnimationActive={!reduce}
             animationDuration={duration}
+            animationEasing="ease-out"
           />
           {showRank1 && !object ? (
             <Line
@@ -308,6 +334,7 @@ export function CutoffChart({
               dot={false}
               isAnimationActive={!reduce}
               animationDuration={duration}
+              animationEasing="ease-out"
             />
           ) : null}
           <Line
@@ -323,8 +350,10 @@ export function CutoffChart({
             }
             isAnimationActive={!reduce}
             animationDuration={duration}
+            animationEasing="ease-out"
+            onAnimationEnd={() => setCalloutReady(true)}
           />
-          {showLiveCallout && lastPoint && liveCutoffSr != null ? (
+          {showLiveCallout && calloutReady && lastPoint && liveCutoffSr != null ? (
             <LiveCutoffAnnotation
               point={lastPoint}
               yValue={liveCutoffSr}

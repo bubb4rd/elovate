@@ -29,9 +29,11 @@ export function SessionShareDialog({
 }) {
   const titleId = useId();
   const captureRef = useRef<HTMLElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewScale, setPreviewScale] = useState(1);
   const nativeShare = canShareFiles();
 
   useEffect(() => {
@@ -45,6 +47,17 @@ export function SessionShareDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      setPreviewScale(entry.contentRect.width / SESSION_SHARE_WIDTH);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   async function run(action: "download" | "copy" | "share") {
     const node = captureRef.current;
@@ -119,20 +132,19 @@ export function SessionShareDialog({
             Close
           </button>
         </div>
-        <div className="@container w-full">
+        <div
+          ref={previewRef}
+          className="relative w-full overflow-hidden"
+          style={{
+            aspectRatio: `${SESSION_SHARE_WIDTH} / ${SESSION_SHARE_HEIGHT}`,
+            borderRadius: SESSION_SHARE_RADIUS,
+          }}
+        >
           <div
-            className="relative w-full overflow-hidden"
-            style={{
-              aspectRatio: `${SESSION_SHARE_WIDTH} / ${SESSION_SHARE_HEIGHT}`,
-              borderRadius: SESSION_SHARE_RADIUS,
-            }}
+            className="absolute top-0 left-0 origin-top-left"
+            style={{ transform: `scale(${previewScale})` }}
           >
-            <div
-              className="absolute top-0 left-0 origin-top-left"
-              style={{ transform: `scale(calc(100cqi / ${SESSION_SHARE_WIDTH}))` }}
-            >
-              <SessionShareCard summary={summary} />
-            </div>
+            <SessionShareCard summary={summary} />
           </div>
         </div>
         {error ? <p className="mt-3 text-[12px] text-[#e8a0a0]">{error}</p> : null}
