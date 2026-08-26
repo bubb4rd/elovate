@@ -22,9 +22,9 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import type { ParsedSrBreakdown } from "@/lib/ocr";
+import { PICK_MAX_BYTES, prepareUploadImage } from "@/lib/ocr/prepare-upload-image";
 import { cn } from "@/lib/utils";
 
-const MAX_BYTES = 8 * 1024 * 1024;
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 type UploadStatus = "idle" | "ready" | "uploading" | "error";
@@ -55,7 +55,7 @@ function validateFile(file: File): string | null {
   if (!file.type.startsWith("image/")) {
     return "Use a PNG, JPEG, or WebP screenshot.";
   }
-  if (file.size > MAX_BYTES) {
+  if (file.size > PICK_MAX_BYTES) {
     return "Keep the screenshot under 8 MB.";
   }
   return null;
@@ -64,11 +64,12 @@ function validateFile(file: File): string | null {
 function kindForStatus(status: number, bodyError?: string): ScanErrorKind {
   if (status === 429) return "rate_limit";
   if (status === 503) return "unavailable";
+  if (status === 413) return "invalid_file";
   if (status === 502) return "read_failed";
   if (status === 422) return "unreadable";
   if (status === 400) {
     const msg = bodyError?.trim() ?? "";
-    if (msg.includes("8 MB") || /PNG|JPEG|WebP/i.test(msg)) return "invalid_file";
+    if (msg.includes("MB") || /PNG|JPEG|WebP/i.test(msg)) return "invalid_file";
     return "unreadable";
   }
   return "read_failed";
@@ -76,12 +77,13 @@ function kindForStatus(status: number, bodyError?: string): ScanErrorKind {
 
 function messageForStatus(status: number, bodyError?: string): string {
   if (bodyError?.trim()) {
-    if (status === 400 || status === 422 || status === 429 || status === 502 || status === 503) {
+    if (status === 400 || status === 413 || status === 422 || status === 429 || status === 502 || status === 503) {
       return bodyError.trim();
     }
   }
   if (status === 429) return "Too many scans — try again in a minute";
   if (status === 503) return "Scan unavailable right now";
+  if (status === 413) return "Keep the screenshot under 3 MB, or crop it first.";
   if (status === 502) return "Couldn’t read the screenshot. Try again.";
   if (status === 422) return "Couldn’t find an SR breakdown in this image";
   if (status === 400) return "No image uploaded";
@@ -92,8 +94,18 @@ async function uploadSrScreenshot(
   file: File,
   expectedFee?: number,
 ): Promise<ParsedSrBreakdown> {
+  let image: File;
+  try {
+    image = await prepareUploadImage(file);
+  } catch (err) {
+    throw new ScanError(
+      "invalid_file",
+      err instanceof Error ? err.message : "Couldn’t prepare the screenshot. Try again.",
+    );
+  }
+
   const body = new FormData();
-  body.set("image", file);
+  body.set("image", image);
   if (expectedFee != null) body.set("expectedFee", String(expectedFee));
 
   let res: Response;

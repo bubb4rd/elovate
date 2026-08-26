@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx src/lib/history/sessions.test.ts && node --import tsx src/lib/history/share.test.ts && node --import tsx src/lib/ocr/parse-sr-breakdown.test.ts && node --import tsx src/lib/ocr/error-matrix.test.ts && node --import tsx src/lib/data/live-history.test.ts"
+    "test": "node --import tsx src/lib/history/sessions.test.ts && node --import tsx src/lib/history/share.test.ts && node --import tsx src/lib/ocr/parse-sr-breakdown.test.ts && node --import tsx src/lib/ocr/error-matrix.test.ts && node --import tsx src/lib/ocr/prepare-upload-image.test.ts && node --import tsx src/lib/data/live-history.test.ts"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.7",
