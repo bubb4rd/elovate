@@ -474,7 +474,6 @@ function ScanRow({
               weight="fill"
               className="size-4 shrink-0 text-warning"
               aria-label={issueLabel(issue)}
-              title={issueLabel(issue)}
             />
           ) : null}
           {!editing ? (
