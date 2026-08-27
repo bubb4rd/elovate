@@ -1,16 +1,28 @@
 import { NextResponse } from "next/server";
+import {
+  clearAuthNextCookie,
+  readAuthNextFromCookieHeader,
+} from "@/lib/auth/oauth-return";
 import { postAuthPath, safeNextPath } from "@/lib/auth/paths";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = safeNextPath(searchParams.get("next"), "/");
+  const nextFromQuery = searchParams.get("next");
+  const nextFromCookie = readAuthNextFromCookieHeader(request.headers.get("cookie"));
+  const next = safeNextPath(nextFromQuery, nextFromCookie);
+
+  function redirect(path: string) {
+    const response = NextResponse.redirect(`${origin}${path}`);
+    response.headers.append("Set-Cookie", clearAuthNextCookie());
+    return response;
+  }
 
   if (code) {
     const supabase = await createServerSupabaseClient();
     if (!supabase) {
-      return NextResponse.redirect(`${origin}/login?error=config`);
+      return redirect("/login?error=config");
     }
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
@@ -27,10 +39,9 @@ export async function GET(request: Request) {
         onboardingComplete = data?.onboarding_completed_at != null;
         slug = data?.slug;
       }
-      const path = postAuthPath({ onboardingComplete, slug, next });
-      return NextResponse.redirect(`${origin}${path}`);
+      return redirect(postAuthPath({ onboardingComplete, slug, next }));
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return redirect("/login?error=auth");
 }

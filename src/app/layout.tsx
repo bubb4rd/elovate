@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
+import { AuthCodeCatcher } from "@/components/auth/auth-code-catcher";
 import { ThemeScript } from "@/components/theme-script";
 import "./globals.css";
 
@@ -33,6 +35,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeScript />
       </head>
       <body className="min-h-full flex flex-col bg-background font-sans text-foreground">
+        <Suspense fallback={null}>
+          <AuthCodeCatcher />
+        </Suspense>
         {children}
       </body>
     </html>

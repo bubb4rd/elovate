@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { oauthCallbackUrl, stashAuthNext } from "@/lib/auth/oauth-return";
 
 type ProviderId = "email" | "discord";
 
@@ -92,10 +93,11 @@ export function LinkedAccounts({
     setBusy("discord");
     setError(null);
     const origin = window.location.origin;
+    stashAuthNext(nextPath);
     const { error: linkError } = await supabase.auth.linkIdentity({
       provider: "discord",
       options: {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        redirectTo: oauthCallbackUrl(origin),
       },
     });
     if (linkError) {

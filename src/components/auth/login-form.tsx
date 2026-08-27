@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { postAuthPath, safeNextPath } from "@/lib/auth/paths";
+import { oauthCallbackUrl, stashAuthNext } from "@/lib/auth/oauth-return";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 const ERROR_COPY: Record<string, string> = {
@@ -103,10 +104,11 @@ export function LoginForm({
     setBusy("discord");
     setError(null);
     const origin = window.location.origin;
+    stashAuthNext(next);
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "discord",
       options: {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: oauthCallbackUrl(origin),
       },
     });
     if (oauthError) {

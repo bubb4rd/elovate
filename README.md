@@ -57,6 +57,22 @@ The job POSTs every 15 minutes. 24h stays empty until a snapshot is at least 24 
 
 Push profile migrations to hosted with `supabase db push` (includes onboarding columns on `profiles`). Existing auth users without a profile row need either a re-signup (trigger) or a one-off insert matching `private.handle_new_user`. After sign-in, incomplete profiles are sent to `/onboarding`.
 
+### Hosted Auth URL configuration (required for Discord / OAuth)
+
+In the [elovate Auth URL Configuration](https://supabase.com/dashboard/project/ioagctykwkspbwzyrfcb/auth/url-configuration):
+
+- **Site URL:** `https://elovatesr.netlify.app`
+- **Redirect URLs** (add all that apply):
+  - `https://elovatesr.netlify.app/auth/callback`
+  - `http://127.0.0.1:3000/auth/callback`
+  - `http://localhost:3000/auth/callback`
+
+If `/auth/callback` is missing from Redirect URLs, Supabase falls back to Site URL and you land on `/?code=…` with no session.
+
+Discord Developer Portal redirect for this project must be:
+
+`https://ioagctykwkspbwzyrfcb.supabase.co/auth/v1/callback`
+
 ## Getting Started
 
 First, run the development server:
