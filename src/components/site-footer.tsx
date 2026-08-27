@@ -22,7 +22,7 @@ export function SiteFooter({
           Not affiliated with Activision, Treyarch, or Raven.
         </p>
         <p className="numeric">{freshness ?? "Sample snapshots for this build."}</p>
-        <nav className="flex gap-4">
+        <nav className="flex flex-wrap gap-4">
           <Link href="/wz" className="hover:text-foreground">
             Warzone
           </Link>
@@ -31,6 +31,9 @@ export function SiteFooter({
           </Link>
           <Link href={calcHref} className="hover:text-foreground">
             Climb
+          </Link>
+          <Link href="/desktop" className="hover:text-foreground">
+            Desktop
           </Link>
         </nav>
       </div>

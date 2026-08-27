@@ -67,6 +67,16 @@ export type ProfileVoteRow = {
   updated_at: string;
 };
 
+export type DesktopWaitlistRow = {
+  id: string;
+  email: string;
+  user_id: string | null;
+  want_updates: boolean;
+  want_beta: boolean;
+  source: string;
+  created_at: string;
+};
+
 export type CastProfileVoteResult = {
   ups: number;
   downs: number;
@@ -169,6 +179,20 @@ export type Database = {
           value?: -1 | 1;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      desktop_waitlist: {
+        Row: DesktopWaitlistRow;
+        Insert: {
+          id?: string;
+          email: string;
+          user_id?: string | null;
+          want_updates?: boolean;
+          want_beta?: boolean;
+          source?: string;
+          created_at?: string;
+        };
+        Update: never;
         Relationships: [];
       };
     };
