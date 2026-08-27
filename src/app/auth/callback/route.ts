@@ -3,12 +3,16 @@ import {
   clearAuthNextCookie,
   readAuthNextFromCookieHeader,
 } from "@/lib/auth/oauth-return";
-import { postAuthPath, safeNextPath } from "@/lib/auth/paths";
+import { parseEmailOtpType } from "@/lib/auth/email-otp";
+import { destinationAfterSession } from "@/lib/auth/post-auth";
+import { safeNextPath } from "@/lib/auth/paths";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const otpType = parseEmailOtpType(searchParams.get("type"));
   const nextFromQuery = searchParams.get("next");
   const nextFromCookie = readAuthNextFromCookieHeader(request.headers.get("cookie"));
   const next = safeNextPath(nextFromQuery, nextFromCookie);
@@ -19,27 +23,19 @@ export async function GET(request: Request) {
     return response;
   }
 
-  if (code) {
+  if (code || (tokenHash && otpType)) {
     const supabase = await createServerSupabaseClient();
     if (!supabase) {
       return redirect("/login?error=config");
     }
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = code
+      ? await supabase.auth.exchangeCodeForSession(code)
+      : await supabase.auth.verifyOtp({
+          type: otpType!,
+          token_hash: tokenHash!,
+        });
     if (!error) {
-      const { data: claimsData } = await supabase.auth.getClaims();
-      const id = claimsData?.claims?.sub;
-      let onboardingComplete = false;
-      let slug: string | undefined;
-      if (typeof id === "string") {
-        const { data } = await supabase
-          .from("profiles")
-          .select("slug, onboarding_completed_at")
-          .eq("id", id)
-          .maybeSingle();
-        onboardingComplete = data?.onboarding_completed_at != null;
-        slug = data?.slug;
-      }
-      return redirect(postAuthPath({ onboardingComplete, slug, next }));
+      return redirect(await destinationAfterSession(supabase, next));
     }
   }
 

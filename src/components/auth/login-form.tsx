@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { postAuthPath, safeNextPath } from "@/lib/auth/paths";
+import { verifyEmailOtp } from "@/lib/auth/email-otp";
 import { oauthCallbackUrl, stashAuthNext } from "@/lib/auth/oauth-return";
+import { safeNextPath } from "@/lib/auth/paths";
+import { destinationAfterSession } from "@/lib/auth/post-auth";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 const ERROR_COPY: Record<string, string> = {
@@ -42,9 +44,13 @@ export function LoginForm({
     }
     setBusy("email");
     setError(null);
+    stashAuthNext(next);
     const { error: sendError } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: oauthCallbackUrl(window.location.origin),
+      },
     });
     setBusy(null);
     if (sendError) {
@@ -68,30 +74,15 @@ export function LoginForm({
     }
     setBusy("otp");
     setError(null);
-    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-      email: trimmed,
-      token,
-      type: "email",
-    });
+    const { error: verifyError } = await verifyEmailOtp(supabase, trimmed, token);
     if (verifyError) {
       setBusy(null);
       setError(verifyError.message);
       return;
     }
-    const userId = verifyData.user?.id;
-    let onboardingComplete = false;
-    let slug: string | undefined;
-    if (userId) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("slug, onboarding_completed_at")
-        .eq("id", userId)
-        .maybeSingle();
-      onboardingComplete = profile?.onboarding_completed_at != null;
-      slug = profile?.slug;
-    }
+    const path = await destinationAfterSession(supabase, next);
     setBusy(null);
-    router.replace(postAuthPath({ onboardingComplete, slug, next }));
+    router.replace(path);
     router.refresh();
   }
 

@@ -254,6 +254,12 @@ otp_expiry = 3600
 subject = "Your elovate sign-in code"
 content_path = "./supabase/templates/magic_link.html"
 
+# First-time signInWithOtp uses this template when Confirm email is on.
+# Keep it OTP-only so the login form's code field matches the email.
+[auth.email.template.confirmation]
+subject = "Your elovate sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

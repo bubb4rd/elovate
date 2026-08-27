@@ -28,3 +28,8 @@ export function postAuthPath(input: {
   if (next === "/" && input.slug) return `/players/${input.slug}`;
   return next;
 }
+
+/** Auth exchange and the onboarding wizard must run before the incomplete-profile gate. */
+export function shouldSkipOnboardingGate(pathname: string): boolean {
+  return pathname.startsWith("/onboarding") || pathname.startsWith("/auth/");
+}

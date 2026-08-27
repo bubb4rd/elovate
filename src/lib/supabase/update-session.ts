@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { onboardingHref, shouldSkipOnboardingGate } from "@/lib/auth/paths";
 import { supabasePublishableKey, supabaseUrl } from "./env";
+
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie.name, cookie.value);
+  });
+  return to;
+}
 
 export async function updateSession(request: NextRequest) {
   const url = supabaseUrl();
@@ -29,6 +37,24 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const id = claimsData?.claims?.sub;
+  const pathname = request.nextUrl.pathname;
+
+  if (typeof id === "string" && !shouldSkipOnboardingGate(pathname)) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("onboarding_completed_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (data?.onboarding_completed_at == null) {
+      const nextPath =
+        pathname === "/login" ? "/" : `${pathname}${request.nextUrl.search}`;
+      const dest = onboardingHref(nextPath);
+      const redirectResponse = NextResponse.redirect(new URL(dest, request.url));
+      return copyCookies(supabaseResponse, redirectResponse);
+    }
+  }
+
   return supabaseResponse;
 }
