@@ -402,7 +402,7 @@ export function SessionPanel({
 
         {saveFailed ? (
           <p className="border-t border-dashed border-white/15 px-3.5 py-2 text-[11px] text-zinc-500">
-            Couldn&apos;t save history on this device.
+            Couldn&apos;t save history to your account.
           </p>
         ) : null}
       </aside>

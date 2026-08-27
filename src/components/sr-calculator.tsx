@@ -225,7 +225,7 @@ export function SrCalculator({
   const [showAuthCta, setShowAuthCta] = useState(false);
   const rankCardRef = useRef<HTMLDivElement>(null);
   const [rankCardHeight, setRankCardHeight] = useState<number | undefined>();
-  const { doc: historyDoc, store: historyStore } = useHistory(mode);
+  const { doc: historyDoc, store: historyStore, cloudSyncFailed } = useHistory(mode);
   useLayoutEffect(() => {
     const el = rankCardRef.current;
     if (!el) return;
@@ -863,7 +863,7 @@ export function SrCalculator({
         doc={historyDoc}
         currentSr={sr}
         ticketOpen={ticketOpen}
-        saveFailed={historySaveFailed}
+        saveFailed={historySaveFailed || cloudSyncFailed}
         onUndo={undoLast}
         onEnd={endOpenSession}
         onDelete={deletePastSession}

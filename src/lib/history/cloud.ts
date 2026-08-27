@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Mode } from "@/lib/data/types";
 import type { Database } from "@/lib/supabase/database";
+import { documentForMode, matchToRow, rowsToDocument, sessionToRow } from "./map";
 import { emptyDocument } from "./sessions";
-import { matchToRow, rowsToDocument, sessionToRow } from "./map";
 import type { HistoryDocument } from "./types";
 
 type Client = SupabaseClient<Database>;
@@ -21,14 +21,34 @@ export async function fetchCloudHistory(
   return rowsToDocument(sessions ?? [], matches ?? []);
 }
 
+async function syncProfileCurrentSr(
+  supabase: Client,
+  userId: string,
+  mode: Mode,
+  doc: HistoryDocument,
+): Promise<boolean> {
+  const scoped = documentForMode(doc, mode);
+  const latest = [...scoped.matches]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .at(-1);
+  if (!latest) return true;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ current_sr: latest.srAfter })
+    .eq("id", userId);
+  return error == null;
+}
+
 export async function pushCloudHistory(
   supabase: Client,
   userId: string,
   mode: Mode,
   doc: HistoryDocument,
 ): Promise<boolean> {
-  const sessionRows = doc.sessions.map((session) => sessionToRow(userId, session));
-  const matchRows = doc.matches.map((match) => matchToRow(userId, match));
+  const scoped = documentForMode(doc, mode);
+  const sessionRows = scoped.sessions.map((session) => sessionToRow(userId, session));
+  const matchRows = scoped.matches.map((match) => matchToRow(userId, match));
   const keepSessionIds = sessionRows.map((row) => row.id);
   const keepMatchIds = matchRows.map((row) => row.id);
 
@@ -41,17 +61,39 @@ export async function pushCloudHistory(
     if (error) return false;
   }
 
-  let matchQuery = supabase.from("climb_matches").delete().eq("user_id", userId).eq("mode", mode);
   if (keepMatchIds.length > 0) {
-    matchQuery = matchQuery.filter("id", "not.in", `(${keepMatchIds.join(",")})`);
+    const { error: deleteMatchError } = await supabase
+      .from("climb_matches")
+      .delete()
+      .eq("user_id", userId)
+      .eq("mode", mode)
+      .not("id", "in", `(${keepMatchIds.join(",")})`);
+    if (deleteMatchError) return false;
+  } else {
+    const { error: deleteMatchError } = await supabase
+      .from("climb_matches")
+      .delete()
+      .eq("user_id", userId)
+      .eq("mode", mode);
+    if (deleteMatchError) return false;
   }
-  const { error: deleteMatchError } = await matchQuery;
-  if (deleteMatchError) return false;
 
-  let sessionQuery = supabase.from("climb_sessions").delete().eq("user_id", userId).eq("mode", mode);
   if (keepSessionIds.length > 0) {
-    sessionQuery = sessionQuery.filter("id", "not.in", `(${keepSessionIds.join(",")})`);
+    const { error: deleteSessionError } = await supabase
+      .from("climb_sessions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("mode", mode)
+      .not("id", "in", `(${keepSessionIds.join(",")})`);
+    if (deleteSessionError) return false;
+  } else {
+    const { error: deleteSessionError } = await supabase
+      .from("climb_sessions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("mode", mode);
+    if (deleteSessionError) return false;
   }
-  const { error: deleteSessionError } = await sessionQuery;
-  return deleteSessionError == null;
+
+  return syncProfileCurrentSr(supabase, userId, mode, scoped);
 }
