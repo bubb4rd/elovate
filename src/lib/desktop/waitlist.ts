@@ -2,11 +2,12 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import type { Database } from "@/lib/supabase/database";
 import { isValidEmail, normalizeEmail } from "./email";
 
+const WAITLIST_SOURCE = "desktop_page";
+
 export type DesktopWaitlistInput = {
   email: string;
   wantUpdates: boolean;
   wantBeta: boolean;
-  source?: string;
   userId?: string | null;
 };
 
@@ -26,12 +27,11 @@ export async function joinDesktopWaitlist(
     return { error: "Pick updates, beta testing, or both." };
   }
 
-  const source = (input.source?.trim() || "desktop_page").slice(0, 40);
   const payload: Database["public"]["Tables"]["desktop_waitlist"]["Insert"] = {
     email,
     want_updates: input.wantUpdates,
     want_beta: input.wantBeta,
-    source,
+    source: WAITLIST_SOURCE,
     user_id: input.userId ?? null,
   };
 

@@ -7,18 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SettingsToggle } from "@/components/settings/settings-section";
 import { joinDesktopWaitlist } from "@/lib/desktop/waitlist";
-import { cn } from "@/lib/utils";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export function DesktopWaitlistForm({
   initialEmail = null,
   userId = null,
-  source = "desktop_page",
 }: {
   initialEmail?: string | null;
   userId?: string | null;
-  source?: string;
 }) {
   const reduce = useReducedMotion();
   const [email, setEmail] = useState(initialEmail ?? "");
@@ -38,7 +35,6 @@ export function DesktopWaitlistForm({
       email: useAccountEmail && initialEmail ? initialEmail : email,
       wantUpdates,
       wantBeta,
-      source,
       userId,
     });
 
@@ -53,7 +49,7 @@ export function DesktopWaitlistForm({
   if (done) {
     return (
       <motion.div
-        className="mx-auto w-full max-w-md space-y-3 text-center"
+        className="mx-auto w-full max-w-md space-y-3 text-center md:mx-0 md:ml-auto"
         initial={reduce ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease }}
@@ -81,10 +77,11 @@ export function DesktopWaitlistForm({
       onSubmit={(event) => {
         void onSubmit(event);
       }}
-      className="mx-auto w-full max-w-md space-y-5"
-      initial={reduce ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay: 0.28, ease }}
+      className="w-full max-w-md space-y-5 justify-self-stretch md:justify-self-end"
+      initial={reduce ? false : { opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.5, ease }}
     >
       <div className="space-y-2">
         <label htmlFor="desktop-email" className="text-sm font-medium text-foreground">
@@ -155,7 +152,7 @@ export function DesktopWaitlistForm({
         {submitting ? "Joining…" : "Join the waitlist"}
       </Button>
 
-      <p className={cn("text-center text-xs text-muted")}>
+      <p className="text-center text-xs text-muted">
         No spam. Unsubscribe anytime when we start sending.
       </p>
     </motion.form>

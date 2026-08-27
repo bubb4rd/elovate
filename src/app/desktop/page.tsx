@@ -1,4 +1,9 @@
-import { DesktopComingSoon } from "@/components/desktop/desktop-coming-soon";
+import { DesktopComingSoonHero } from "@/components/desktop/desktop-coming-soon-hero";
+import { DesktopWaitlistSection } from "@/components/desktop/desktop-waitlist-section";
+import { DesktopWhatsComing } from "@/components/desktop/desktop-whats-coming";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteNav } from "@/components/site-nav";
+import { listSeasons } from "@/lib/data/queries";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
@@ -8,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DesktopPage() {
+  const seasons = listSeasons();
   const supabase = await createServerSupabaseClient();
   let initialEmail: string | null = null;
   let userId: string | null = null;
@@ -18,5 +24,15 @@ export default async function DesktopPage() {
     userId = data.user?.id ?? null;
   }
 
-  return <DesktopComingSoon initialEmail={initialEmail} userId={userId} />;
+  return (
+    <div className="flex min-h-[100dvh] flex-col">
+      <SiteNav seasons={seasons} />
+      <main className="flex-1">
+        <DesktopComingSoonHero />
+        <DesktopWhatsComing />
+        <DesktopWaitlistSection initialEmail={initialEmail} userId={userId} />
+      </main>
+      <SiteFooter />
+    </div>
+  );
 }
