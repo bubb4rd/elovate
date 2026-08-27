@@ -4,14 +4,12 @@ import { IRIDESCENT_GRADIENT } from "@/lib/profile/themes";
 import { headerDef, type ProfileHeaderId } from "@/lib/profile/headers";
 import { cn } from "@/lib/utils";
 
-const BANNER_BG: Record<ProfileHeaderId, string> = {
+const BANNER_BG: Record<Exclude<ProfileHeaderId, "fragger">, string> = {
   default: "linear-gradient(90deg, rgb(112 112 112 / 0) 0%, #454545 100%)",
   platinum: "linear-gradient(90deg, #73fffa 0%, #1df2b2 50%, #0bca8a 100%)",
   diamond: "linear-gradient(90deg, #7373ff 0%, #241df2 50%, #180bca 100%)",
   crimson: "linear-gradient(90deg, #ff7375 0%, #f21d21 50%, #ca0b0e 100%)",
   iridescent: IRIDESCENT_GRADIENT,
-  "elovate-staff":
-    "linear-gradient(90deg, var(--geebung-100) 0%, var(--geebung-400) 50%, var(--geebung-600) 100%)",
 };
 
 function inkClass(ink: "black" | "white"): string {
@@ -31,34 +29,32 @@ export function ProfileBanner({
   const header = headerDef(headerId);
   const ink = inkClass(header.ink);
   const showChrome = variant === "full";
+  const isFragger = headerId === "fragger";
 
   return (
     <div
       className={cn(
         "relative h-[200px] w-full overflow-hidden rounded-2xl [container-type:size]",
         headerId === "default" && "bg-[#292929]",
+        isFragger && "bg-[#1a0a00]",
         className,
       )}
-      style={{ backgroundImage: BANNER_BG[headerId] }}
+      style={
+        isFragger
+          ? undefined
+          : { backgroundImage: BANNER_BG[headerId as Exclude<ProfileHeaderId, "fragger">] }
+      }
     >
-      {headerId === "default" ? <DefaultPeaks /> : null}
-
-      {headerId === "elovate-staff" ? (
-        <>
-          <ClimbMark
-            className={cn(
-              "pointer-events-none absolute top-[18.5%] left-1/2 h-[63%] w-auto -translate-x-1/2",
-              ink,
-            )}
-          />
-          {showChrome ? (
-            <ElovateWordmark
-              className={cn("pointer-events-none absolute right-[2.9%] bottom-[10%]", ink)}
-              sizeClassName="text-[15cqh]"
-            />
-          ) : null}
-        </>
+      {isFragger ? (
+        <img
+          alt=""
+          src="/profile/headers/fragger.png"
+          className="pointer-events-none absolute inset-0 size-full object-cover"
+          draggable={false}
+        />
       ) : null}
+
+      {headerId === "default" ? <DefaultPeaks /> : null}
 
       {header.kind === "rank" && showChrome ? (
         <>

@@ -9,7 +9,13 @@ import { rankFromSr } from "@/lib/ranked";
 import type { ClimbMatchRow, ClimbSessionRow, ProfileRow } from "@/lib/supabase/database";
 import { createAnonSupabaseClient } from "@/lib/supabase/server";
 import { parseClimbGoals } from "./goals";
-import { headerState, isProfileHeaderId, peakSrForHeaders, type ProfileHeaderId } from "./headers";
+import {
+  headerState,
+  isProfileGrantId,
+  isProfileHeaderId,
+  peakSrForHeaders,
+  type ProfileGrantId,
+} from "./headers";
 import { isProfilePageThemeId, type ProfilePageThemeId } from "./themes";
 import type {
   ProfileMatch,
@@ -126,7 +132,7 @@ function profileMatchesFromRows(rows: ClimbMatchRow[]): ProfileMatch[] {
 
 function viewFromUser(
   profile: ProfileRow,
-  grants: ProfileHeaderId[],
+  grants: ProfileGrantId[],
   sessions: ClimbSessionRow[],
   matches: ClimbMatchRow[],
   cutoffSr: number | null,
@@ -177,7 +183,7 @@ function viewFromUser(
     : "gold";
   const headers = headerState({
     peakSr: peakSrForHeaders(peaks, currentSr),
-    grantedHeaderIds: grants,
+    grantedIds: grants,
     equippedHeaderId: headerId,
   });
 
@@ -252,7 +258,7 @@ async function getUserProfile(
 
   const grants = (grantRows ?? [])
     .map((row) => row.grant_id)
-    .filter(isProfileHeaderId);
+    .filter(isProfileGrantId);
   const season = getActiveSeason();
   const latestMode = (matchRows ?? []).at(-1)?.mode ?? "wz";
   const cutoffSr = getBoardMetrics(latestMode, season.id)?.cutoffSr ?? null;

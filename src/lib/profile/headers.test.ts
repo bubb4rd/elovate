@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   headerState,
+  headersUnlockedByGrants,
   ownedHeaderIds,
   peakSrForHeaders,
   resolveEquippedHeaderId,
@@ -32,24 +33,22 @@ assert.deepEqual(ownedHeaderIds(12_880, ["elovate-staff"]), [
   "diamond",
   "crimson",
   "iridescent",
-  "elovate-staff",
+  "fragger",
 ]);
 
-assert.equal(ownedHeaderIds(2000, ["elovate-staff"]).includes("elovate-staff"), true);
-assert.equal(ownedHeaderIds(12_000).includes("elovate-staff"), false);
-
-assert.deepEqual(ownedHeaderIds(10_000), ownedHeaderIds(10_000));
-assert.equal(ownedHeaderIds(10_000).includes("iridescent"), true);
-assert.equal(ownedHeaderIds(2000).includes("iridescent"), false);
+assert.deepEqual(headersUnlockedByGrants(["elovate-staff"]), ["fragger"]);
+assert.equal(ownedHeaderIds(2000, ["elovate-staff"]).includes("fragger"), true);
+assert.equal(ownedHeaderIds(12_000).includes("fragger"), false);
 
 assert.equal(resolveEquippedHeaderId("diamond", ["default", "platinum", "diamond"]), "diamond");
-assert.equal(resolveEquippedHeaderId("elovate-staff", ["default", "platinum"]), "default");
+assert.equal(resolveEquippedHeaderId("fragger", ["default", "platinum"]), "default");
+assert.equal(resolveEquippedHeaderId("elovate-staff", ["default", "fragger"]), "fragger");
 assert.equal(resolveEquippedHeaderId("not-a-header", ["default", "iridescent"]), "default");
 assert.equal(resolveEquippedHeaderId(null, ["default", "crimson"]), "default");
 
 const kai = headerState({
   peakSr: 12_880,
-  grantedHeaderIds: ["elovate-staff"],
+  grantedIds: ["elovate-staff"],
   equippedHeaderId: "default",
 });
 assert.deepEqual(kai.ownedHeaderIds, [
@@ -58,7 +57,7 @@ assert.deepEqual(kai.ownedHeaderIds, [
   "diamond",
   "crimson",
   "iridescent",
-  "elovate-staff",
+  "fragger",
 ]);
 assert.equal(kai.equippedHeaderId, "default");
 

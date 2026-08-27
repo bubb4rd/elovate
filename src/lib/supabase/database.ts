@@ -1,5 +1,5 @@
 import type { Mode } from "@/lib/data/types";
-import type { ProfileHeaderId } from "@/lib/profile/headers";
+import type { ProfileGrantId, ProfileHeaderId } from "@/lib/profile/headers";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ClimbTarget, WzPlacementId } from "@/lib/ranked";
 
@@ -23,7 +23,7 @@ export type ProfileRow = {
 
 export type ProfileGrantRow = {
   profile_id: string;
-  grant_id: ProfileHeaderId;
+  grant_id: ProfileGrantId;
 };
 
 export type ClimbSessionRow = {

@@ -1,6 +1,6 @@
 import type { CutoffPoint, Mode } from "@/lib/data/types";
 import type { ClimbTarget, WzPlacementId } from "@/lib/ranked";
-import type { ProfileHeaderId } from "./headers";
+import type { ProfileGrantId, ProfileHeaderId } from "./headers";
 import type { ProfilePageThemeId } from "./themes";
 
 export type ReputationVotes = {
@@ -62,7 +62,8 @@ export type ProfileView = {
   matches: ProfileMatch[];
   series: CutoffPoint[];
   peaks: ProfilePeaks;
-  grantedHeaderIds: ProfileHeaderId[];
+  /** Capability grants (e.g. `elovate-staff`) — unlock exclusive headers. */
+  grantedHeaderIds: ProfileGrantId[];
   ownedHeaderIds: ProfileHeaderId[];
   equippedHeaderId: ProfileHeaderId;
   pageThemeId: ProfilePageThemeId;

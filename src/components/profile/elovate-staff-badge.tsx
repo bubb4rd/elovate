@@ -3,16 +3,16 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ClimbSessionIcon } from "@/components/icons";
 import { ElovateWordmark } from "@/components/elovate-wordmark";
-import { headerDef } from "@/lib/profile/headers";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
+
+const STAFF_LABEL = "elovate Staff";
 
 export function ElovateStaffBadge() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLSpanElement>(null);
   const panelId = useId();
   const titleId = `${panelId}-title`;
-  const header = headerDef("elovate-staff");
 
   useEffect(() => {
     if (!open) return;
@@ -42,7 +42,7 @@ export function ElovateStaffBadge() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={header.label}
+        aria-label={STAFF_LABEL}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           "inline-flex rounded-[4px] transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer",
@@ -62,7 +62,7 @@ export function ElovateStaffBadge() {
           style={{ zIndex: zIndex.overlay }}
         >
           <p id={titleId} className="text-sm font-semibold text-foreground">
-            {header.label}
+            {STAFF_LABEL}
           </p>
           <div className="mt-2.5 flex items-start gap-2.5">
             <ClimbSessionIcon className="mt-0.5 size-5 shrink-0" aria-hidden />
