@@ -7,6 +7,7 @@ export const PROFILE_HEADER_IDS = [
   "diamond",
   "crimson",
   "iridescent",
+  "elovate-staff",
   "fragger",
 ] as const;
 
@@ -22,7 +23,7 @@ export const GRANT_UNLOCKS_HEADERS: Record<
   ProfileGrantId,
   readonly ProfileHeaderId[]
 > = {
-  "elovate-staff": ["fragger"],
+  "elovate-staff": ["elovate-staff", "fragger"],
 };
 
 export type HeaderKind = "default" | "rank" | "exclusive";
@@ -82,6 +83,13 @@ export const PROFILE_HEADERS: readonly ProfileHeaderDef[] = [
     ink: "black",
   },
   {
+    id: "elovate-staff",
+    label: "elovate Staff",
+    kind: "exclusive",
+    minSr: null,
+    ink: "black",
+  },
+  {
     id: "fragger",
     label: "Fragger",
     kind: "exclusive",
@@ -134,21 +142,12 @@ export function ownedHeaderIds(
   }).map((header) => header.id);
 }
 
-/** Legacy equipped id from before Fragger replaced the staff banner. */
-function normalizeEquippedHeaderId(
-  equippedHeaderId: string | null | undefined,
-): string | null | undefined {
-  if (equippedHeaderId === "elovate-staff") return "fragger";
-  return equippedHeaderId;
-}
-
 export function resolveEquippedHeaderId(
   equippedHeaderId: string | null | undefined,
   owned: readonly ProfileHeaderId[],
 ): ProfileHeaderId {
-  const normalized = normalizeEquippedHeaderId(equippedHeaderId);
-  if (normalized && isProfileHeaderId(normalized) && owned.includes(normalized)) {
-    return normalized;
+  if (equippedHeaderId && isProfileHeaderId(equippedHeaderId) && owned.includes(equippedHeaderId)) {
+    return equippedHeaderId;
   }
   return "default";
 }
@@ -178,9 +177,7 @@ export function readStoredEquippedHeader(slug: string): ProfileHeaderId | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(equippedHeaderStorageKey(slug));
-    if (!raw) return null;
-    const normalized = normalizeEquippedHeaderId(raw);
-    return normalized && isProfileHeaderId(normalized) ? normalized : null;
+    return raw && isProfileHeaderId(raw) ? raw : null;
   } catch {
     return null;
   }

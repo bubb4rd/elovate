@@ -33,16 +33,20 @@ assert.deepEqual(ownedHeaderIds(12_880, ["elovate-staff"]), [
   "diamond",
   "crimson",
   "iridescent",
+  "elovate-staff",
   "fragger",
 ]);
 
-assert.deepEqual(headersUnlockedByGrants(["elovate-staff"]), ["fragger"]);
+assert.deepEqual(headersUnlockedByGrants(["elovate-staff"]), ["elovate-staff", "fragger"]);
 assert.equal(ownedHeaderIds(2000, ["elovate-staff"]).includes("fragger"), true);
+assert.equal(ownedHeaderIds(2000, ["elovate-staff"]).includes("elovate-staff"), true);
 assert.equal(ownedHeaderIds(12_000).includes("fragger"), false);
+assert.equal(ownedHeaderIds(12_000).includes("elovate-staff"), false);
 
 assert.equal(resolveEquippedHeaderId("diamond", ["default", "platinum", "diamond"]), "diamond");
 assert.equal(resolveEquippedHeaderId("fragger", ["default", "platinum"]), "default");
-assert.equal(resolveEquippedHeaderId("elovate-staff", ["default", "fragger"]), "fragger");
+assert.equal(resolveEquippedHeaderId("elovate-staff", ["default", "elovate-staff", "fragger"]), "elovate-staff");
+assert.equal(resolveEquippedHeaderId("fragger", ["default", "elovate-staff", "fragger"]), "fragger");
 assert.equal(resolveEquippedHeaderId("not-a-header", ["default", "iridescent"]), "default");
 assert.equal(resolveEquippedHeaderId(null, ["default", "crimson"]), "default");
 
@@ -57,6 +61,7 @@ assert.deepEqual(kai.ownedHeaderIds, [
   "diamond",
   "crimson",
   "iridescent",
+  "elovate-staff",
   "fragger",
 ]);
 assert.equal(kai.equippedHeaderId, "default");
