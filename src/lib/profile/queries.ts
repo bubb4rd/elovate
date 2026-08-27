@@ -2,7 +2,6 @@ import type { CutoffPoint } from "@/lib/data/types";
 import {
   getActiveSeason,
   getBoardMetrics,
-  getPlayerHistory,
 } from "@/lib/data/queries";
 import { rowToMatch, rowToSession } from "@/lib/history/map";
 import type { WzHistoryMatch } from "@/lib/history";
@@ -11,7 +10,6 @@ import type { ClimbMatchRow, ClimbSessionRow, ProfileRow } from "@/lib/supabase/
 import { createAnonSupabaseClient } from "@/lib/supabase/server";
 import { parseClimbGoals } from "./goals";
 import { headerState, isProfileHeaderId, peakSrForHeaders, type ProfileHeaderId } from "./headers";
-import { getSeedProfile } from "./seed";
 import { isProfilePageThemeId, type ProfilePageThemeId } from "./themes";
 import type {
   ProfileMatch,
@@ -20,16 +18,7 @@ import type {
   ProfileView,
   ReputationVoteValue,
   ReputationVotes,
-  SeedProfile,
 } from "./types";
-
-function photo(seed: string, width: number, height: number): string {
-  return `https://picsum.photos/seed/${seed}/${width}/${height}`;
-}
-
-function emptyReputation(): Pick<ProfileView, "votes" | "viewerVote" | "canChangeVote"> {
-  return { votes: { ups: 0, downs: 0 }, viewerVote: null, canChangeVote: false };
-}
 
 function utcDateString(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
@@ -44,9 +33,7 @@ function canChangeVoteToday(updatedAt: string | null | undefined): boolean {
   return utcDateString(updatedAt) < todayUtcDateString();
 }
 
-function aggregateVotes(
-  rows: { value: number }[],
-): ReputationVotes {
+function aggregateVotes(rows: { value: number }[]): ReputationVotes {
   let ups = 0;
   let downs = 0;
   for (const row of rows) {
@@ -63,80 +50,6 @@ function seriesFromMatches(matches: ProfileMatch[]): CutoffPoint[] {
     rank1Sr: match.srAfter,
     deltaCutoff: index === 0 ? null : match.net,
   }));
-}
-
-function peaksFromSeed(profile: SeedProfile, cutoffSr: number | null): ProfilePeaks {
-  if (profile.matches.length === 0 && profile.sessions.length === 0) {
-    return {
-      seasonPeakSr: null,
-      allTimePeakSr: null,
-      peakRankLabel: null,
-      peakBoardRank: null,
-      bestSession: null,
-    };
-  }
-
-  const seasonPeakSr = Math.max(
-    profile.currentSr,
-    ...profile.matches.map((match) => match.srAfter),
-    ...profile.sessions.map((session) => session.endSr),
-  );
-  const allTimePeakSr =
-    profile.allTimePeakSr != null && profile.allTimePeakSr > seasonPeakSr
-      ? profile.allTimePeakSr
-      : null;
-  const peakSr = allTimePeakSr ?? seasonPeakSr;
-  const bestSession = profile.sessions.reduce<ProfileSession | null>((best, session) => {
-    if (!best || session.net > best.net) return session;
-    return best;
-  }, null);
-
-  return {
-    seasonPeakSr,
-    allTimePeakSr,
-    peakRankLabel: rankFromSr(peakSr, cutoffSr).label,
-    peakBoardRank: profile.peakBoardRank ?? null,
-    bestSession,
-  };
-}
-
-function viewFromSeed(profile: SeedProfile, cutoffSr: number | null, seasonName: string | null): ProfileView {
-  const matches = [...profile.matches].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  const currentSr = matches[matches.length - 1]?.srAfter ?? profile.currentSr;
-  const peaks = peaksFromSeed({ ...profile, currentSr, matches }, cutoffSr);
-  const grantedHeaderIds = profile.grantedHeaderIds ?? [];
-  const headers = headerState({
-    peakSr: peakSrForHeaders(peaks, currentSr),
-    grantedHeaderIds,
-    equippedHeaderId: profile.equippedHeaderId,
-  });
-
-  return {
-    id: null,
-    slug: profile.slug,
-    displayName: profile.displayName,
-    handle: profile.handle,
-    bannerUrl: profile.bannerUrl,
-    avatarUrl: profile.avatarUrl,
-    mode: profile.mode,
-    currentSr,
-    cutoffSr,
-    boardRank: null,
-    seasonName,
-    votes: profile.votes,
-    viewerVote: null,
-    canChangeVote: false,
-    matches: [...matches].reverse(),
-    series: seriesFromMatches(matches),
-    peaks,
-    grantedHeaderIds,
-    ownedHeaderIds: headers.ownedHeaderIds,
-    equippedHeaderId: headers.equippedHeaderId,
-    pageThemeId: "gold",
-    preferredMode: profile.mode,
-    climbGoals: [],
-    source: "seed",
-  };
 }
 
 function climbPeaks(
@@ -273,7 +186,7 @@ function viewFromUser(
     slug: profile.slug,
     displayName: profile.display_name,
     handle: `@${profile.slug}`,
-    bannerUrl: photo(`${profile.slug}-banner`, 1600, 480),
+    bannerUrl: "",
     avatarUrl: profile.avatar_url ?? "",
     mode,
     currentSr,
@@ -358,59 +271,5 @@ export async function getProfile(
   slug: string,
   viewerId?: string | null,
 ): Promise<ProfileView | null> {
-  const fromDb = await getUserProfile(slug, viewerId);
-  if (fromDb) return fromDb;
-
-  const season = getActiveSeason();
-  const seed = getSeedProfile(slug);
-  const metrics = seed ? getBoardMetrics(seed.mode, season.id) : null;
-
-  if (seed) {
-    return viewFromSeed(seed, metrics?.cutoffSr ?? null, season.name);
-  }
-
-  const history = getPlayerHistory(slug);
-  if (!history) return null;
-
-  const { player, appearances } = history;
-  const latest = appearances[appearances.length - 1];
-  const mode = latest?.mode ?? "wz";
-  const cutoffSr = getBoardMetrics(mode, latest?.season.id ?? season.id)?.cutoffSr ?? null;
-  const series: CutoffPoint[] = appearances.map((appearance, index) => ({
-    capturedAt: appearance.capturedAt,
-    cutoffSr: appearance.sr,
-    rank1Sr: appearance.sr,
-    deltaCutoff: index === 0 ? null : appearance.sr - appearances[index - 1]!.sr,
-  }));
-
-  return {
-    id: null,
-    slug: player.slug,
-    displayName: player.displayName,
-    handle: `@${player.slug}`,
-    bannerUrl: photo(`${player.slug}-banner`, 1600, 480),
-    avatarUrl: photo(`${player.slug}-avatar`, 256, 256),
-    mode,
-    currentSr: latest?.sr ?? 0,
-    cutoffSr,
-    boardRank: latest?.rank ?? null,
-    seasonName: latest?.season.name ?? season.name,
-    ...emptyReputation(),
-    matches: [],
-    series,
-    peaks: {
-      seasonPeakSr: null,
-      allTimePeakSr: null,
-      peakRankLabel: null,
-      peakBoardRank: null,
-      bestSession: null,
-    },
-    grantedHeaderIds: [],
-    ownedHeaderIds: ["default"],
-    equippedHeaderId: "default",
-    pageThemeId: "gold",
-    preferredMode: mode,
-    climbGoals: [],
-    source: "ladder",
-  };
+  return getUserProfile(slug, viewerId);
 }

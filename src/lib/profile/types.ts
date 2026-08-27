@@ -36,23 +36,6 @@ export type ProfileSession = {
   endSr: number;
 };
 
-export type SeedProfile = {
-  slug: string;
-  displayName: string;
-  handle: string;
-  bannerUrl: string;
-  avatarUrl: string;
-  mode: Mode;
-  currentSr: number;
-  votes: ReputationVotes;
-  allTimePeakSr?: number;
-  peakBoardRank?: number | null;
-  grantedHeaderIds?: ProfileHeaderId[];
-  equippedHeaderId?: ProfileHeaderId;
-  matches: ProfileMatch[];
-  sessions: ProfileSession[];
-};
-
 export type ProfilePeaks = {
   seasonPeakSr: number | null;
   allTimePeakSr: number | null;
@@ -86,5 +69,5 @@ export type ProfileView = {
   preferredMode: Mode;
   climbGoals: ClimbTarget[];
   isPrivate?: boolean;
-  source: "seed" | "ladder" | "user";
+  source: "user";
 };

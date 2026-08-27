@@ -28,10 +28,6 @@ export function getSeason(id: string): Season | undefined {
   return db().seasons.find((s) => s.id === id);
 }
 
-export function getPlayer(slug: string): Player | undefined {
-  return db().players.find((p) => p.slug === slug);
-}
-
 export function getPlayerById(id: string): Player | undefined {
   return db().players.find((p) => p.id === id);
 }
@@ -58,55 +54,6 @@ export function getCutoffSeries(mode: Mode, seasonId: string): CutoffPoint[] {
       deltaCutoff: prev ? snap.cutoffSr - prev.cutoffSr : null,
     };
   });
-}
-
-/** Two-point series spanning the same window as `change24h`. */
-export function getCutoff24hSeries(mode: Mode, seasonId: string): CutoffPoint[] {
-  const all = snapshotsFor(mode, seasonId);
-  const latest = all[all.length - 1];
-  if (!latest) return [];
-  const dayAgo = nearestAtLeastHoursAgo(all, latest, 24);
-  if (!dayAgo) {
-    return [
-      {
-        capturedAt: latest.capturedAt,
-        cutoffSr: latest.cutoffSr,
-        rank1Sr: latest.rank1Sr,
-        deltaCutoff: null,
-      },
-    ];
-  }
-  return [
-    {
-      capturedAt: dayAgo.capturedAt,
-      cutoffSr: dayAgo.cutoffSr,
-      rank1Sr: dayAgo.rank1Sr,
-      deltaCutoff: null,
-    },
-    {
-      capturedAt: latest.capturedAt,
-      cutoffSr: latest.cutoffSr,
-      rank1Sr: latest.rank1Sr,
-      deltaCutoff: latest.cutoffSr - dayAgo.cutoffSr,
-    },
-  ];
-}
-
-export function overlayLiveCutoffSeries(
-  series: CutoffPoint[],
-  live: LiveWzBoard,
-  change24h: number | null,
-): CutoffPoint[] {
-  if (series.length === 0) return series;
-  const next = series.map((point) => ({ ...point }));
-  const last = next[next.length - 1]!;
-  next[next.length - 1] = {
-    ...last,
-    capturedAt: live.fetchedAt,
-    cutoffSr: live.cutoffSr,
-    deltaCutoff: change24h,
-  };
-  return next;
 }
 
 function nearestAtLeastHoursAgo(all: Snapshot[], latest: Snapshot, hours: number): Snapshot | undefined {
@@ -208,39 +155,5 @@ export function getHomeSummary() {
     season,
     wz: getBoardMetrics("wz", season.id),
     mp: getBoardMetrics("mp", season.id),
-    wzSeries: getCutoffSeries("wz", season.id),
-    mpSeries: getCutoffSeries("mp", season.id),
   };
-}
-
-export type PlayerAppearance = {
-  mode: Mode;
-  season: Season;
-  capturedAt: string;
-  rank: number;
-  sr: number;
-};
-
-export function getPlayerHistory(slug: string): {
-  player: Player;
-  appearances: PlayerAppearance[];
-} | null {
-  const player = getPlayer(slug);
-  if (!player) return null;
-  const appearances: PlayerAppearance[] = [];
-  for (const row of db().rows) {
-    if (row.playerId !== player.id) continue;
-    const snap = db().snapshots.find((s) => s.id === row.snapshotId);
-    const season = snap ? getSeason(snap.seasonId) : undefined;
-    if (!snap || !season) continue;
-    appearances.push({
-      mode: snap.mode,
-      season,
-      capturedAt: snap.capturedAt,
-      rank: row.rank,
-      sr: row.sr,
-    });
-  }
-  appearances.sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
-  return { player, appearances };
 }

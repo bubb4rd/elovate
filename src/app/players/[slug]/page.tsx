@@ -2,7 +2,14 @@ import { ProfilePageContent } from "@/components/profile/profile-page-content";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { getViewerProfile } from "@/lib/auth/viewer";
-import { listSeasons } from "@/lib/data/queries";
+import { liveWzHistoryFor } from "@/lib/data/live-history";
+import {
+  getActiveSeason,
+  getBoardMetrics,
+  getLiveWzBoard,
+  listSeasons,
+  overlayLiveMetrics,
+} from "@/lib/data/queries";
 import { getProfile } from "@/lib/profile/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
@@ -28,10 +35,21 @@ export default async function PlayerPage({
   const profile = await getProfile(slug, viewer?.id);
   if (!profile) notFound();
   if (profile.isPrivate && profile.id !== viewer?.id) notFound();
+
+  const season = getActiveSeason();
   const seasons = listSeasons();
-  const active = seasons.find((season) => season.isActive);
-  const firstSr = profile.series[0]?.cutoffSr;
-  const lastSr = profile.series[profile.series.length - 1]?.cutoffSr;
+  const seedMetrics = getBoardMetrics(profile.mode, season.id);
+  const live = profile.mode === "wz" ? await getLiveWzBoard() : null;
+  const history = await liveWzHistoryFor(live, season.id);
+  const metrics =
+    live && seedMetrics
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      : seedMetrics;
+  const cutoffSr = metrics?.cutoffSr ?? profile.cutoffSr ?? IRIDESCENT_SR;
+  const profileWithLive = { ...profile, cutoffSr };
+
+  const firstSr = profileWithLive.series[0]?.cutoffSr;
+  const lastSr = profileWithLive.series[profileWithLive.series.length - 1]?.cutoffSr;
   const srDelta =
     firstSr != null && lastSr != null ? lastSr - firstSr : null;
 
@@ -40,13 +58,14 @@ export default async function PlayerPage({
       <SiteNav
         mode={profile.mode}
         seasons={seasons}
-        seasonId={active?.id}
-        cutoffSr={profile.cutoffSr ?? IRIDESCENT_SR}
+        seasonId={season.id}
+        cutoffSr={cutoffSr}
+        nextUpdateAt={live?.nextUpdateAt}
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6">
         <ProfilePageContent
           key={`${profile.source}-${profile.slug}`}
-          profile={profile}
+          profile={profileWithLive}
           srDelta={srDelta}
           canEdit={Boolean(viewer && profile.id && viewer.id === profile.id)}
           isSignedIn={Boolean(viewer)}
