@@ -1,6 +1,7 @@
 import { ProfilePageContent } from "@/components/profile/profile-page-content";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
+import { getViewerProfile } from "@/lib/auth/viewer";
 import { listSeasons } from "@/lib/data/queries";
 import { getProfile } from "@/lib/profile/queries";
 import type { Metadata } from "next";
@@ -12,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const profile = getProfile(slug);
+  const profile = await getProfile(slug);
   return { title: profile?.displayName ?? "Player" };
 }
 
@@ -22,8 +23,9 @@ export default async function PlayerPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const profile = getProfile(slug);
+  const [profile, viewer] = await Promise.all([getProfile(slug), getViewerProfile()]);
   if (!profile) notFound();
+  if (profile.isPrivate && profile.id !== viewer?.id) notFound();
   const seasons = listSeasons();
   const active = seasons.find((season) => season.isActive);
   const firstSr = profile.series[0]?.cutoffSr;
@@ -35,7 +37,12 @@ export default async function PlayerPage({
     <div className="flex min-h-[100dvh] flex-col">
       <SiteNav mode={profile.mode} seasons={seasons} seasonId={active?.id} />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6">
-        <ProfilePageContent profile={profile} srDelta={srDelta} />
+        <ProfilePageContent
+          key={`${profile.source}-${profile.slug}`}
+          profile={profile}
+          srDelta={srDelta}
+          canEdit={Boolean(viewer && profile.id && viewer.id === profile.id)}
+        />
       </main>
       <SiteFooter />
     </div>

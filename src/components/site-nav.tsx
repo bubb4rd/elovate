@@ -5,6 +5,7 @@ import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
 import { NavCutoff } from "@/components/nav-cutoff";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NavSession } from "@/components/nav-session";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { zIndex } from "@/lib/z-index";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export function SiteNav({
   cutoffSr,
   nextUpdateAt,
   boardStatus = "live",
+  loginNext,
 }: {
   mode?: Mode;
   seasons: Season[];
@@ -26,6 +28,7 @@ export function SiteNav({
   cutoffSr?: number;
   nextUpdateAt?: string;
   boardStatus?: BoardFreshnessStatus;
+  loginNext?: string;
 }) {
   const liveMode = mode ?? "wz";
   const activeSeason = seasons.find((s) => s.isActive);
@@ -84,6 +87,7 @@ export function SiteNav({
               boardStatus={boardStatus}
             />
           ) : null}
+          <NavSession loginNext={loginNext ?? (mode ? `/${mode}` : "/")} />
           <ThemeToggle />
         </div>
       </div>

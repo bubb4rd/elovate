@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { CaretDown, CaretUp, PencilSimple } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
@@ -13,15 +13,7 @@ import { ProfileBanner } from "@/components/profile/profile-banner";
 import { ReputationChip } from "@/components/profile/reputation-chip";
 import { SiteTooltip } from "@/components/ui/tooltip";
 import { formatDelta, formatSr } from "@/lib/format";
-import {
-  readStoredAvatar,
-  readStoredDisplayName,
-} from "@/lib/profile/edit-storage";
-import {
-  readStoredEquippedHeader,
-  resolveEquippedHeaderId,
-  type ProfileHeaderId,
-} from "@/lib/profile/headers";
+import type { ProfileHeaderId } from "@/lib/profile/headers";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileView } from "@/lib/profile/types";
 import { cn } from "@/lib/utils";
@@ -30,17 +22,18 @@ export function ProfileHero({
   profile,
   srDelta,
   pageThemeId,
+  canEdit,
   onPageThemeChange,
 }: {
   profile: ProfileView;
   srDelta: number | null;
   pageThemeId: ProfilePageThemeId;
+  canEdit: boolean;
   onPageThemeChange: (id: ProfilePageThemeId) => void;
 }) {
   const up = srDelta != null && srDelta > 0;
   const down = srDelta != null && srDelta < 0;
   const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
-  const canEdit = profile.source === "seed";
   const reduce = useReducedMotion();
 
   const [displayName, setDisplayName] = useState(profile.displayName);
@@ -48,36 +41,12 @@ export function ProfileHero({
   const [equipped, setEquipped] = useState<ProfileHeaderId>(profile.equippedHeaderId);
   const [editOpen, setEditOpen] = useState(false);
 
-  useEffect(() => {
-    setDisplayName(profile.displayName);
-    setAvatarUrl(profile.avatarUrl);
-    setEquipped(profile.equippedHeaderId);
-    if (profile.source !== "seed") return;
-    const storedName = readStoredDisplayName(profile.slug);
-    const storedAvatar = readStoredAvatar(profile.slug);
-    const storedHeader = readStoredEquippedHeader(profile.slug);
-    if (storedName) setDisplayName(storedName);
-    if (storedAvatar) setAvatarUrl(storedAvatar);
-    setEquipped(
-      resolveEquippedHeaderId(storedHeader ?? profile.equippedHeaderId, profile.ownedHeaderIds),
-    );
-  }, [
-    profile.slug,
-    profile.source,
-    profile.displayName,
-    profile.avatarUrl,
-    profile.equippedHeaderId,
-    profile.ownedHeaderIds,
-  ]);
-
   function applyEdits(saved: ProfileEditDraft) {
     setDisplayName(saved.displayName);
     setAvatarUrl(saved.avatarUrl);
     setEquipped(saved.equippedHeaderId);
     onPageThemeChange(saved.pageThemeId);
   }
-
-  const avatarIsDataUrl = avatarUrl.startsWith("data:");
 
   return (
     <section>
@@ -108,8 +77,10 @@ export function ProfileHero({
         ) : null}
       </div>
 
+      {canEdit && profile.id ? (
       <ProfileEditModal
         open={editOpen}
+        userId={profile.id}
         slug={profile.slug}
         handle={profile.handle}
         ownedHeaderIds={profile.ownedHeaderIds}
@@ -122,13 +93,14 @@ export function ProfileHero({
         onSave={applyEdits}
         onClose={() => setEditOpen(false)}
       />
+      ) : null}
 
       <div className="relative z-10 -mt-10 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-5 gap-y-3 pb-6 pl-12 pr-6 sm:grid-cols-[auto_minmax(0,1fr)_auto] md:-mt-12 md:pl-28 md:pr-10 lg:pl-18">
         <div className="relative size-32 shrink-0 overflow-hidden rounded-full ring-2 ring-accent md:size-36">
-          {avatarIsDataUrl ? (
+          {avatarUrl.startsWith("data:") ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt="" className="size-full object-cover" />
-          ) : (
+          ) : avatarUrl ? (
             <Image
               src={avatarUrl}
               alt=""
@@ -137,6 +109,10 @@ export function ProfileHero({
               priority
               className="size-full object-cover"
             />
+          ) : (
+            <span className="flex size-full items-center justify-center bg-surface text-2xl font-semibold text-muted">
+              {displayName.trim().slice(0, 2).toUpperCase() || "?"}
+            </span>
           )}
         </div>
 

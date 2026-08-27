@@ -1,32 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CutoffChart } from "@/components/cutoff-chart";
 import { MatchHistory } from "@/components/profile/match-history";
 import { ProfileHero } from "@/components/profile/profile-hero";
 import { ProfileThemeProvider } from "@/components/profile/profile-theme-provider";
 import { SrProgress } from "@/components/profile/sr-progress";
-import {
-  readStoredPageTheme,
-  type ProfilePageThemeId,
-} from "@/lib/profile/themes";
+import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileView } from "@/lib/profile/types";
 
 export function ProfilePageContent({
   profile,
   srDelta,
+  canEdit,
 }: {
   profile: ProfileView;
   srDelta: number | null;
+  canEdit: boolean;
 }) {
-  const canEdit = profile.source === "seed";
-  const [pageThemeId, setPageThemeId] = useState<ProfilePageThemeId>("gold");
-
-  useEffect(() => {
-    if (!canEdit) return;
-    const stored = readStoredPageTheme(profile.slug);
-    if (stored) setPageThemeId(stored);
-  }, [profile.slug, canEdit]);
+  const [pageThemeId, setPageThemeId] = useState<ProfilePageThemeId>(profile.pageThemeId);
 
   return (
     <ProfileThemeProvider themeId={pageThemeId}>
@@ -34,6 +26,7 @@ export function ProfilePageContent({
         profile={profile}
         srDelta={srDelta}
         pageThemeId={pageThemeId}
+        canEdit={canEdit}
         onPageThemeChange={setPageThemeId}
       />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">

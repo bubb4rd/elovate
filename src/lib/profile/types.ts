@@ -1,6 +1,7 @@
 import type { CutoffPoint, Mode } from "@/lib/data/types";
-import type { WzPlacementId } from "@/lib/ranked";
+import type { ClimbTarget, WzPlacementId } from "@/lib/ranked";
 import type { ProfileHeaderId } from "./headers";
+import type { ProfilePageThemeId } from "./themes";
 
 export type ReputationVotes = {
   ups: number;
@@ -59,6 +60,7 @@ export type ProfilePeaks = {
 };
 
 export type ProfileView = {
+  id: string | null;
   slug: string;
   displayName: string;
   handle: string;
@@ -76,5 +78,9 @@ export type ProfileView = {
   grantedHeaderIds: ProfileHeaderId[];
   ownedHeaderIds: ProfileHeaderId[];
   equippedHeaderId: ProfileHeaderId;
-  source: "seed" | "ladder";
+  pageThemeId: ProfilePageThemeId;
+  preferredMode: Mode;
+  climbGoals: ClimbTarget[];
+  isPrivate?: boolean;
+  source: "seed" | "ladder" | "user";
 };

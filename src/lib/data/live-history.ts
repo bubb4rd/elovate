@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAnonSupabaseClient } from "@/lib/supabase/server";
 import { windowCutoffHistory, type StoredCutoff } from "./cutoff-window";
 import type { CutoffPoint, LiveWzBoard, Mode } from "./types";
 
@@ -9,7 +9,7 @@ export async function getStoredCutoffSnapshots(
   mode: Mode,
   seasonId: string,
 ): Promise<StoredCutoff[]> {
-  const supabase = createServerSupabaseClient();
+  const supabase = createAnonSupabaseClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase

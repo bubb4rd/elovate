@@ -16,6 +16,8 @@ export {
   winStreak,
 } from "./sessions";
 export { createLocalHistoryStore, historyKey } from "./store";
+export { createHistoryStore } from "./synced-store";
+export { mergeHistory } from "./merge";
 export {
   SESSION_SHARE_HEIGHT,
   SESSION_SHARE_RADIUS,

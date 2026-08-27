@@ -7,12 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx src/lib/history/sessions.test.ts && node --import tsx src/lib/history/share.test.ts && node --import tsx src/lib/ocr/parse-sr-breakdown.test.ts && node --import tsx src/lib/ocr/error-matrix.test.ts && node --import tsx src/lib/ocr/prepare-upload-image.test.ts && node --import tsx src/lib/data/live-history.test.ts && node --import tsx src/lib/profile/headers.test.ts && node --import tsx src/lib/profile/themes.test.ts"
+    "test": "node --import tsx src/lib/history/sessions.test.ts && node --import tsx src/lib/history/share.test.ts && node --import tsx src/lib/history/merge.test.ts && node --import tsx src/lib/ocr/parse-sr-breakdown.test.ts && node --import tsx src/lib/ocr/error-matrix.test.ts && node --import tsx src/lib/ocr/prepare-upload-image.test.ts && node --import tsx src/lib/data/live-history.test.ts && node --import tsx src/lib/profile/headers.test.ts && node --import tsx src/lib/profile/themes.test.ts && node --import tsx src/lib/profile/slug.test.ts"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.7",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-slot": "^1.3.3",
+    "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.109.0",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",

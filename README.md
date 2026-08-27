@@ -53,6 +53,10 @@ supabase db query --linked -f supabase/cron/schedule_poll_wz_cutoff.sql
 
 The job POSTs every 15 minutes. 24h stays empty until a snapshot is at least 24 hours older than the latest live fetch.
 
+## Auth / profiles
+
+Push profile migrations to hosted with `supabase db push` (includes onboarding columns on `profiles`). Existing auth users without a profile row need either a re-signup (trigger) or a one-off insert matching `private.handle_new_user`. After sign-in, incomplete profiles are sent to `/onboarding`.
+
 ## Getting Started
 
 First, run the development server:

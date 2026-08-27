@@ -2,19 +2,16 @@
 
 import { Camera, CircleNotch, X } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { LinkedAccounts } from "@/components/profile/linked-accounts";
 import { ProfileHeaderPicker } from "@/components/profile/profile-header-picker";
 import { ProfileThemePicker } from "@/components/profile/profile-theme-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  readFileAsDataUrl,
-  validateAvatarFile,
-  writeStoredAvatar,
-  writeStoredDisplayName,
-} from "@/lib/profile/edit-storage";
+import { validateAvatarFile } from "@/lib/profile/edit-storage";
 import { writeStoredEquippedHeader, type ProfileHeaderId } from "@/lib/profile/headers";
+import { saveProfileEdits } from "@/lib/profile/save";
 import {
   writeStoredPageTheme,
   type ProfilePageThemeId,
@@ -31,6 +28,7 @@ export type ProfileEditDraft = {
 
 export function ProfileEditModal({
   open,
+  userId,
   slug,
   handle,
   ownedHeaderIds,
@@ -39,6 +37,7 @@ export function ProfileEditModal({
   onClose,
 }: {
   open: boolean;
+  userId: string;
   slug: string;
   handle: string;
   ownedHeaderIds: readonly ProfileHeaderId[];
@@ -49,7 +48,11 @@ export function ProfileEditModal({
   const titleId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const reduce = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [displayName, setDisplayName] = useState(draft.displayName);
   const [avatarUrl, setAvatarUrl] = useState(draft.avatarUrl);
   const [equippedHeaderId, setEquippedHeaderId] = useState(draft.equippedHeaderId);
@@ -57,24 +60,26 @@ export function ProfileEditModal({
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState(draft.avatarUrl);
 
   const spring = reduce
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 380, damping: 30, mass: 0.85 };
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
     if (!open) return;
+    /* eslint-disable react-hooks/set-state-in-effect -- reset form when the dialog opens */
     setDisplayName(draft.displayName);
     setAvatarUrl(draft.avatarUrl);
+    setPreviewUrl(draft.avatarUrl);
+    setAvatarFile(null);
     setEquippedHeaderId(draft.equippedHeaderId);
     setPageThemeId(draft.pageThemeId);
     setAvatarError(null);
     setNameError(null);
     setSaving(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, draft.displayName, draft.avatarUrl, draft.equippedHeaderId, draft.pageThemeId]);
 
   useEffect(() => {
@@ -94,8 +99,8 @@ export function ProfileEditModal({
     }
     setAvatarError(null);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setAvatarUrl(dataUrl);
+      setAvatarFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
     } catch {
       setAvatarError("Could not load that image.");
     }
@@ -109,16 +114,24 @@ export function ProfileEditModal({
     }
     setNameError(null);
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, reduce ? 0 : 420));
-    writeStoredDisplayName(slug, trimmed);
-    if (avatarUrl.startsWith("data:")) {
-      writeStoredAvatar(slug, avatarUrl);
+    const result = await saveProfileEdits({
+      userId,
+      displayName: trimmed,
+      equippedHeaderId,
+      pageThemeId,
+      avatarFile,
+      avatarUrl,
+    });
+    if ("error" in result) {
+      setAvatarError(result.error);
+      setSaving(false);
+      return;
     }
     writeStoredEquippedHeader(slug, equippedHeaderId);
     writeStoredPageTheme(slug, pageThemeId);
     const saved: ProfileEditDraft = {
       displayName: trimmed,
-      avatarUrl,
+      avatarUrl: result.avatarUrl,
       equippedHeaderId,
       pageThemeId,
     };
@@ -186,8 +199,14 @@ export function ProfileEditModal({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]",
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={avatarUrl} alt="" className="size-full object-cover" />
+              {previewUrl || avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl || avatarUrl} alt="" className="size-full object-cover" />
+              ) : (
+                <span className="flex size-full items-center justify-center bg-[#0a0a0b] text-sm font-semibold text-zinc-400">
+                  {displayName.trim().slice(0, 2).toUpperCase() || "?"}
+                </span>
+              )}
               <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                 <Camera weight="bold" className="size-5 text-white" />
               </span>
@@ -248,6 +267,8 @@ export function ProfileEditModal({
               onSelect={setEquippedHeaderId}
             />
           </div>
+
+          <LinkedAccounts nextPath={`/players/${slug}`} disabled={saving} />
         </div>
 
         <div className="mt-5 flex gap-2">
