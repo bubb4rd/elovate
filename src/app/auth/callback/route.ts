@@ -35,7 +35,8 @@ export async function GET(request: Request) {
           token_hash: tokenHash!,
         });
     if (!error) {
-      return redirect(await destinationAfterSession(supabase, next));
+      const destination = await destinationAfterSession(supabase, next);
+      return redirect(`/auth/complete?next=${encodeURIComponent(destination)}`);
     }
   }
 
