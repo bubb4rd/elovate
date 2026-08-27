@@ -1,4 +1,5 @@
 import { CutoffNumeral } from "@/components/cutoff-numeral";
+import { DesktopHomeTeaser } from "@/components/desktop-home-teaser";
 import { HomeCutoffObject } from "@/components/home-cutoff-object";
 import { HomeHeroCopy } from "@/components/home-hero-copy";
 import { ModePick } from "@/components/mode-pick";
@@ -52,6 +53,7 @@ export default async function Home() {
         <HomeHeroCopy />
       </section>
       <ModePick mp={mp} wz={wz} />
+      <DesktopHomeTeaser />
       <SiteFooter
         freshness={
           capturedAt
