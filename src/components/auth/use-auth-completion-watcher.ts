@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { subscribeAuthComplete } from "@/lib/auth/cross-tab-auth";
 import { destinationAfterSession } from "@/lib/auth/post-auth";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import type { Database } from "@/lib/supabase/database";
 
 const POLL_MS = 1500;
 
@@ -27,28 +29,31 @@ export function useAuthCompletionWatcher({
       return;
     }
 
-    const supabase = createBrowserSupabaseClient();
-    if (!supabase) return;
+    const maybeClient = createBrowserSupabaseClient();
+    if (!maybeClient) return;
 
-    async function complete(fromBroadcastNext?: string) {
-      if (completingRef.current) return;
+    const supabase: SupabaseClient<Database> = maybeClient;
+    let cancelled = false;
+
+    const complete = async (fromBroadcastNext?: string) => {
+      if (cancelled || completingRef.current) return;
       completingRef.current = true;
       setCompleting(true);
 
       const path =
-        fromBroadcastNext ??
-        (await destinationAfterSession(supabase!, next));
+        fromBroadcastNext ?? (await destinationAfterSession(supabase, next));
 
       router.replace(path);
       router.refresh();
-    }
+    };
 
-    async function checkSession() {
+    const checkSession = async () => {
+      if (cancelled) return;
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         await complete();
       }
-    }
+    };
 
     void checkSession();
 
@@ -60,20 +65,21 @@ export function useAuthCompletionWatcher({
       void checkSession();
     }, POLL_MS);
 
-    function onFocus() {
+    const onFocus = () => {
       void checkSession();
-    }
+    };
 
-    function onVisibilityChange() {
+    const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         void checkSession();
       }
-    }
+    };
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
+      cancelled = true;
       unsubscribe();
       window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
