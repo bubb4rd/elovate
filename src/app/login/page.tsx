@@ -38,7 +38,7 @@ export default async function LoginPage({
         <div className="mx-auto w-full max-w-sm">
           <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
           <p className="mt-2 text-sm text-muted">
-            Use a one-time email code or Discord. Same account can hold both.
+            We email you a sign-in link, or continue with Discord. Same account can hold both.
           </p>
           {isSupabaseConfigured() ? (
             <LoginForm nextPath={params.next} errorCode={params.error} />
