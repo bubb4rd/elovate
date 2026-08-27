@@ -54,6 +54,21 @@ export type ClimbMatchRow = {
   sr_per_win: number | null;
 };
 
+export type ProfileVoteRow = {
+  voter_id: string;
+  profile_id: string;
+  value: -1 | 1;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CastProfileVoteResult = {
+  ups: number;
+  downs: number;
+  viewer_vote: -1 | 1;
+  can_change_vote: boolean;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -136,9 +151,29 @@ export type Database = {
         Update: Partial<Omit<ClimbMatchRow, "id" | "user_id">>;
         Relationships: [];
       };
+      profile_votes: {
+        Row: ProfileVoteRow;
+        Insert: {
+          voter_id: string;
+          profile_id: string;
+          value: -1 | 1;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          value?: -1 | 1;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      cast_profile_vote: {
+        Args: { target_id: string; vote: number };
+        Returns: CastProfileVoteResult;
+      };
+    };
     CompositeTypes: Record<string, never>;
     Enums: {
       mode: Mode;

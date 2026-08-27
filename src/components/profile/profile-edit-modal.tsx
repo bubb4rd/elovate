@@ -4,7 +4,6 @@ import { Camera, CircleNotch, X } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { LinkedAccounts } from "@/components/profile/linked-accounts";
 import { ProfileHeaderPicker } from "@/components/profile/profile-header-picker";
 import { ProfileThemePicker } from "@/components/profile/profile-theme-picker";
 import { Button } from "@/components/ui/button";
@@ -267,8 +266,6 @@ export function ProfileEditModal({
               onSelect={setEquippedHeaderId}
             />
           </div>
-
-          <LinkedAccounts nextPath={`/players/${slug}`} disabled={saving} />
         </div>
 
         <div className="mt-5 flex gap-2">

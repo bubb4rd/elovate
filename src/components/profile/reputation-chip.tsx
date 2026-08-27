@@ -7,17 +7,32 @@ import { ReputationModal } from "@/components/profile/reputation-modal";
 import { formatDelta } from "@/lib/format";
 import { scoreReputation } from "@/lib/profile/reputation";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
-import type { ReputationVotes } from "@/lib/profile/types";
+import type { ReputationVoteValue, ReputationVotes } from "@/lib/profile/types";
 import { cn } from "@/lib/utils";
 
 export function ReputationChip({
-  votes,
+  profileId,
+  profileSlug,
+  votes: initialVotes,
+  viewerVote: initialViewerVote,
+  canChangeVote: initialCanChangeVote,
+  isSignedIn,
+  isOwnProfile,
   themeId,
 }: {
+  profileId: string | null;
+  profileSlug: string;
   votes: ReputationVotes;
+  viewerVote: ReputationVoteValue | null;
+  canChangeVote: boolean;
+  isSignedIn: boolean;
+  isOwnProfile: boolean;
   themeId: ProfilePageThemeId;
 }) {
   const [open, setOpen] = useState(false);
+  const [votes, setVotes] = useState(initialVotes);
+  const [viewerVote, setViewerVote] = useState(initialViewerVote);
+  const [canChangeVote, setCanChangeVote] = useState(initialCanChangeVote);
   const score = scoreReputation(votes);
   const reduce = useReducedMotion();
 
@@ -44,11 +59,9 @@ export function ReputationChip({
         />
         <span>
           Reputation
-          {score.unrated ? null : (
-            <span className="numeric ml-1.5 text-sm font-semibold tracking-normal normal-case">
-              {formatDelta(score.raw)}
-            </span>
-          )}
+          <span className="numeric ml-1.5 text-sm font-semibold tracking-normal normal-case">
+            {formatDelta(score.raw)}
+          </span>
         </span>
         <CaretUpDown
           weight="bold"
@@ -57,9 +70,20 @@ export function ReputationChip({
       </motion.button>
       <ReputationModal
         open={open}
+        profileId={profileId}
+        profileSlug={profileSlug}
         votes={votes}
+        viewerVote={viewerVote}
+        canChangeVote={canChangeVote}
+        isSignedIn={isSignedIn}
+        isOwnProfile={isOwnProfile}
         themeId={themeId}
         onClose={() => setOpen(false)}
+        onVoted={(next) => {
+          setVotes({ ups: next.ups, downs: next.downs });
+          setViewerVote(next.viewerVote);
+          setCanChangeVote(next.canChangeVote);
+        }}
       />
     </>
   );

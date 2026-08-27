@@ -1,7 +1,5 @@
 import type { ReputationVotes } from "./types";
 
-export const REPUTATION_FLOOR = 5;
-
 export type StandingId = "unrated" | "contested" | "poor" | "solid" | "trusted";
 
 export type ReputationScore = {
@@ -30,7 +28,7 @@ export function scoreReputation(votes: ReputationVotes): ReputationScore {
   const total = ups + downs;
   const raw = ups - downs;
   const adjusted = (ups + 2) / (total + 4);
-  const unrated = total < REPUTATION_FLOOR;
+  const unrated = total === 0;
   const standing = unrated ? "unrated" : standingFrom(raw, total, adjusted);
 
   return {

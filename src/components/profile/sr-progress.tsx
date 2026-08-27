@@ -21,13 +21,6 @@ export function SrProgress({
 
   return (
     <div className="flex h-full flex-col justify-center gap-3 pr-2 pl-8 py-2">
-      <p className="inline-flex w-fit items-baseline gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-medium tracking-[0.16em] text-muted uppercase">
-        Current SR
-        <span className="numeric text-sm font-semibold tracking-normal text-foreground normal-case">
-          {formatSr(currentSr)}
-        </span>
-      </p>
-
       <div
         className="h-2.5 overflow-hidden rounded-full bg-foreground/10"
         role="progressbar"

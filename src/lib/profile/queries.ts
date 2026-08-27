@@ -18,11 +18,42 @@ import type {
   ProfilePeaks,
   ProfileSession,
   ProfileView,
+  ReputationVoteValue,
+  ReputationVotes,
   SeedProfile,
 } from "./types";
 
 function photo(seed: string, width: number, height: number): string {
   return `https://picsum.photos/seed/${seed}/${width}/${height}`;
+}
+
+function emptyReputation(): Pick<ProfileView, "votes" | "viewerVote" | "canChangeVote"> {
+  return { votes: { ups: 0, downs: 0 }, viewerVote: null, canChangeVote: false };
+}
+
+function utcDateString(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 10);
+}
+
+function todayUtcDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function canChangeVoteToday(updatedAt: string | null | undefined): boolean {
+  if (!updatedAt) return true;
+  return utcDateString(updatedAt) < todayUtcDateString();
+}
+
+function aggregateVotes(
+  rows: { value: number }[],
+): ReputationVotes {
+  let ups = 0;
+  let downs = 0;
+  for (const row of rows) {
+    if (row.value === 1) ups += 1;
+    else if (row.value === -1) downs += 1;
+  }
+  return { ups, downs };
 }
 
 function seriesFromMatches(matches: ProfileMatch[]): CutoffPoint[] {
@@ -93,6 +124,8 @@ function viewFromSeed(profile: SeedProfile, cutoffSr: number | null, seasonName:
     boardRank: null,
     seasonName,
     votes: profile.votes,
+    viewerVote: null,
+    canChangeVote: false,
     matches: [...matches].reverse(),
     series: seriesFromMatches(matches),
     peaks,
@@ -185,6 +218,7 @@ function viewFromUser(
   matches: ClimbMatchRow[],
   cutoffSr: number | null,
   seasonName: string | null,
+  reputation: Pick<ProfileView, "votes" | "viewerVote" | "canChangeVote">,
 ): ProfileView {
   const parsed = matches
     .map(rowToMatch)
@@ -246,7 +280,9 @@ function viewFromUser(
     cutoffSr,
     boardRank: null,
     seasonName,
-    votes: { ups: 0, downs: 0 },
+    votes: reputation.votes,
+    viewerVote: reputation.viewerVote,
+    canChangeVote: reputation.canChangeVote,
     matches: displayMatches,
     series,
     peaks,
@@ -261,7 +297,10 @@ function viewFromUser(
   };
 }
 
-async function getUserProfile(slug: string): Promise<ProfileView | null> {
+async function getUserProfile(
+  slug: string,
+  viewerId?: string | null,
+): Promise<ProfileView | null> {
   const supabase = createAnonSupabaseClient();
   if (!supabase) return null;
 
@@ -272,16 +311,31 @@ async function getUserProfile(slug: string): Promise<ProfileView | null> {
     .maybeSingle();
   if (error || !profile) return null;
 
-  const [{ data: grantRows }, { data: sessionRows }, { data: matchRows }] = await Promise.all([
-    supabase.from("profile_grants").select("grant_id").eq("profile_id", profile.id),
-    supabase.from("climb_sessions").select("*").eq("user_id", profile.id),
-    supabase
-      .from("climb_matches")
-      .select("*")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: true })
-      .limit(200),
-  ]);
+  const [{ data: grantRows }, { data: sessionRows }, { data: matchRows }, { data: voteRows }] =
+    await Promise.all([
+      supabase.from("profile_grants").select("grant_id").eq("profile_id", profile.id),
+      supabase.from("climb_sessions").select("*").eq("user_id", profile.id),
+      supabase
+        .from("climb_matches")
+        .select("*")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: true })
+        .limit(200),
+      supabase.from("profile_votes").select("value, voter_id, updated_at").eq("profile_id", profile.id),
+    ]);
+
+  const votes = aggregateVotes(voteRows ?? []);
+  let viewerVote: ReputationVoteValue | null = null;
+  let canChangeVote = false;
+  if (viewerId && viewerId !== profile.id) {
+    const own = (voteRows ?? []).find((row) => row.voter_id === viewerId);
+    if (own?.value === 1 || own?.value === -1) {
+      viewerVote = own.value;
+      canChangeVote = canChangeVoteToday(own.updated_at);
+    } else {
+      canChangeVote = true;
+    }
+  }
 
   const grants = (grantRows ?? [])
     .map((row) => row.grant_id)
@@ -296,11 +350,15 @@ async function getUserProfile(slug: string): Promise<ProfileView | null> {
     matchRows ?? [],
     cutoffSr,
     season.name,
+    { votes, viewerVote, canChangeVote },
   );
 }
 
-export async function getProfile(slug: string): Promise<ProfileView | null> {
-  const fromDb = await getUserProfile(slug);
+export async function getProfile(
+  slug: string,
+  viewerId?: string | null,
+): Promise<ProfileView | null> {
+  const fromDb = await getUserProfile(slug, viewerId);
   if (fromDb) return fromDb;
 
   const season = getActiveSeason();
@@ -337,7 +395,7 @@ export async function getProfile(slug: string): Promise<ProfileView | null> {
     cutoffSr,
     boardRank: latest?.rank ?? null,
     seasonName: latest?.season.name ?? season.name,
-    votes: { ups: 0, downs: 0 },
+    ...emptyReputation(),
     matches: [],
     series,
     peaks: {

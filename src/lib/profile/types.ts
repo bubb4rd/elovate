@@ -8,6 +8,8 @@ export type ReputationVotes = {
   downs: number;
 };
 
+export type ReputationVoteValue = -1 | 1;
+
 export type ProfileTeammate = {
   displayName: string;
   slug: string | null;
@@ -72,6 +74,8 @@ export type ProfileView = {
   boardRank: number | null;
   seasonName: string | null;
   votes: ReputationVotes;
+  viewerVote: ReputationVoteValue | null;
+  canChangeVote: boolean;
   matches: ProfileMatch[];
   series: CutoffPoint[];
   peaks: ProfilePeaks;

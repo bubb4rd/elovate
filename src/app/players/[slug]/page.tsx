@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/site-nav";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { listSeasons } from "@/lib/data/queries";
 import { getProfile } from "@/lib/profile/queries";
+import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -23,7 +24,8 @@ export default async function PlayerPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [profile, viewer] = await Promise.all([getProfile(slug), getViewerProfile()]);
+  const viewer = await getViewerProfile();
+  const profile = await getProfile(slug, viewer?.id);
   if (!profile) notFound();
   if (profile.isPrivate && profile.id !== viewer?.id) notFound();
   const seasons = listSeasons();
@@ -35,13 +37,19 @@ export default async function PlayerPage({
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <SiteNav mode={profile.mode} seasons={seasons} seasonId={active?.id} />
+      <SiteNav
+        mode={profile.mode}
+        seasons={seasons}
+        seasonId={active?.id}
+        cutoffSr={profile.cutoffSr ?? IRIDESCENT_SR}
+      />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6">
         <ProfilePageContent
           key={`${profile.source}-${profile.slug}`}
           profile={profile}
           srDelta={srDelta}
           canEdit={Boolean(viewer && profile.id && viewer.id === profile.id)}
+          isSignedIn={Boolean(viewer)}
         />
       </main>
       <SiteFooter />

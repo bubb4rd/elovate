@@ -4,8 +4,16 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { loginHref, onboardingHref } from "@/lib/auth/paths";
 import { getViewerProfile } from "@/lib/auth/viewer";
-import { listSeasons } from "@/lib/data/queries";
+import { liveWzHistoryFor } from "@/lib/data/live-history";
+import {
+  getActiveSeason,
+  getBoardMetrics,
+  getLiveWzBoard,
+  listSeasons,
+  overlayLiveMetrics,
+} from "@/lib/data/queries";
 import { getAccountSettings } from "@/lib/profile/settings-queries";
+import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -26,11 +34,25 @@ export default async function SettingsPage() {
     redirect(onboardingHref("/settings"));
   }
 
+  const season = getActiveSeason();
   const seasons = listSeasons();
+  const seedMetrics = getBoardMetrics("wz", season.id);
+  const live = await getLiveWzBoard();
+  const history = await liveWzHistoryFor(live, season.id);
+  const metrics =
+    live && seedMetrics
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      : seedMetrics;
+  const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <SiteNav seasons={seasons} loginNext="/settings" />
+      <SiteNav
+        seasons={seasons}
+        loginNext="/settings"
+        cutoffSr={cutoffSr}
+        nextUpdateAt={live?.nextUpdateAt}
+      />
       <main className="mx-auto w-full max-w-[640px] flex-1 px-4 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>

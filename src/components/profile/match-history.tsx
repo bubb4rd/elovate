@@ -45,14 +45,9 @@ function SrMetricColumn({
 
   return (
     <div className="min-w-0">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[10px] font-medium tracking-[0.12em] text-muted uppercase">
-          {label}
-        </span>
-        <span className="numeric text-sm font-semibold leading-none text-foreground">
-          {formatSr(value)}
-        </span>
-      </div>
+      <span className="text-[10px] font-medium tracking-[0.12em] text-muted uppercase">
+        {label}
+      </span>
       <div
         className="mt-2 h-1 overflow-hidden rounded-full bg-foreground/10"
         role="progressbar"
@@ -69,8 +64,9 @@ function SrMetricColumn({
           }}
         />
       </div>
-      <p className="numeric mt-1 text-[10px] text-muted/80">
-        {formatSr(value)} / {formatSr(max)} SR
+      <p className="numeric mt-1.5 leading-none">
+        <span className="text-base font-semibold text-accent">{formatSr(value)}</span>
+        <span className="text-[10px] text-muted/80"> / {formatSr(max)}</span>
       </p>
       {footer}
     </div>

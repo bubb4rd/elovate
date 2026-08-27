@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { CaretDown, CaretUp, PencilSimple } from "@phosphor-icons/react";
+import { PencilSimple } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   ProfileEditModal,
@@ -11,8 +11,6 @@ import {
 import { ElovateStaffBadge } from "@/components/profile/elovate-staff-badge";
 import { ProfileBanner } from "@/components/profile/profile-banner";
 import { ReputationChip } from "@/components/profile/reputation-chip";
-import { SiteTooltip } from "@/components/ui/tooltip";
-import { formatDelta, formatSr } from "@/lib/format";
 import type { ProfileHeaderId } from "@/lib/profile/headers";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileView } from "@/lib/profile/types";
@@ -20,19 +18,17 @@ import { cn } from "@/lib/utils";
 
 export function ProfileHero({
   profile,
-  srDelta,
   pageThemeId,
   canEdit,
+  isSignedIn,
   onPageThemeChange,
 }: {
   profile: ProfileView;
-  srDelta: number | null;
   pageThemeId: ProfilePageThemeId;
   canEdit: boolean;
+  isSignedIn: boolean;
   onPageThemeChange: (id: ProfilePageThemeId) => void;
 }) {
-  const up = srDelta != null && srDelta > 0;
-  const down = srDelta != null && srDelta < 0;
   const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
   const reduce = useReducedMotion();
 
@@ -95,7 +91,7 @@ export function ProfileHero({
       />
       ) : null}
 
-      <div className="relative z-10 -mt-10 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-5 gap-y-3 pb-6 pl-12 pr-6 sm:grid-cols-[auto_minmax(0,1fr)_auto] md:-mt-12 md:pl-28 md:pr-10 lg:pl-18">
+      <div className="relative z-10 -mt-10 grid grid-cols-1 items-start gap-x-5 gap-y-3 pb-6 pl-12 pr-6 sm:grid-cols-[auto_minmax(0,1fr)] md:-mt-12 md:pl-28 md:pr-10 lg:pl-18">
         <div className="relative size-32 shrink-0 overflow-hidden rounded-full ring-2 ring-accent md:size-36">
           {avatarUrl.startsWith("data:") ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -116,48 +112,24 @@ export function ProfileHero({
           )}
         </div>
 
-        <div className="min-w-0 pt-18 ">
+        <div className="min-w-0 sm:pt-18">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
               {displayName}
             </h1>
             {isStaff ? <ElovateStaffBadge /> : null}
-            <ReputationChip votes={profile.votes} themeId={pageThemeId} />
+            <ReputationChip
+              profileId={profile.id}
+              profileSlug={profile.slug}
+              votes={profile.votes}
+              viewerVote={profile.viewerVote}
+              canChangeVote={profile.canChangeVote}
+              isSignedIn={isSignedIn}
+              isOwnProfile={canEdit}
+              themeId={pageThemeId}
+            />
           </div>
           <p className="mt-1 text-sm text-muted">{profile.handle}</p>
-        </div>
-
-        <div className="col-span-2 pt-18 text-right sm:col-span-1 sm:col-start-3">
-          <p className="flex items-center justify-end gap-1.5">
-            <span className="numeric accent-glow text-4xl font-semibold tracking-tight text-accent md:text-5xl">
-              {formatSr(profile.currentSr)}
-            </span>
-            {up && srDelta != null ? (
-              <SiteTooltip label={`${formatDelta(srDelta)} SR`} align="end">
-                <span
-                  tabIndex={0}
-                  aria-label={`Up ${formatDelta(srDelta)} SR`}
-                  className="rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  <CaretUp weight="bold" className="size-5 text-accent" aria-hidden />
-                </span>
-              </SiteTooltip>
-            ) : null}
-            {down && srDelta != null ? (
-              <SiteTooltip label={`${formatDelta(srDelta)} SR`} align="end">
-                <span
-                  tabIndex={0}
-                  aria-label={`Down ${formatDelta(Math.abs(srDelta))} SR`}
-                  className="rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  <CaretDown weight="bold" className="size-5 text-negative" aria-hidden />
-                </span>
-              </SiteTooltip>
-            ) : null}
-          </p>
-          <p className="mt-1 text-[10px] font-medium tracking-[0.18em] text-muted uppercase">
-            Current SR
-          </p>
         </div>
       </div>
     </section>
