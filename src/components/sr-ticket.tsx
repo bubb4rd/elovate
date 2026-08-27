@@ -62,7 +62,7 @@ export function SrTicket({
             <GoldStarDef />
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[radial-gradient(circle_at_8px_0,var(--background)_6px,transparent_6.5px)] bg-size-[16px_12px] bg-repeat-x"
+              className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[radial-gradient(circle_at_8px_0,#0a0a0b_6px,transparent_6.5px)] bg-size-[16px_12px] bg-repeat-x"
             />
             <div className="relative px-4 pt-5 pb-3">
               <div className="flex items-center justify-between gap-3">

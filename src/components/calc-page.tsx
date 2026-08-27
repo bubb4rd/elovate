@@ -1,4 +1,5 @@
 import { RememberMode } from "@/components/remember-mode";
+import { getViewerProfile } from "@/lib/auth/viewer";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { SrCalculator } from "@/components/sr-calculator";
@@ -28,6 +29,8 @@ export async function CalcPage({ mode }: { mode: Mode }) {
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const ladder = live?.ladder ?? getBoardLadder(mode, season.id);
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
+  const viewer = await getViewerProfile();
+  const calcHref = `/${mode}/calc`;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -38,9 +41,15 @@ export async function CalcPage({ mode }: { mode: Mode }) {
         tool="calc"
         cutoffSr={cutoffSr}
         nextUpdateAt={live?.nextUpdateAt}
+        loginNext={calcHref}
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5">
-        <SrCalculator mode={mode} cutoffSr={cutoffSr} ladder={ladder} />
+        <SrCalculator
+          mode={mode}
+          cutoffSr={cutoffSr}
+          ladder={ladder}
+          signedIn={viewer != null}
+        />
       </main>
       <SiteFooter
         calcHref={`/${mode}/calc`}

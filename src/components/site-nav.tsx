@@ -68,7 +68,7 @@ export function SiteNav({
         </div>
         {mode ? (
           <nav className="flex items-center gap-1 text-sm">
-            <ToolLink href={boardHref} active={tool === "board" || tool == null}>
+            <ToolLink href={boardHref} active={tool === "board"}>
               Board
             </ToolLink>
             <span className="text-border/80" aria-hidden>

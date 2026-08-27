@@ -1,6 +1,9 @@
+"use client";
+
 import { Skull, Trophy } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { ProfileBlob } from "@/components/profile/profile-blob";
 import { formatDelta, formatLocalTime, formatSr } from "@/lib/format";
 import {
@@ -13,7 +16,7 @@ import type { ProfileMatch, ProfileTeammate } from "@/lib/profile/types";
 import { cn } from "@/lib/utils";
 
 const MATCH_LIMIT = 5;
-const MAX_TEAMMATES = 2;
+const MAX_TEAMMATES = 3;
 
 function netClass(net: number) {
   if (net > 0) return "accent-glow text-accent";
@@ -28,6 +31,14 @@ function initials(name: string): string {
     .map((part) => part[0] ?? "")
     .join("")
     .toUpperCase();
+}
+
+function ColumnLabel({ children }: { children: string }) {
+  return (
+    <span className="text-[10px] font-medium tracking-[0.12em] text-muted uppercase">
+      {children}
+    </span>
+  );
 }
 
 function SrMetricColumn({
@@ -45,9 +56,7 @@ function SrMetricColumn({
 
   return (
     <div className="min-w-0">
-      <span className="text-[10px] font-medium tracking-[0.12em] text-muted uppercase">
-        {label}
-      </span>
+      <ColumnLabel>{label}</ColumnLabel>
       <div
         className="mt-2 h-1 overflow-hidden rounded-full bg-foreground/10"
         role="progressbar"
@@ -90,10 +99,39 @@ function ElimCounts({ squadElims, yourElims }: { squadElims: number; yourElims: 
   );
 }
 
+function TeammateAvatar({ teammate }: { teammate: ProfileTeammate }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(teammate.avatarUrl) && !imageFailed;
+
+  return (
+    <span
+      className="relative flex size-7 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-semibold tracking-wide text-foreground"
+      title={teammate.displayName}
+    >
+      {showImage && teammate.avatarUrl ? (
+        <Image
+          src={teammate.avatarUrl}
+          alt=""
+          width={28}
+          height={28}
+          className="size-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        initials(teammate.displayName) || "?"
+      )}
+    </span>
+  );
+}
+
 function TeammateStack({ teammates }: { teammates: ProfileTeammate[] }) {
   const shown = teammates.slice(0, MAX_TEAMMATES);
   if (shown.length === 0) {
-    return <span className="text-xs text-muted">Solo</span>;
+    return (
+      <span className="text-xs text-muted" title="No teammates logged">
+        N/A
+      </span>
+    );
   }
 
   return (
@@ -102,34 +140,18 @@ function TeammateStack({ teammates }: { teammates: ProfileTeammate[] }) {
       aria-label={`Teammates: ${shown.map((teammate) => teammate.displayName).join(", ")}`}
     >
       {shown.map((teammate, index) => {
-        const avatar = (
-          <span
-            className={cn(
-              "relative flex size-7 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-semibold text-muted",
-              index > 0 && "-ml-2",
-            )}
-            style={{ zIndex: shown.length - index }}
-            title={teammate.displayName}
-          >
-            {teammate.avatarUrl ? (
-              <Image
-                src={teammate.avatarUrl}
-                alt=""
-                width={28}
-                height={28}
-                className="size-full object-cover"
-              />
-            ) : (
-              initials(teammate.displayName)
-            )}
-          </span>
-        );
+        const avatar = <TeammateAvatar teammate={teammate} />;
 
         return (
-          <li key={`${teammate.displayName}-${index}`}>
+          <li
+            key={`${teammate.slug ?? teammate.displayName}-${index}`}
+            className={cn(index > 0 && "-ml-2")}
+            style={{ zIndex: shown.length - index }}
+          >
             {teammate.slug ? (
               <Link
                 href={`/players/${teammate.slug}`}
+                aria-label={teammate.displayName}
                 className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {avatar}
@@ -152,8 +174,8 @@ function MatchRow({ match }: { match: ProfileMatch }) {
   const elimSr = elimSrBreakdown(match.squadElims, match.yourElims).elimSr;
 
   return (
-    <li className="flex items-center gap-3 py-3">
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-[4px] border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground">
+    <li className="flex items-start gap-3 py-3">
+      <span className="mt-[1.375rem] inline-flex shrink-0 items-center gap-1 rounded-[4px] border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground">
         {match.placement === "first" ? (
           <Trophy
             weight="fill"
@@ -163,33 +185,44 @@ function MatchRow({ match }: { match: ProfileMatch }) {
         ) : null}
         {placement}
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="grid grid-cols-2 gap-3">
-          <SrMetricColumn
-            label="Placement"
-            value={placementSr}
-            max={WZ_PLACEMENT_MAX}
-            footer={
-              <p className="numeric mt-1 text-[10px] text-muted/80">
-                {formatLocalTime(match.createdAt)}
-              </p>
-            }
-          />
-          <SrMetricColumn
-            label="Elims"
-            value={elimSr}
-            max={WZ_ELIM_CAP}
-            footer={
-              <ElimCounts squadElims={match.squadElims} yourElims={match.yourElims} />
-            }
-          />
+      <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3">
+        <SrMetricColumn
+          label="Placement"
+          value={placementSr}
+          max={WZ_PLACEMENT_MAX}
+          footer={
+            <p className="numeric mt-1 text-[10px] text-muted/80">
+              {formatLocalTime(match.createdAt)}
+            </p>
+          }
+        />
+        <SrMetricColumn
+          label="Elims"
+          value={elimSr}
+          max={WZ_ELIM_CAP}
+          footer={
+            <ElimCounts squadElims={match.squadElims} yourElims={match.yourElims} />
+          }
+        />
+        <div className="min-w-14">
+          <ColumnLabel>Total</ColumnLabel>
+          <div className="mt-2 h-1" aria-hidden />
+          <p
+            className={cn(
+              "numeric mt-1.5 leading-none text-base font-semibold",
+              netClass(match.net),
+            )}
+          >
+            {formatDelta(match.net)}
+          </p>
         </div>
-      </div>
-      <p className={cn("numeric shrink-0 text-base font-semibold", netClass(match.net))}>
-        {formatDelta(match.net)}
-      </p>
-      <div className="w-14 shrink-0">
-        <TeammateStack teammates={match.teammates} />
+        <div className="min-w-16">
+          <ColumnLabel>Squad</ColumnLabel>
+          <div className="mt-2 h-1" aria-hidden />
+          <div className="mt-1.5">
+            <TeammateStack teammates={match.teammates} />
+          </div>
+        </div>
       </div>
     </li>
   );

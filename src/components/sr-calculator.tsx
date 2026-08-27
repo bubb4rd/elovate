@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { RankPlate } from "@/components/rank-plate";
 import { RankTimeline } from "@/components/rank-timeline";
 import { SessionPanel } from "@/components/session-panel";
+import { SaveClimbCta } from "@/components/save-climb-cta";
 import { SrInputMode, type EntryMode } from "@/components/sr-input-mode";
 import { SrScanPreview } from "@/components/sr-scan-preview";
 import { SrScreenshotUpload } from "@/components/sr-screenshot-upload";
 import { SrTicket } from "@/components/sr-ticket";
+import { TeammatePicker } from "@/components/teammate-picker";
 import { TickerNumeral } from "@/components/ticker-numeral";
 import { formatDelta, formatSr } from "@/lib/format";
 import { reverseElimKills, type ParsedSrBreakdown } from "@/lib/ocr";
@@ -44,7 +46,9 @@ import {
   deleteSession,
   endSession,
   openSession,
+  setMatchTeammates,
   undoLastMatch,
+  type HistoryTeammate,
   type NewMatch,
 } from "@/lib/history";
 import { useHistory } from "@/lib/history/use-history";
@@ -183,10 +187,12 @@ export function SrCalculator({
   mode,
   cutoffSr,
   ladder,
+  signedIn = false,
 }: {
   mode: Mode;
   cutoffSr: number;
   ladder: BoardRung[];
+  signedIn?: boolean;
 }) {
   const raw = useSyncExternalStore(
     (onChange) => subscribeCalc(mode, onChange),
@@ -215,6 +221,8 @@ export function SrCalculator({
   const [entryMode, setEntryMode] = useState<EntryMode>("manual");
   const [ocrResult, setOcrResult] = useState<ParsedSrBreakdown | null>(null);
   const [historySaveFailed, setHistorySaveFailed] = useState(false);
+  const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
+  const [showAuthCta, setShowAuthCta] = useState(false);
   const rankCardRef = useRef<HTMLDivElement>(null);
   const [rankCardHeight, setRankCardHeight] = useState<number | undefined>();
   const { doc: historyDoc, store: historyStore } = useHistory(mode);
@@ -258,6 +266,12 @@ export function SrCalculator({
       srPerLossInput,
       ...next,
     });
+  }
+
+  function startNextGame(next: Partial<StoredCalc>) {
+    setPendingMatchId(null);
+    setShowAuthCta(false);
+    patch(next);
   }
 
   const rank = rankFromSr(sr, cutoffSr);
@@ -397,7 +411,12 @@ export function SrCalculator({
           srPerWin,
         };
       }
-      recorded = historyStore.save(appendMatch(historyStore.load(), draft).doc);
+      const result = appendMatch(historyStore.load(), draft);
+      recorded = historyStore.save(result.doc);
+      if (recorded) {
+        setPendingMatchId(result.match.id);
+        if (!signedIn) setShowAuthCta(true);
+      }
     } catch {
       recorded = false;
     }
@@ -411,6 +430,10 @@ export function SrCalculator({
   }
 
   function setEntryModeSafe(next: EntryMode) {
+    if (next === "photo") {
+      setPendingMatchId(null);
+      setShowAuthCta(false);
+    }
     setEntryMode(next);
     if (next === "manual") setOcrResult(null);
   }
@@ -443,7 +466,12 @@ export function SrCalculator({
         elimSr: parsed.elimSr,
         capped: parsed.elimSr >= WZ_ELIM_CAP,
       };
-      recorded = historyStore.save(appendMatch(historyStore.load(), draft).doc);
+      const result = appendMatch(historyStore.load(), draft);
+      recorded = historyStore.save(result.doc);
+      if (recorded) {
+        setPendingMatchId(result.match.id);
+        if (!signedIn) setShowAuthCta(true);
+      }
     } catch {
       recorded = false;
     }
@@ -460,9 +488,19 @@ export function SrCalculator({
   function undoLast() {
     const result = undoLastMatch(historyStore.load(), sr);
     if (!result) return;
+    setPendingMatchId((current) => (current === result.removed.id ? null : current));
+    setShowAuthCta(false);
     const ok = historyStore.save(result.doc);
     setHistorySaveFailed(!ok);
     patch({ sr: result.restoredSr, srInput: String(result.restoredSr) });
+  }
+
+  function savePendingTeammates(teammates: HistoryTeammate[]) {
+    if (!pendingMatchId) return;
+    const ok = historyStore.save(
+      setMatchTeammates(historyStore.load(), pendingMatchId, teammates),
+    );
+    setHistorySaveFailed(!ok);
   }
 
   function endOpenSession() {
@@ -515,7 +553,7 @@ export function SrCalculator({
                   inputMode="numeric"
                   value={srPerWinInput}
                   onChange={(e) =>
-                    patch({
+                    startNextGame({
                       srPerWinInput: e.target.value,
                       srPerWin: Math.max(0, Math.floor(Number(e.target.value) || 0)),
                     })
@@ -544,7 +582,7 @@ export function SrCalculator({
                       variant={active ? "default" : "outline"}
                       disabled={net <= 0}
                       onClick={() =>
-                        patch({
+                        startNextGame({
                           srPerWin: net,
                           srPerWinInput: String(net),
                         })
@@ -560,6 +598,21 @@ export function SrCalculator({
                 Typical Warzone nets at your rank. Edit if your lobby pays differently.
               </span>
               <ApplyGameBar {...applyBarState} onAdd={addSr} onCancel={cancel} />
+              {pendingMatchId || (!signedIn && showAuthCta) ? (
+                <div className="space-y-3">
+                  {pendingMatchId ? (
+                    <TeammatePicker
+                      matchId={pendingMatchId}
+                      doc={historyDoc}
+                      onTeammatesChange={savePendingTeammates}
+                      onDismiss={() => setPendingMatchId(null)}
+                    />
+                  ) : null}
+                  {signedIn || !showAuthCta ? null : (
+                    <SaveClimbCta nextPath={`/${mode}/calc`} />
+                  )}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -615,6 +668,21 @@ export function SrCalculator({
           {mode === "wz" ? (
             <div className="mt-6 space-y-4">
               <SrInputMode value={entryMode} onChange={setEntryModeSafe} />
+              {pendingMatchId || (!signedIn && showAuthCta) ? (
+                <div className="space-y-3">
+                  {pendingMatchId ? (
+                    <TeammatePicker
+                      matchId={pendingMatchId}
+                      doc={historyDoc}
+                      onTeammatesChange={savePendingTeammates}
+                      onDismiss={() => setPendingMatchId(null)}
+                    />
+                  ) : null}
+                  {signedIn || !showAuthCta ? null : (
+                    <SaveClimbCta nextPath={`/${mode}/calc`} />
+                  )}
+                </div>
+              ) : null}
               {entryMode === "photo" ? (
                 ocrResult ? (
                   <SrScanPreview
@@ -647,7 +715,7 @@ export function SrCalculator({
                         variant={
                           squadElimsInput.trim() !== "" && squadElims === n ? "default" : "outline"
                         }
-                        onClick={() => patch({ squadElims: n, squadElimsInput: String(n) })}
+                        onClick={() => startNextGame({ squadElims: n, squadElimsInput: String(n) })}
                       >
                         {n}
                       </Button>
@@ -660,7 +728,7 @@ export function SrCalculator({
                       placeholder="40"
                       value={squadElimsInput}
                       onChange={(e) =>
-                        patch({
+                        startNextGame({
                           squadElimsInput: e.target.value,
                           squadElims: Math.max(0, Math.floor(Number(e.target.value) || 0)),
                         })
@@ -686,7 +754,7 @@ export function SrCalculator({
                             ? "default"
                             : "outline"
                         }
-                        onClick={() => patch({ yourElims: n, yourElimsInput: String(n) })}
+                        onClick={() => startNextGame({ yourElims: n, yourElimsInput: String(n) })}
                       >
                         {n}
                       </Button>
@@ -699,7 +767,7 @@ export function SrCalculator({
                       placeholder="8"
                       value={yourElimsInput}
                       onChange={(e) =>
-                        patch({
+                        startNextGame({
                           yourElimsInput: e.target.value,
                           yourElims: Math.max(0, Math.floor(Number(e.target.value) || 0)),
                         })
@@ -727,7 +795,7 @@ export function SrCalculator({
                   <button
                     key={row.placement.id}
                     type="button"
-                    onClick={() => patch({ placement: row.placement.id })}
+                    onClick={() => startNextGame({ placement: row.placement.id })}
                     className={cn(
                       "rounded-[6px] border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                       selected

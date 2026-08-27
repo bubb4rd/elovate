@@ -6,6 +6,9 @@ import {
   emptyDocument,
   endSession,
   openSession,
+  parseDocument,
+  recentTeammates,
+  setMatchTeammates,
   summarizeSession,
   undoLastMatch,
   winStreak,
@@ -68,5 +71,51 @@ assert.equal(winStreak(hot.doc.matches), 2);
 const open = openSession(hot.doc);
 assert.ok(open);
 assert.equal(summarizeSession(open, hot.doc.matches.filter((m) => m.sessionId === open.id)).streak, 2);
+
+assert.deepEqual(first.match.teammates, []);
+
+const tagged = setMatchTeammates(first.doc, first.match.id, [
+  { displayName: "  OPAL  ", slug: null, avatarUrl: null },
+  { displayName: "Nova", slug: "nova", avatarUrl: "https://cdn.discordapp.com/n.png" },
+  { displayName: "opal", slug: null, avatarUrl: null },
+  { displayName: "Third", slug: null, avatarUrl: null },
+  { displayName: "Fourth", slug: null, avatarUrl: null },
+]);
+assert.deepEqual(
+  tagged.matches.find((match) => match.id === first.match.id)?.teammates,
+  [
+    { displayName: "OPAL", slug: null, avatarUrl: null },
+    { displayName: "Nova", slug: "nova", avatarUrl: "https://cdn.discordapp.com/n.png" },
+    { displayName: "Third", slug: null, avatarUrl: null },
+  ],
+);
+assert.equal(setMatchTeammates(first.doc, "missing", []).matches.length, 1);
+
+const later = appendMatch(
+  tagged,
+  mp(1050, 40),
+  new Date("2026-08-24T12:10:00.000Z"),
+);
+const laterTagged = setMatchTeammates(later.doc, later.match.id, [
+  { displayName: "Fresh", slug: null, avatarUrl: null },
+  { displayName: "Nova", slug: "nova", avatarUrl: "https://cdn.discordapp.com/n.png" },
+]);
+assert.deepEqual(
+  recentTeammates(laterTagged).map((teammate) => teammate.displayName),
+  ["Fresh", "Nova", "OPAL", "Third"],
+);
+assert.deepEqual(
+  recentTeammates(laterTagged, 2).map((teammate) => teammate.displayName),
+  ["Fresh", "Nova"],
+);
+
+const parsedLegacy = parseDocument(
+  JSON.stringify({
+    version: 1,
+    sessions: first.doc.sessions,
+    matches: [{ ...first.match, teammates: undefined }],
+  }),
+);
+assert.deepEqual(parsedLegacy.matches[0]?.teammates, []);
 
 console.log("history session rules ok");

@@ -9,6 +9,11 @@ export function loginHref(next?: string): string {
   return `/login?next=${encodeURIComponent(safeNextPath(next))}`;
 }
 
+export function registerHref(next?: string): string {
+  const signIn = loginHref(next);
+  return signIn.includes("?") ? `${signIn}&intent=register` : `${signIn}?intent=register`;
+}
+
 export function onboardingHref(next?: string): string {
   const safe = safeNextPath(next, "/");
   if (safe === "/" || safe.startsWith("/onboarding")) return "/onboarding";

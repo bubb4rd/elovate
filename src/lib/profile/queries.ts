@@ -120,7 +120,7 @@ function profileMatchesFromRows(rows: ClimbMatchRow[]): ProfileMatch[] {
       yourElims: match.yourElims,
       net: match.net,
       srAfter: match.srAfter,
-      teammates: [],
+      teammates: match.teammates,
     }));
 }
 
@@ -153,7 +153,7 @@ function viewFromUser(
           yourElims: match.yourElims,
           net: match.net,
           srAfter: match.srAfter,
-          teammates: [],
+          teammates: match.teammates,
         };
       }
       return {
@@ -164,7 +164,7 @@ function viewFromUser(
         yourElims: 0,
         net: match.net,
         srAfter: match.srAfter,
-        teammates: [],
+        teammates: match.teammates,
       };
     }),
   );

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import type { ViewerProfile } from "@/lib/auth/viewer";
-import { loginHref } from "@/lib/auth/paths";
+import { loginHref, registerHref } from "@/lib/auth/paths";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
@@ -66,12 +66,20 @@ export function NavAccount({
 
   if (!viewer) {
     return (
-      <Link
-        href={loginHref(loginNext)}
-        className="rounded-[6px] px-2.5 py-1.5 text-xs font-medium tracking-wide text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        Sign in
-      </Link>
+      <div className="flex items-center gap-1">
+        <Link
+          href={registerHref(loginNext)}
+          className="rounded-[6px] px-2.5 py-1.5 text-xs font-medium tracking-wide text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          Register
+        </Link>
+        <Link
+          href={loginHref(loginNext)}
+          className="rounded-[6px] border border-border bg-surface-elevated px-2.5 py-1.5 text-xs font-medium tracking-wide text-foreground hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          Sign in
+        </Link>
+      </div>
     );
   }
 

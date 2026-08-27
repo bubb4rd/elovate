@@ -15,10 +15,11 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; intent?: string }>;
 }) {
   const params = await searchParams;
   const next = safeNextPath(params.next, "/");
+  const register = params.intent === "register";
   const viewer = await getViewerProfile();
   if (viewer) {
     redirect(
@@ -36,9 +37,13 @@ export default async function LoginPage({
       <SiteNav seasons={seasons} />
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-4 py-12">
         <div className="mx-auto w-full max-w-sm">
-          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {register ? "Create an account" : "Sign in"}
+          </h1>
           <p className="mt-2 text-sm text-muted">
-            We email you a sign-in link, or continue with Discord. Same account can hold both.
+            {register
+              ? "Email a link or continue with Discord. Same flow if you already have an account."
+              : "We email you a sign-in link, or continue with Discord. Same account can hold both."}
           </p>
           {isSupabaseConfigured() ? (
             <LoginForm nextPath={params.next} errorCode={params.error} />

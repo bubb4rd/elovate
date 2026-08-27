@@ -1,16 +1,59 @@
 import {
   HISTORY_VERSION,
   MAX_MATCHES_PER_MODE,
+  MAX_RECENT_TEAMMATES,
+  MAX_TEAMMATES_PER_MATCH,
   SESSION_IDLE_MS,
+  TEAMMATE_NAME_MAX_LEN,
   type HistoryDocument,
   type HistoryMatch,
   type HistorySession,
+  type HistoryTeammate,
   type NewMatch,
   type SessionSummary,
 } from "./types";
 
 export function emptyDocument(): HistoryDocument {
   return { version: HISTORY_VERSION, sessions: [], matches: [] };
+}
+
+export function teammateKey(teammate: HistoryTeammate): string {
+  if (teammate.slug) return `slug:${teammate.slug.toLowerCase()}`;
+  return `name:${teammate.displayName.trim().toLowerCase()}`;
+}
+
+export function normalizeTeammate(raw: unknown): HistoryTeammate | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Record<string, unknown>;
+  const displayNameRaw = value.displayName ?? value.display_name;
+  const displayName = typeof displayNameRaw === "string" ? displayNameRaw.trim() : "";
+  if (!displayName || displayName.length > TEAMMATE_NAME_MAX_LEN) return null;
+  const slugRaw = value.slug;
+  const slug = typeof slugRaw === "string" && slugRaw.trim() ? slugRaw.trim() : null;
+  const avatarRaw = value.avatarUrl ?? value.avatar_url;
+  const avatarUrl =
+    typeof avatarRaw === "string" && avatarRaw.trim() ? avatarRaw.trim() : null;
+  return { displayName, slug, avatarUrl };
+}
+
+export function normalizeTeammates(raw: unknown): HistoryTeammate[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const next: HistoryTeammate[] = [];
+  for (const item of raw) {
+    const teammate = normalizeTeammate(item);
+    if (!teammate) continue;
+    const key = teammateKey(teammate);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    next.push(teammate);
+    if (next.length >= MAX_TEAMMATES_PER_MATCH) break;
+  }
+  return next;
+}
+
+function withTeammates(match: HistoryMatch): HistoryMatch {
+  return { ...match, teammates: normalizeTeammates(match.teammates) };
 }
 
 export function parseDocument(raw: string): HistoryDocument {
@@ -24,7 +67,7 @@ export function parseDocument(raw: string): HistoryDocument {
     return {
       version: HISTORY_VERSION,
       sessions: parsed.sessions,
-      matches: parsed.matches,
+      matches: parsed.matches.map((match) => withTeammates(match as HistoryMatch)),
     };
   } catch {
     return emptyDocument();
@@ -208,6 +251,7 @@ export function appendMatch(
     id: createId(),
     sessionId: open.id,
     createdAt: nowIso,
+    teammates: normalizeTeammates(draft.teammates ?? []),
   } as HistoryMatch;
   matches.push(match);
 
@@ -244,4 +288,39 @@ export function undoLastMatch(
     restoredSr: last.srBefore,
     removed: last,
   };
+}
+
+export function setMatchTeammates(
+  doc: HistoryDocument,
+  matchId: string,
+  teammates: HistoryTeammate[],
+): HistoryDocument {
+  if (!doc.matches.some((match) => match.id === matchId)) return doc;
+  const next = normalizeTeammates(teammates);
+  return {
+    version: HISTORY_VERSION,
+    sessions: doc.sessions,
+    matches: doc.matches.map((match) =>
+      match.id === matchId ? { ...match, teammates: next } : match,
+    ),
+  };
+}
+
+export function recentTeammates(
+  doc: HistoryDocument,
+  limit = MAX_RECENT_TEAMMATES,
+): HistoryTeammate[] {
+  const seen = new Set<string>();
+  const recents: HistoryTeammate[] = [];
+  const ordered = [...doc.matches].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  for (const match of ordered) {
+    for (const teammate of match.teammates) {
+      const key = teammateKey(teammate);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recents.push(teammate);
+      if (recents.length >= limit) return recents;
+    }
+  }
+  return recents;
 }

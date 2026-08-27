@@ -28,6 +28,7 @@ function mpMatch(
     srAfter: srBefore + net,
     net,
     srPerWin: net,
+    teammates: [],
   };
 }
 

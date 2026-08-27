@@ -4,6 +4,15 @@ import type { WzPlacementId } from "@/lib/ranked";
 export const HISTORY_VERSION = 1;
 export const SESSION_IDLE_MS = 2 * 60 * 60 * 1000;
 export const MAX_MATCHES_PER_MODE = 500;
+export const MAX_TEAMMATES_PER_MATCH = 3;
+export const MAX_RECENT_TEAMMATES = 8;
+export const TEAMMATE_NAME_MAX_LEN = 40;
+
+export type HistoryTeammate = {
+  displayName: string;
+  slug: string | null;
+  avatarUrl: string | null;
+};
 
 export type HistorySession = {
   id: string;
@@ -20,6 +29,7 @@ type HistoryMatchBase = {
   srBefore: number;
   srAfter: number;
   net: number;
+  teammates: HistoryTeammate[];
 };
 
 export type WzHistoryMatch = HistoryMatchBase & {
@@ -41,8 +51,12 @@ export type MpHistoryMatch = HistoryMatchBase & {
 export type HistoryMatch = WzHistoryMatch | MpHistoryMatch;
 
 export type NewMatch =
-  | Omit<WzHistoryMatch, "id" | "sessionId" | "createdAt">
-  | Omit<MpHistoryMatch, "id" | "sessionId" | "createdAt">;
+  | (Omit<WzHistoryMatch, "id" | "sessionId" | "createdAt" | "teammates"> & {
+      teammates?: HistoryTeammate[];
+    })
+  | (Omit<MpHistoryMatch, "id" | "sessionId" | "createdAt" | "teammates"> & {
+      teammates?: HistoryTeammate[];
+    });
 
 export type HistoryDocument = {
   version: typeof HISTORY_VERSION;

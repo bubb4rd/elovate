@@ -58,7 +58,7 @@ export async function TrackerPage({
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col lg:h-[100dvh] lg:overflow-hidden">
+    <div className="flex flex-col lg:h-dvh lg:overflow-hidden">
       <RememberMode mode={mode} />
       <SiteNav
         mode={mode}
@@ -66,7 +66,7 @@ export async function TrackerPage({
         seasonId={seasonId}
         tool="board"
       />
-      <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-7 py-6 lg:min-h-0">
+      <main className="mx-auto flex w-full max-w-[1400px] flex-col px-7 py-6 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
         <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-semibold tracking-tight">
             <span className="accent-glow bg-linear-to-r from-geebung-600 to-geebung-500 bg-clip-text text-4xl text-transparent md:text-5xl">

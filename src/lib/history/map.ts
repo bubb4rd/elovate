@@ -2,7 +2,7 @@ import type { Mode } from "@/lib/data/types";
 import type { ClimbMatchRow, ClimbSessionRow } from "@/lib/supabase/database";
 import type { HistoryDocument, HistoryMatch, HistorySession } from "./types";
 import { HISTORY_VERSION } from "./types";
-import { emptyDocument } from "./sessions";
+import { emptyDocument, normalizeTeammates } from "./sessions";
 
 export function sessionToRow(userId: string, session: HistorySession): ClimbSessionRow {
   return {
@@ -25,6 +25,7 @@ export function matchToRow(userId: string, match: HistoryMatch): ClimbMatchRow {
     sr_before: match.srBefore,
     sr_after: match.srAfter,
     net: match.net,
+    teammates: normalizeTeammates(match.teammates),
   };
   if (match.mode === "wz") {
     return {
@@ -80,6 +81,7 @@ export function rowToMatch(row: ClimbMatchRow): HistoryMatch | null {
       placementSr: row.placement_sr ?? 0,
       elimSr: row.elim_sr ?? 0,
       capped: row.capped ?? false,
+      teammates: normalizeTeammates(row.teammates),
     };
   }
   return {
@@ -91,6 +93,7 @@ export function rowToMatch(row: ClimbMatchRow): HistoryMatch | null {
     net: row.net,
     mode: "mp",
     srPerWin: row.sr_per_win ?? 0,
+    teammates: normalizeTeammates(row.teammates),
   };
 }
 

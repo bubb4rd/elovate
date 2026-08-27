@@ -52,6 +52,11 @@ export type ClimbMatchRow = {
   elim_sr: number | null;
   capped: boolean | null;
   sr_per_win: number | null;
+  teammates: Array<{
+    displayName: string;
+    slug: string | null;
+    avatarUrl: string | null;
+  }>;
 };
 
 export type ProfileVoteRow = {

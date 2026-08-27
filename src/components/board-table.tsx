@@ -7,7 +7,7 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { CaretDown, CaretUp, MagnifyingGlass, Microphone } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, MagnifyingGlass, Microphone, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatDelta, formatSr } from "@/lib/format";
@@ -128,12 +128,23 @@ export function BoardTable({
               autoComplete="off"
               className="h-11 w-full rounded-full border border-border bg-background py-2.5 pr-11 pl-4 text-sm text-foreground placeholder:text-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             />
-            <MagnifyingGlass
-              size={18}
-              weight="regular"
-              className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted"
-              aria-hidden
-            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <X size={16} weight="bold" aria-hidden />
+              </button>
+            ) : (
+              <MagnifyingGlass
+                size={18}
+                weight="regular"
+                className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted"
+                aria-hidden
+              />
+            )}
           </label>
           <button
             type="button"

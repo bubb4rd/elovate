@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
-import { onboardingHref, postAuthPath, shouldSkipOnboardingGate } from "./paths";
+import {
+  loginHref,
+  onboardingHref,
+  postAuthPath,
+  registerHref,
+  shouldSkipOnboardingGate,
+} from "./paths";
 import { parseEmailOtpType } from "./email-otp";
+
+assert.equal(loginHref(), "/login");
+assert.equal(loginHref("/"), "/login");
+assert.equal(loginHref("/wz/calc"), "/login?next=%2Fwz%2Fcalc");
+assert.equal(registerHref(), "/login?intent=register");
+assert.equal(registerHref("/wz/calc"), "/login?next=%2Fwz%2Fcalc&intent=register");
 
 assert.equal(onboardingHref("/"), "/onboarding");
 assert.equal(onboardingHref("/wz"), "/onboarding?next=%2Fwz");

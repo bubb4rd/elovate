@@ -76,7 +76,27 @@ function MatchRow({
         {placementLabel(match)}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] text-zinc-400">{detail}</p>
+        <p className="flex items-center gap-1.5 truncate text-[11px] text-zinc-400">
+          <span className="truncate">{detail}</span>
+          {match.teammates.length > 0 ? (
+            <span
+              className="inline-flex shrink-0 items-center"
+              title={match.teammates.map((teammate) => teammate.displayName).join(", ")}
+            >
+              {match.teammates.slice(0, 3).map((teammate, index) => (
+                <span
+                  key={`${teammate.displayName}-${index}`}
+                  className={cn(
+                    "relative flex size-4 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/10 text-[7px] font-semibold text-zinc-300",
+                    index > 0 && "-ml-1",
+                  )}
+                >
+                  {teammate.displayName.slice(0, 1).toUpperCase()}
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </p>
         <p className="numeric mt-0.5 text-[10px] text-zinc-600">{formatLocalTime(match.createdAt)}</p>
       </div>
       <p className={cn("numeric shrink-0 text-[13px] font-medium", netClass(match.net))}>
@@ -274,7 +294,7 @@ export function SessionPanel({
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[radial-gradient(circle_at_8px_0,var(--background)_6px,transparent_6.5px)] bg-size-[16px_12px] bg-repeat-x"
+          className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[radial-gradient(circle_at_8px_0,#0a0a0b_6px,transparent_6.5px)] bg-size-[16px_12px] bg-repeat-x"
         />
         <div
           className={cn(
