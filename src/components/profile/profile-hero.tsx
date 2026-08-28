@@ -19,30 +19,22 @@ import { cn } from "@/lib/utils";
 export function ProfileHero({
   profile,
   pageThemeId,
+  displayName,
+  avatarUrl,
+  equipped,
   canEdit,
-  isSignedIn,
-  onPageThemeChange,
+  onSave,
 }: {
   profile: ProfileView;
   pageThemeId: ProfilePageThemeId;
+  displayName: string;
+  avatarUrl: string;
+  equipped: ProfileHeaderId;
   canEdit: boolean;
-  isSignedIn: boolean;
-  onPageThemeChange: (id: ProfilePageThemeId) => void;
+  onSave: (saved: ProfileEditDraft) => void;
 }) {
-  const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
   const reduce = useReducedMotion();
-
-  const [displayName, setDisplayName] = useState(profile.displayName);
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
-  const [equipped, setEquipped] = useState<ProfileHeaderId>(profile.equippedHeaderId);
   const [editOpen, setEditOpen] = useState(false);
-
-  function applyEdits(saved: ProfileEditDraft) {
-    setDisplayName(saved.displayName);
-    setAvatarUrl(saved.avatarUrl);
-    setEquipped(saved.equippedHeaderId);
-    onPageThemeChange(saved.pageThemeId);
-  }
 
   return (
     <section>
@@ -74,64 +66,91 @@ export function ProfileHero({
       </div>
 
       {canEdit && profile.id ? (
-      <ProfileEditModal
-        open={editOpen}
-        userId={profile.id}
-        slug={profile.slug}
-        handle={profile.handle}
-        ownedHeaderIds={profile.ownedHeaderIds}
-        draft={{
-          displayName,
-          avatarUrl,
-          equippedHeaderId: equipped,
-          pageThemeId,
-        }}
-        onSave={applyEdits}
-        onClose={() => setEditOpen(false)}
-      />
+        <ProfileEditModal
+          open={editOpen}
+          userId={profile.id}
+          slug={profile.slug}
+          handle={profile.handle}
+          ownedHeaderIds={profile.ownedHeaderIds}
+          draft={{
+            displayName,
+            avatarUrl,
+            equippedHeaderId: equipped,
+            pageThemeId,
+          }}
+          onSave={onSave}
+          onClose={() => setEditOpen(false)}
+        />
       ) : null}
-
-      <div className="relative z-10 -mt-10 grid grid-cols-1 items-start gap-x-5 gap-y-3 pb-6 pl-12 pr-6 sm:grid-cols-[auto_minmax(0,1fr)] md:-mt-12 md:pl-28 md:pr-10 lg:pl-18">
-        <div className="relative size-32 shrink-0 overflow-hidden rounded-full ring-2 ring-accent md:size-36">
-          {avatarUrl.startsWith("data:") ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="size-full object-cover" />
-          ) : avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt=""
-              width={144}
-              height={144}
-              priority
-              className="size-full object-cover"
-            />
-          ) : (
-            <span className="flex size-full items-center justify-center bg-surface text-2xl font-semibold text-muted">
-              {displayName.trim().slice(0, 2).toUpperCase() || "?"}
-            </span>
-          )}
-        </div>
-
-        <div className="min-w-0 sm:pt-18">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-              {displayName}
-            </h1>
-            {isStaff ? <ElovateStaffBadge /> : null}
-            <ReputationChip
-              profileId={profile.id}
-              profileSlug={profile.slug}
-              votes={profile.votes}
-              viewerVote={profile.viewerVote}
-              canChangeVote={profile.canChangeVote}
-              isSignedIn={isSignedIn}
-              isOwnProfile={canEdit}
-              themeId={pageThemeId}
-            />
-          </div>
-          <p className="mt-1 text-sm text-muted">{profile.handle}</p>
-        </div>
-      </div>
     </section>
+  );
+}
+
+export function ProfileIdentity({
+  profile,
+  pageThemeId,
+  displayName,
+  avatarUrl,
+  canEdit,
+  isSignedIn,
+  className,
+}: {
+  profile: ProfileView;
+  pageThemeId: ProfilePageThemeId;
+  displayName: string;
+  avatarUrl: string;
+  canEdit: boolean;
+  isSignedIn: boolean;
+  className?: string;
+}) {
+  const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
+
+  return (
+    <div
+      className={cn(
+        "relative z-10 grid grid-cols-1 items-start gap-x-5 gap-y-3 pl-12 pr-6 sm:grid-cols-[auto_minmax(0,1fr)] md:pl-28 md:pr-10 lg:pl-18",
+        className,
+      )}
+    >
+      <div className="relative size-32 shrink-0 overflow-hidden rounded-full ring-2 ring-accent md:size-36">
+        {avatarUrl.startsWith("data:") ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="size-full object-cover" />
+        ) : avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt=""
+            width={144}
+            height={144}
+            priority
+            className="size-full object-cover"
+          />
+        ) : (
+          <span className="flex size-full items-center justify-center bg-surface text-2xl font-semibold text-muted">
+            {displayName.trim().slice(0, 2).toUpperCase() || "?"}
+          </span>
+        )}
+      </div>
+
+      <div className="min-w-0 sm:pt-18">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            {displayName}
+          </h1>
+          {isStaff ? <ElovateStaffBadge /> : null}
+          <ReputationChip
+            profileId={profile.id}
+            profileSlug={profile.slug}
+            votes={profile.votes}
+            viewerVote={profile.viewerVote}
+            canChangeVote={profile.canChangeVote}
+            isSignedIn={isSignedIn}
+            isOwnProfile={canEdit}
+            themeId={pageThemeId}
+          />
+        </div>
+        <p className="mt-1 text-sm text-muted">{profile.handle}</p>
+      </div>
+    </div>
   );
 }

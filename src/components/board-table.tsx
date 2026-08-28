@@ -115,57 +115,55 @@ export function BoardTable({
   });
 
   return (
-    <div className="panel-elevated flex h-[min(22rem,48dvh)] min-h-0 min-w-0 flex-col overflow-hidden lg:h-full">
-      <div className="shrink-0 border-b border-border p-4">
-        <div className="flex items-center gap-2.5">
-          <label className="relative min-w-0 flex-1" htmlFor="player-search">
-            <span className="sr-only">Player Name</span>
-            <input
-              id="player-search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Player Name"
-              autoComplete="off"
-              className="h-11 w-full rounded-full border border-border bg-background py-2.5 pr-11 pl-4 text-sm text-foreground placeholder:text-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    <div className="flex h-[min(22rem,48dvh)] min-h-0 min-w-0 flex-col overflow-hidden lg:h-full">
+      <div className="flex shrink-0 items-center gap-2.5 pb-3">
+        <label className="relative min-w-0 flex-1" htmlFor="player-search">
+          <span className="sr-only">Player Name</span>
+          <input
+            id="player-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Player Name"
+            autoComplete="off"
+            className="h-10 w-full border-0 border-b border-border bg-transparent py-2 pr-10 pl-0 text-sm text-foreground placeholder:text-muted/80 focus-visible:border-accent focus-visible:outline-none"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute top-1/2 right-0 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <X size={16} weight="bold" aria-hidden />
+            </button>
+          ) : (
+            <MagnifyingGlass
+              size={18}
+              weight="regular"
+              className="pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 text-muted"
+              aria-hidden
             />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X size={16} weight="bold" aria-hidden />
-              </button>
-            ) : (
-              <MagnifyingGlass
-                size={18}
-                weight="regular"
-                className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted"
-                aria-hidden
-              />
-            )}
-          </label>
-          <button
-            type="button"
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.98]"
-            aria-label="Voice search"
-          >
-            <Microphone size={18} weight="fill" aria-hidden />
-          </button>
-        </div>
+          )}
+        </label>
+        <button
+          type="button"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:scale-[0.98]"
+          aria-label="Voice search"
+        >
+          <Microphone size={18} weight="fill" aria-hidden />
+        </button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[640px] border-collapse text-left text-base lg:min-w-0">
           <caption className="sr-only">Top 250 ranked players</caption>
-          <thead className="sticky top-0 z-10 bg-surface-elevated">
+          <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b border-border">
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
                     scope="col"
-                    className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-muted"
+                    className="px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-muted"
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -178,12 +176,12 @@ export function BoardTable({
               <tr
                 key={row.id}
                 className={cn(
-                  "border-b border-border/80 odd:bg-background/[0.16]",
+                  "border-b border-border/60 transition-colors duration-150 hover:bg-accent/10",
                   row.original.isCutoff && "border-l-2 border-l-accent bg-accent/10",
                 )}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3">
+                  <td key={cell.id} className="px-4 py-2.5">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

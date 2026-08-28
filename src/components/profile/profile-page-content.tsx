@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import { CutoffChart } from "@/components/cutoff-chart";
 import { MATCH_HIGHLIGHT_MS, MATCH_LIMIT, MatchHistory } from "@/components/profile/match-history";
-import { ProfileHero } from "@/components/profile/profile-hero";
+import { ProfileHero, ProfileIdentity } from "@/components/profile/profile-hero";
 import { ProfileThemeProvider } from "@/components/profile/profile-theme-provider";
 import { SrProgress } from "@/components/profile/sr-progress";
 import { SiteTooltip } from "@/components/ui/tooltip";
@@ -42,6 +42,9 @@ export function ProfilePageContent({
   isSignedIn: boolean;
 }) {
   const [pageThemeId, setPageThemeId] = useState<ProfilePageThemeId>(profile.pageThemeId);
+  const [displayName, setDisplayName] = useState(profile.displayName);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
+  const [equipped, setEquipped] = useState(profile.equippedHeaderId);
   const [matches, setMatches] = useState<ProfileMatch[]>(profile.matches);
   const [currentSr, setCurrentSr] = useState(profile.currentSr);
   const [series, setSeries] = useState<CutoffPoint[]>(profile.series);
@@ -110,21 +113,28 @@ export function ProfilePageContent({
       <ProfileHero
         profile={profile}
         pageThemeId={pageThemeId}
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        equipped={equipped}
         canEdit={canEdit}
-        isSignedIn={isSignedIn}
-        onPageThemeChange={setPageThemeId}
+        onSave={(saved) => {
+          setDisplayName(saved.displayName);
+          setAvatarUrl(saved.avatarUrl);
+          setEquipped(saved.equippedHeaderId);
+          setPageThemeId(saved.pageThemeId);
+        }}
       />
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <div className="order-2 flex flex-col gap-8 lg:order-1">
-          <div className="min-h-80">
-            <MatchHistory
-              matches={matches}
-              enteredId={enteredId}
-              highlightId={highlightId}
-            />
-          </div>
-        </div>
-        <div className="order-1 flex flex-col gap-8 lg:order-2">
+      <div className="relative z-10 -mt-10 grid grid-cols-1 gap-x-8 gap-y-6 md:-mt-12 lg:grid-cols-2">
+        <ProfileIdentity
+          profile={profile}
+          pageThemeId={pageThemeId}
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          canEdit={canEdit}
+          isSignedIn={isSignedIn}
+          className="order-1 lg:col-start-1 lg:row-start-1"
+        />
+        <div className="order-2 flex flex-col gap-8 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-18">
           <div className="min-h-40">
             <div className="mb-2 px-1 text-right">
               <p className="flex items-center justify-end gap-1.5">
@@ -173,6 +183,13 @@ export function ProfilePageContent({
           <div className="min-h-40">
             <SrProgress currentSr={currentSr} cutoffSr={profile.cutoffSr} />
           </div>
+        </div>
+        <div className="order-3 min-h-80 lg:col-start-1 lg:row-start-2">
+          <MatchHistory
+            matches={matches}
+            enteredId={enteredId}
+            highlightId={highlightId}
+          />
         </div>
       </div>
     </ProfileThemeProvider>
