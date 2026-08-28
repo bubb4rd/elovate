@@ -31,26 +31,36 @@ export function ProfileBanner({
   const header = headerDef(headerId);
   const ink = inkClass(header.ink);
   const showChrome = variant === "full";
-  const isFragger = headerId === "fragger";
+  const isImageHeader = headerId === "fragger" || headerId === "top-250";
 
   return (
     <div
       className={cn(
         "relative h-[200px] w-full overflow-hidden rounded-2xl [container-type:size]",
         headerId === "default" && "bg-[#292929]",
-        isFragger && "bg-[#1a0a00]",
+        headerId === "fragger" && "bg-[#1a0a00]",
+        headerId === "top-250" && "bg-[#f5e6a8]",
         className,
       )}
       style={
-        isFragger
+        isImageHeader
           ? undefined
           : { backgroundImage: BANNER_BG[headerId] }
       }
     >
-      {isFragger ? (
+      {headerId === "fragger" ? (
         <img
           alt=""
           src="/profile/headers/fragger.png"
+          className="pointer-events-none absolute inset-0 size-full object-cover"
+          draggable={false}
+        />
+      ) : null}
+
+      {headerId === "top-250" ? (
+        <img
+          alt=""
+          src="/profile/headers/top-250.jpg"
           className="pointer-events-none absolute inset-0 size-full object-cover"
           draggable={false}
         />

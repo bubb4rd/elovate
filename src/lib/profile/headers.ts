@@ -9,6 +9,7 @@ export const PROFILE_HEADER_IDS = [
   "iridescent",
   "elovate-staff",
   "fragger",
+  "top-250",
 ] as const;
 
 export type ProfileHeaderId = (typeof PROFILE_HEADER_IDS)[number];
@@ -23,7 +24,7 @@ export const GRANT_UNLOCKS_HEADERS: Record<
   ProfileGrantId,
   readonly ProfileHeaderId[]
 > = {
-  "elovate-staff": ["elovate-staff", "fragger"],
+  "elovate-staff": ["elovate-staff", "fragger", "top-250"],
 };
 
 export type HeaderKind = "default" | "rank" | "exclusive";
@@ -92,6 +93,13 @@ export const PROFILE_HEADERS: readonly ProfileHeaderDef[] = [
   {
     id: "fragger",
     label: "Fragger",
+    kind: "exclusive",
+    minSr: null,
+    ink: "black",
+  },
+  {
+    id: "top-250",
+    label: "Top 250",
     kind: "exclusive",
     minSr: null,
     ink: "black",
