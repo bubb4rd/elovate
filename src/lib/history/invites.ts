@@ -33,6 +33,10 @@ type InviteRecord = {
   inviter: HistoryTeammate;
 };
 
+function calcKey(mode: Mode): string {
+  return `elovate-calc-sr-${mode}`;
+}
+
 function isMissingMatchInvitesTable(message: string): boolean {
   return /match_invites/i.test(message) && /schema cache|does not exist|relation/i.test(message);
 }
