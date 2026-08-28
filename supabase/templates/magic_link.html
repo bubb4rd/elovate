@@ -1,4 +1,8 @@
 <h2>Sign in to elovate</h2>
-<p>Open this link to finish signing in. It expires in one hour.</p>
-<p><a href="{{ .ConfirmationURL }}">Sign in</a></p>
+<p>Open this link to finish signing in. It expires in one hour and works on any device.</p>
+<p>
+  <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=magiclink"
+    >Sign in</a
+  >
+</p>
 <p>If you did not request this, you can ignore this email.</p>

@@ -38,6 +38,13 @@ export async function GET(request: Request) {
       const destination = await destinationAfterSession(supabase, next);
       return redirect(`/auth/complete?next=${encodeURIComponent(destination)}`);
     }
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("code verifier") ||
+      message.includes("both auth code and code verifier")
+    ) {
+      return redirect("/login?error=device");
+    }
   }
 
   return redirect("/login?error=auth");

@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 
 const ERROR_COPY: Record<string, string> = {
   auth: "Could not complete sign-in. Try again.",
+  device:
+    "That link needs a fresh request on this device. Request a new email link here, then open it on this same phone or computer.",
   config: "Sign-in is not configured on this server.",
 };
 

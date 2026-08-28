@@ -74,6 +74,16 @@ In the [elovate Auth URL Configuration](https://supabase.com/dashboard/project/i
 
 If `/auth/callback` is missing from Redirect URLs, Supabase falls back to Site URL and you land on `/?code=…` with no session.
 
+### Magic-link email templates (required for cross-device sign-in)
+
+With `@supabase/ssr` PKCE, default `{{ .ConfirmationURL }}` links only work on the **same browser** that requested the email (code verifier is local). Hosted Auth templates must use `TokenHash` instead so opening the link on another phone/computer works:
+
+```html
+<a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=magiclink">Sign in</a>
+```
+
+Local copy: `supabase/templates/magic_link.html` (also used for confirmation in `config.toml`). Hosted templates are edited in Dashboard → Auth → Email Templates (or Management API); `config.toml` does not auto-deploy them.
+
 Discord Developer Portal redirect for this project must be:
 
 `https://ioagctykwkspbwzyrfcb.supabase.co/auth/v1/callback`

@@ -36,6 +36,7 @@ Hosted Supabase Auth URL configuration verified via authorize endpoint probing:
 
 ## Notes
 
+- Hosted magic-link / confirmation email templates must use `TokenHash` → `/auth/callback` (not `ConfirmationURL`) so links work on another device. Updated 2026-08-28; see README Auth section.
 - `AuthCodeCatcher` remains safety net if Supabase falls back to Site URL with `?code=` or hash tokens.
 - Test user `wz01-smoke@mailinator.com` created during smoke; safe to delete from `auth.users` if desired.
-- Re-run full manual 2-tab magic link + cold Discord OAuth in browser before launch freeze (see [LAUNCH_ROADMAP.md](./LAUNCH_ROADMAP.md) §5 step 4).
+- Re-run full manual **cross-device** magic link + cold Discord OAuth in browser before launch freeze (see [LAUNCH_ROADMAP.md](./LAUNCH_ROADMAP.md) §5 step 4).
