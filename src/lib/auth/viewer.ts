@@ -5,6 +5,7 @@ export type ViewerProfile = {
   slug: string;
   displayName: string;
   avatarUrl: string | null;
+  currentSr: number;
   onboardingComplete: boolean;
 };
 
@@ -18,7 +19,7 @@ export async function getViewerProfile(): Promise<ViewerProfile | null> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, slug, display_name, avatar_url, onboarding_completed_at")
+    .select("id, slug, display_name, avatar_url, current_sr, onboarding_completed_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -28,6 +29,7 @@ export async function getViewerProfile(): Promise<ViewerProfile | null> {
       slug: "",
       displayName: "",
       avatarUrl: null,
+      currentSr: 0,
       onboardingComplete: false,
     };
   }
@@ -37,6 +39,7 @@ export async function getViewerProfile(): Promise<ViewerProfile | null> {
     slug: data.slug,
     displayName: data.display_name,
     avatarUrl: data.avatar_url,
+    currentSr: typeof data.current_sr === "number" ? data.current_sr : 0,
     onboardingComplete: data.onboarding_completed_at != null,
   };
 }

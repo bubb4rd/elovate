@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 const CHIP_EASE = [0.16, 1, 0.3, 1] as const;
 
 export type TeammateViewer = {
+  id?: string;
   slug: string;
   displayName: string;
 };
@@ -232,8 +233,7 @@ export function TeammatePicker({
       aria-label="Add teammates"
       className="rounded-[6px] border border-border bg-surface px-3.5 py-3"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
             <Users weight="bold" className="size-3.5 text-muted" aria-hidden />
             Teammates
@@ -241,10 +241,6 @@ export function TeammatePicker({
           </p>
           <p className="mt-0.5 text-xs text-muted">Who played with you?</p>
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
-          {selected.length > 0 ? "Done" : "Skip"}
-        </Button>
-      </div>
 
       <AnimatePresence initial={false}>
         {selected.length > 0 ? (
@@ -384,6 +380,20 @@ export function TeammatePicker({
             ) : null}
           </ul>
         ) : null}
+      </div>
+
+      <div className="mt-3 flex items-center justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
+          Skip
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          disabled={selected.length === 0}
+          onClick={onDismiss}
+        >
+          Done
+        </Button>
       </div>
     </section>
   );

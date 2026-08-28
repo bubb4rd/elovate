@@ -201,6 +201,7 @@ export function ProfilePageContent({
             matches={matches}
             enteredId={enteredId}
             highlightId={highlightId}
+            personalLabel={canEdit ? "you" : displayName}
           />
         </div>
       </div>

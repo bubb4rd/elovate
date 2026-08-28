@@ -21,6 +21,11 @@ import {
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { useActionCooldown } from "@/components/use-action-cooldown";
+import {
+  DEFAULT_ACTION_COOLDOWN_SEC,
+  withCooldownLabel,
+} from "@/lib/action-cooldown";
 import type { ParsedSrBreakdown } from "@/lib/ocr";
 import { PICK_MAX_BYTES, prepareUploadImage } from "@/lib/ocr/prepare-upload-image";
 import { cn } from "@/lib/utils";
@@ -175,6 +180,7 @@ export function SrScreenshotUpload({
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [errorKind, setErrorKind] = useState<ScanErrorKind | undefined>();
+  const cooldown = useActionCooldown();
 
   const clearPreview = useCallback(() => {
     if (previewRef.current) {
@@ -243,12 +249,15 @@ export function SrScreenshotUpload({
   }, [applyFile]);
 
   const uploading = status === "uploading";
-  const canRetry = file != null && (status === "ready" || (status === "error" && errorKind !== "rate_limit"));
+  const canRetry =
+    file != null &&
+    !cooldown.cooling &&
+    (status === "ready" || (status === "error" && errorKind !== "rate_limit"));
   const canCancel = file != null || status === "error";
   const stacked = file != null && status !== "error";
 
   function openPicker() {
-    if (uploading) return;
+    if (uploading || cooldown.cooling) return;
     inputRef.current?.click();
   }
 
@@ -260,6 +269,7 @@ export function SrScreenshotUpload({
 
   async function onUpload() {
     if (!file || (status !== "ready" && status !== "error")) return;
+    if (cooldown.cooling) return;
     if (status === "error" && errorKind === "rate_limit") return;
     setStatus("uploading");
     setErrorMessage(undefined);
@@ -270,6 +280,13 @@ export function SrScreenshotUpload({
       reset();
     } catch (err) {
       const scan = err instanceof ScanError ? err : null;
+      if (scan?.kind === "rate_limit") {
+        cooldown.startFromError(scan.message, DEFAULT_ACTION_COOLDOWN_SEC);
+        setStatus("ready");
+        setErrorKind(undefined);
+        setErrorMessage(undefined);
+        return;
+      }
       setStatus("error");
       setErrorKind(scan?.kind ?? "read_failed");
       setErrorMessage(scan?.message ?? (err instanceof Error ? err.message : "Upload failed. Try again."));
@@ -402,7 +419,14 @@ export function SrScreenshotUpload({
           disabled={!canRetry || uploading}
           onClick={onUpload}
         >
-          {status === "error" && file && errorKind !== "rate_limit" ? "Try again" : "Upload"}
+          {uploading
+            ? "Upload"
+            : withCooldownLabel(
+                status === "error" && file && errorKind !== "rate_limit"
+                  ? "Try again"
+                  : "Upload",
+                cooldown.remaining,
+              )}
         </Button>
         <Button
           type="button"

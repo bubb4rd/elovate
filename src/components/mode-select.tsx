@@ -30,7 +30,7 @@ export function ModeSelect({
           const next = e.target.value as Mode;
           router.push(tool === "calc" ? `/${next}/calc` : `/${next}`);
         }}
-        className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+        className="absolute inset-0 cursor-pointer appearance-none text-base opacity-0"
         aria-label="Select mode"
       >
         {OPTIONS.map((option) => (

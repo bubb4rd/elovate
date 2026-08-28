@@ -15,6 +15,7 @@ import { appendMatch } from "./sessions";
 import { fetchCloudHistory, upsertHistoryMatchInCloud } from "./cloud";
 import { createHistoryStore, resolveSignedInUserId } from "./synced-store";
 import { createLocalHistoryStore } from "./store";
+import { patchCalcSr } from "./calc-storage";
 import type { HistoryMatch, HistoryTeammate } from "./types";
 
 export const MATCH_ACCEPTED_EVENT = "elovate-match-accepted";
@@ -41,10 +42,6 @@ type InviteRecord = {
   inviter: HistoryTeammate;
 };
 
-function calcKey(mode: Mode): string {
-  return `elovate-calc-sr-${mode}`;
-}
-
 function isMissingMatchInvitesTable(message: string): boolean {
   return /match_invites/i.test(message) && /schema cache|does not exist|relation/i.test(message);
 }
@@ -52,22 +49,6 @@ function isMissingMatchInvitesTable(message: string): boolean {
 function logInviteError(context: string, message: string): void {
   if (isMissingMatchInvitesTable(message)) return;
   console.error(`[match-invites] ${context}`, message);
-}
-
-export function patchCalcSr(mode: Mode, sr: number): void {
-  if (typeof window === "undefined") return;
-  const key = calcKey(mode);
-  let stored: Record<string, unknown> = {};
-  try {
-    const parsed = JSON.parse(localStorage.getItem(key) ?? "") as unknown;
-    if (parsed && typeof parsed === "object") stored = parsed as Record<string, unknown>;
-  } catch {
-    stored = {};
-  }
-  stored.sr = sr;
-  stored.srInput = String(sr);
-  localStorage.setItem(key, JSON.stringify(stored));
-  window.dispatchEvent(new Event(key));
 }
 
 export function wzMatchToProfileMatch(match: HistoryMatch): ProfileMatch | null {
@@ -355,7 +336,7 @@ export async function acceptMatchInvite(inviteId: string): Promise<boolean> {
     .eq("status", "pending");
   if (updateError) return false;
 
-  patchCalcSr(mode, result.match.srAfter);
+  patchCalcSr(mode, result.match.srAfter, userId);
   broadcastAcceptedMatch({
     match: result.match,
     srAfter: result.match.srAfter,

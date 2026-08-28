@@ -25,7 +25,7 @@ export function SeasonSelect({
           if (active && id === active.id) router.push(`/${mode}`);
           else router.push(`/${mode}/s/${id}`);
         }}
-        className="h-8 rounded-[6px] border border-border bg-surface px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-8 rounded-[6px] border border-border bg-surface px-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:text-sm"
         aria-label="Select season"
       >
         {seasons.map((s) => (

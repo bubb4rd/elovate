@@ -21,7 +21,7 @@ export function SiteFooter({
         <p>
           Not affiliated with Activision, Treyarch, or Raven.
         </p>
-        <p className="numeric">{freshness ?? "Sample snapshots for this build."}</p>
+        {freshness ? <p className="numeric">{freshness}</p> : null}
         <nav className="flex flex-wrap gap-4">
           <Link href="/wz" className="hover:text-foreground">
             Warzone

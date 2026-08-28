@@ -79,7 +79,7 @@ export function RankPlate({
             id="rank-select"
             value={selectValue}
             onChange={(e) => onRankChange(e.target.value)}
-            className="absolute inset-0 w-full cursor-pointer appearance-none opacity-0"
+            className="absolute inset-0 w-full cursor-pointer appearance-none text-base opacity-0"
             aria-label="Select rank"
           >
             {rankOptions.map((option) => (
@@ -110,7 +110,7 @@ export function RankPlate({
               onFocus={() => setEditing(true)}
               onBlur={() => setEditing(false)}
               className={cn(
-                "numeric min-w-0 w-full bg-transparent text-center text-sm outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                "numeric min-w-0 w-full bg-transparent text-center text-base outline-none [appearance:textfield] md:text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
                 editingSr ? "text-zinc-100" : "text-transparent caret-transparent",
               )}
               aria-label="Current SR"

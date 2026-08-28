@@ -49,15 +49,20 @@ export async function CalcPage({ mode }: { mode: Mode }) {
           cutoffSr={cutoffSr}
           ladder={ladder}
           signedIn={viewer != null}
+          profileSr={viewer?.currentSr ?? null}
           viewer={
             viewer
-              ? { slug: viewer.slug, displayName: viewer.displayName }
+              ? {
+                  id: viewer.id,
+                  slug: viewer.slug,
+                  displayName: viewer.displayName,
+                }
               : null
           }
         />
       </main>
       <SiteFooter
-        calcHref={`/${mode}/calc`}
+        calcHref={calcHref}
         freshness={
           capturedAt ? `Last snapshot ${formatSnapshotTime(capturedAt)}` : undefined
         }

@@ -3,8 +3,14 @@
 import { DiscordLogo, EnvelopeSimple } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useAuthCompletionWatcher } from "@/components/auth/use-auth-completion-watcher";
+import { useActionCooldown } from "@/components/use-action-cooldown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DEFAULT_ACTION_COOLDOWN_SEC,
+  isRateLimitMessage,
+  withCooldownLabel,
+} from "@/lib/action-cooldown";
 import { oauthCallbackUrl, stashAuthNext } from "@/lib/auth/oauth-return";
 import { safeNextPath } from "@/lib/auth/paths";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
@@ -28,8 +34,10 @@ export function LoginForm({
   const [busy, setBusy] = useState<"email" | "discord" | null>(null);
   const [error, setError] = useState<string | null>(ERROR_COPY[errorCode ?? ""] ?? null);
   const completionPhase = useAuthCompletionWatcher({ enabled: sent, next });
+  const cooldown = useActionCooldown();
 
   async function sendLink() {
+    if (cooldown.cooling) return;
     const trimmed = email.trim();
     if (!trimmed) {
       setError("Enter an email address.");
@@ -52,9 +60,14 @@ export function LoginForm({
     });
     setBusy(null);
     if (sendError) {
+      if (isRateLimitMessage(sendError.message)) {
+        cooldown.startFromError(sendError.message);
+        return;
+      }
       setError(sendError.message);
       return;
     }
+    cooldown.start(DEFAULT_ACTION_COOLDOWN_SEC);
     setSent(true);
   }
 
@@ -79,6 +92,13 @@ export function LoginForm({
       setError(oauthError.message);
     }
   }
+
+  const emailBusy = busy === "email";
+  const emailDisabled = busy != null || cooldown.cooling;
+  const sendLabel = withCooldownLabel(
+    sent ? "Resend link" : "Email me a link",
+    cooldown.remaining,
+  );
 
   return (
     <div className="mt-8 space-y-6">
@@ -132,12 +152,12 @@ export function LoginForm({
               <Button
                 type="button"
                 className="w-full"
-                disabled={busy != null}
+                disabled={emailDisabled}
                 onClick={() => {
                   void sendLink();
                 }}
               >
-                {busy === "email" ? "Working…" : "Resend link"}
+                {emailBusy ? "Working…" : sendLabel}
               </Button>
               <button
                 type="button"
@@ -173,8 +193,8 @@ export function LoginForm({
               placeholder="you@email.com"
             />
           </label>
-          <Button type="submit" className="w-full" disabled={busy != null}>
-            {busy === "email" ? "Working…" : "Email me a link"}
+          <Button type="submit" className="w-full" disabled={emailDisabled}>
+            {emailBusy ? "Working…" : sendLabel}
           </Button>
         </form>
       )}

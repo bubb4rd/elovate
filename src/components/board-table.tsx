@@ -125,7 +125,7 @@ export function BoardTable({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Player Name"
             autoComplete="off"
-            className="h-10 w-full border-0 border-b border-border bg-transparent py-2 pr-10 pl-0 text-sm text-foreground placeholder:text-muted/80 focus-visible:border-accent focus-visible:outline-none"
+            className="h-10 w-full border-0 border-b border-border bg-transparent py-2 pr-10 pl-0 text-base text-foreground placeholder:text-muted/80 focus-visible:border-accent focus-visible:outline-none md:text-sm"
           />
           {query ? (
             <button

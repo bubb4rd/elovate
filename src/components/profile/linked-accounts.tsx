@@ -3,8 +3,14 @@
 import { DiscordLogo } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useActionCooldown } from "@/components/use-action-cooldown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DEFAULT_ACTION_COOLDOWN_SEC,
+  isRateLimitMessage,
+  withCooldownLabel,
+} from "@/lib/action-cooldown";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { oauthCallbackUrl, stashAuthNext } from "@/lib/auth/oauth-return";
 
@@ -43,6 +49,7 @@ export function LinkedAccounts({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const cooldown = useActionCooldown();
 
   async function loadIdentities() {
     const supabase = createBrowserSupabaseClient();
@@ -111,6 +118,7 @@ export function LinkedAccounts({
   }
 
   async function sendEmailLink() {
+    if (cooldown.cooling) return;
     const trimmed = email.trim();
     if (!trimmed) {
       setError("Enter an email address.");
@@ -123,6 +131,10 @@ export function LinkedAccounts({
     const { error: updateError } = await supabase.auth.updateUser({ email: trimmed });
     setBusy(null);
     if (updateError) {
+      if (isRateLimitMessage(updateError.message)) {
+        cooldown.startFromError(updateError.message);
+        return;
+      }
       setError(
         updateError.message.toLowerCase().includes("already")
           ? "That email is already used by another user."
@@ -130,6 +142,7 @@ export function LinkedAccounts({
       );
       return;
     }
+    cooldown.start(DEFAULT_ACTION_COOLDOWN_SEC);
     setSent(true);
     setMessage("Check your inbox for a 6-digit code.");
   }
@@ -272,15 +285,41 @@ export function LinkedAccounts({
               className={inputClass ? `${inputClass} tracking-[0.3em]` : "tracking-[0.3em]"}
             />
           ) : null}
-          <Button
-            type="submit"
-            size="sm"
-            variant="outline"
-            disabled={disabled || busy != null}
-            className={outlineBtnClass}
-          >
-            {sent ? "Verify email" : "Send code"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              size="sm"
+              variant="outline"
+              disabled={
+                disabled ||
+                busy != null ||
+                (!sent && cooldown.cooling)
+              }
+              className={outlineBtnClass}
+            >
+              {busy === "email" || busy === "otp"
+                ? "Working…"
+                : sent
+                  ? "Verify email"
+                  : withCooldownLabel("Send code", cooldown.remaining)}
+            </Button>
+            {sent ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={disabled || busy != null || cooldown.cooling}
+                className={outlineBtnClass}
+                onClick={() => {
+                  void sendEmailLink();
+                }}
+              >
+                {busy === "email"
+                  ? "Working…"
+                  : withCooldownLabel("Resend code", cooldown.remaining)}
+              </Button>
+            ) : null}
+          </div>
         </form>
       ) : null}
 

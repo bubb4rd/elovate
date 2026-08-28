@@ -19,6 +19,25 @@ export function BoardPodiumIcon({ className }: { className?: string }) {
   );
 }
 
+export function SquadUsersIcon({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-block shrink-0 bg-current", className)}
+      style={{
+        maskImage: "url(/icons/squad-users.png)",
+        WebkitMaskImage: "url(/icons/squad-users.png)",
+        maskSize: "contain",
+        WebkitMaskSize: "contain",
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+        maskPosition: "center",
+        WebkitMaskPosition: "center",
+      }}
+    />
+  );
+}
+
 const CLIMB_MARK_PATH =
   "M10 205 L18 190 L70 126 L91 103 L98 101 L105 104 L126 126 L129 128 L134 128 L219 27 L237 8 L244 8 L247 12 L248 111 L247 239 L245 243 L239 247 L164 248 L13 246 L8 238 L9 206 Z";
 

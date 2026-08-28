@@ -4,7 +4,6 @@ import icon from "@/app/icon.png";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
 import { NavCutoff } from "@/components/nav-cutoff";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { NavSession } from "@/components/nav-session";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { zIndex } from "@/lib/z-index";
@@ -47,7 +46,7 @@ export function SiteNav({
       className="sticky top-0 shrink-0 bg-background/95 backdrop-blur"
       style={{ zIndex: zIndex.nav }}
     >
-      <div className="mx-auto flex min-h-16 max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 md:h-16 md:flex-nowrap md:py-0">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-x-3 px-4 md:gap-x-4">
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/"
@@ -66,7 +65,7 @@ export function SiteNav({
           </Link>
           <ModeSelect mode={liveMode} tool={tool} />
         </div>
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="hidden items-center gap-1 text-sm md:flex">
           <ToolLink href={boardHref} active={tool === "board"}>
             Board
           </ToolLink>
@@ -77,7 +76,7 @@ export function SiteNav({
             Climb
           </ToolLink>
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 md:gap-3">
           {cutoffSr != null ? (
             <NavCutoff
               cutoffSr={cutoffSr}
@@ -85,8 +84,12 @@ export function SiteNav({
               boardStatus={boardStatus}
             />
           ) : null}
-          <NavSession loginNext={loginNext ?? (mode ? `/${mode}` : "/")} />
-          <ThemeToggle />
+          <NavSession
+            loginNext={loginNext ?? (mode ? `/${mode}` : "/")}
+            boardHref={boardHref}
+            calcHref={calcHref}
+            tool={tool}
+          />
         </div>
       </div>
     </header>

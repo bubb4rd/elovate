@@ -33,7 +33,7 @@ export default async function Home() {
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <SiteNav seasons={seasons} />
-      <section className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-center gap-10 px-4 pt-16 md:grid-cols-2 md:pt-20">
+      <section className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-center gap-10 px-4 pt-16 pb-12 md:grid-cols-2 md:pt-20 md:pb-0">
         <div className="text-right">
           {wz ? (
             <>
@@ -57,10 +57,8 @@ export default async function Home() {
       <SiteFooter
         freshness={
           capturedAt
-            ? live
-              ? `Last snapshot ${formatSnapshotTime(capturedAt)}`
-              : `Last snapshot ${formatSnapshotTime(capturedAt)}. Sample season data.`
-            : "Sample snapshots for this build."
+            ? `Last snapshot ${formatSnapshotTime(capturedAt)}`
+            : undefined
         }
       />
     </div>

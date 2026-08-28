@@ -66,7 +66,7 @@ export function NavAccount({
 
   if (!viewer) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="hidden items-center gap-1 md:flex">
         <Link
           href={registerHref(loginNext)}
           className="rounded-[6px] px-2.5 py-1.5 text-xs font-medium tracking-wide text-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"

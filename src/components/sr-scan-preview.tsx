@@ -551,7 +551,7 @@ function PlacementEditor({
         autoFocus
         onChange={(event) => onChange(event.target.value as WzPlacementId | "")}
         onKeyDown={onKeyDown}
-        className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:text-sm"
       >
         <option value="">Select placement…</option>
         {WZ_PLACEMENTS.map((placement) => (

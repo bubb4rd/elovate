@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useLayoutEffect, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,14 @@ import {
 } from "@/lib/ranked";
 import type { Mode } from "@/lib/data/types";
 import {
+  ensureCalcSeeded,
+  parseStoredCalc,
+  readCalcRaw,
+  subscribeCalc,
+  writeCalcStored,
+  type StoredCalc as StoredCalcBase,
+} from "@/lib/history/calc-storage";
+import {
   appendMatch,
   deleteSession,
   endSession,
@@ -58,30 +66,6 @@ import {
 } from "@/lib/history";
 import { useHistory } from "@/lib/history/use-history";
 
-const LEGACY_CALC_KEY = "elovate-calc-sr";
-
-function calcKey(mode: Mode) {
-  return `elovate-calc-sr-${mode}`;
-}
-
-function calcEvent(mode: Mode) {
-  return `elovate-calc-sr-${mode}`;
-}
-
-function migrateLegacyCalc() {
-  try {
-    const legacy = localStorage.getItem(LEGACY_CALC_KEY);
-    if (legacy == null) return;
-    for (const mode of ["wz", "mp"] as const) {
-      if (localStorage.getItem(calcKey(mode)) == null) {
-        localStorage.setItem(calcKey(mode), legacy);
-      }
-    }
-  } catch {
-    /* quota / private mode */
-  }
-}
-
 const TARGETS: { id: ClimbTarget; label: string }[] = [
   { id: "nextTier", label: "Next tier" },
   { id: "nextDivision", label: "Next rank" },
@@ -89,61 +73,13 @@ const TARGETS: { id: ClimbTarget; label: string }[] = [
   { id: "top250", label: "Live T250" },
 ];
 
-type StoredCalc = {
-  sr?: number;
-  srInput?: string;
-  elims?: number;
-  elimsInput?: string;
-  squadElims?: number;
-  squadElimsInput?: string;
-  yourElims?: number;
-  yourElimsInput?: string;
-  rankDelta?: number;
-  protection?: number;
-  dailyForgive?: boolean;
-  srPerWin?: number;
-  srPerWinInput?: string;
-  srPerLoss?: number;
-  srPerLossInput?: string;
+type StoredCalc = Omit<StoredCalcBase, "target" | "placement"> & {
   target?: ClimbTarget;
   placement?: WzPlacementId | null;
 };
 
-function subscribeCalc(mode: Mode, onStoreChange: () => void) {
-  const key = calcKey(mode);
-  const event = calcEvent(mode);
-  function onStorage(e: StorageEvent) {
-    if (e.key === key || e.key === null) onStoreChange();
-  }
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(event, onStoreChange);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(event, onStoreChange);
-  };
-}
-
-function getSnapshot(mode: Mode) {
-  migrateLegacyCalc();
-  return localStorage.getItem(calcKey(mode)) ?? "";
-}
-
 function getServerSnapshot() {
   return "";
-}
-
-function parseStored(raw: string): StoredCalc {
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw) as StoredCalc;
-  } catch {
-    return {};
-  }
-}
-
-function writeStored(mode: Mode, next: StoredCalc) {
-  localStorage.setItem(calcKey(mode), JSON.stringify(next));
-  window.dispatchEvent(new Event(calcEvent(mode)));
 }
 
 function asRankDelta(value: number | undefined): RankDelta {
@@ -194,19 +130,35 @@ export function SrCalculator({
   ladder,
   signedIn = false,
   viewer = null,
+  profileSr = null,
 }: {
   mode: Mode;
   cutoffSr: number;
   ladder: BoardRung[];
   signedIn?: boolean;
   viewer?: TeammateViewer | null;
+  profileSr?: number | null;
 }) {
-  const raw = useSyncExternalStore(
-    (onChange) => subscribeCalc(mode, onChange),
-    () => getSnapshot(mode),
-    getServerSnapshot,
+  const userId = viewer?.id ?? null;
+  const subscribe = useCallback(
+    (onChange: () => void) => subscribeCalc(mode, userId, onChange),
+    [mode, userId],
   );
-  const stored = parseStored(raw);
+  const getSnapshot = useCallback(() => readCalcRaw(mode, userId), [mode, userId]);
+  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const stored = parseStoredCalc(raw) as StoredCalc;
+
+  useEffect(() => {
+    if (!userId || profileSr == null) return;
+    ensureCalcSeeded(mode, userId, profileSr);
+  }, [mode, userId, profileSr]);
+
+  useEffect(() => {
+    setPendingMatchId(null);
+    setSubmitReceipt(null);
+    setShowAuthCta(false);
+    setOcrResult(null);
+  }, [userId]);
 
   const srInput = stored.srInput ?? (stored.sr != null ? String(stored.sr) : "0");
   const squadElimsState = readSquadElims(stored);
@@ -222,7 +174,7 @@ export function SrCalculator({
     (stored.srPerLoss != null ? String(stored.srPerLoss) : String(DEFAULT_SR_PER_LOSS));
   const rankDelta = asRankDelta(stored.rankDelta);
   const target = asTarget(stored.target);
-  const placementId = asPlacement(stored.placement);
+  const placementId = asPlacement(stored.placement as WzPlacementId | null | undefined);
 
   const [editingSr, setEditingSr] = useState(false);
   const [entryMode, setEntryMode] = useState<EntryMode>("manual");
@@ -257,7 +209,7 @@ export function SrCalculator({
   const srPerLoss = Math.max(0, Math.floor(Number(srPerLossInput) || 0));
 
   function patch(next: Partial<StoredCalc>) {
-    writeStored(mode, {
+    writeCalcStored(mode, userId, {
       ...stored,
       sr,
       squadElims,
@@ -490,7 +442,6 @@ export function SrCalculator({
     setHistorySaveFailed(!recorded);
     patch({ sr: next, srInput: String(next), ...clearedGame() });
     setOcrResult(null);
-    setEntryMode("manual");
   }
 
   function patchSr(value: string) {
@@ -696,7 +647,7 @@ export function SrCalculator({
                   value={climbValue}
                   disabled={climbOptions.length === 1}
                   onChange={(e) => patch({ target: e.target.value as ClimbTarget })}
-                  className="absolute inset-0 cursor-pointer appearance-none opacity-0 disabled:cursor-default"
+                  className="absolute inset-0 cursor-pointer appearance-none text-base opacity-0 disabled:cursor-default"
                   aria-label="Climb to rank"
                 >
                   {climbOptions.map((item) => (
@@ -723,36 +674,39 @@ export function SrCalculator({
 
           {mode === "wz" ? (
             <div className="mt-6 space-y-4">
-              <SrInputMode value={entryMode} onChange={setEntryModeSafe} />
-              <PostApplyPanel
-                mode={mode}
-                pendingMatchId={pendingMatchId}
-                submitReceipt={submitReceipt}
-                historyDoc={historyDoc}
-                viewer={viewer}
-                signedIn={signedIn}
-                showAuthCta={showAuthCta}
-                onTeammatesChange={savePendingTeammates}
-                onFinishTeammates={finishTeammates}
-                onNewMatch={startNewSubmission}
-              />
-              {entryMode === "photo" ? (
-                ocrResult ? (
-                  <SrScanPreview
-                    initial={ocrResult}
-                    expectedFee={rank.fee}
-                    onApply={applyOcrMatch}
-                    onRetry={() => setOcrResult(null)}
-                  />
-                ) : (
-                  <SrScreenshotUpload
-                    expectedFee={rank.fee}
-                    onParsed={setOcrResult}
-                    panelHeight={rankCardHeight}
-                  />
-                )
+              {pendingMatchId || submitReceipt ? (
+                <PostApplyPanel
+                  mode={mode}
+                  pendingMatchId={pendingMatchId}
+                  submitReceipt={submitReceipt}
+                  historyDoc={historyDoc}
+                  viewer={viewer}
+                  signedIn={signedIn}
+                  showAuthCta={showAuthCta}
+                  onTeammatesChange={savePendingTeammates}
+                  onFinishTeammates={finishTeammates}
+                  onNewMatch={startNewSubmission}
+                />
               ) : (
                 <>
+                  <SrInputMode value={entryMode} onChange={setEntryModeSafe} />
+                  {entryMode === "photo" ? (
+                    ocrResult ? (
+                      <SrScanPreview
+                        initial={ocrResult}
+                        expectedFee={rank.fee}
+                        onApply={applyOcrMatch}
+                        onRetry={() => setOcrResult(null)}
+                      />
+                    ) : (
+                      <SrScreenshotUpload
+                        expectedFee={rank.fee}
+                        onParsed={setOcrResult}
+                        panelHeight={rankCardHeight}
+                      />
+                    )
+                  ) : (
+                    <>
               <div>
                 <p className="text-xs text-muted">Eliminations</p>
                 <div className="mt-2 flex flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
@@ -884,6 +838,8 @@ export function SrCalculator({
               })}
               </div>
               <ApplyGameBar {...applyBarState} onAdd={addSr} onCancel={cancel} />
+                    </>
+                  )}
                 </>
               )}
             </div>
