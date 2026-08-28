@@ -1,4 +1,5 @@
 import type { Mode } from "@/lib/data/types";
+import type { ProfileMatch } from "@/lib/profile/types";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import type { ClimbMatchRow } from "@/lib/supabase/database";
 import {
@@ -9,15 +10,14 @@ import {
   teammatesForAcceptedMatch,
 } from "./invite-draft";
 import { rowToMatch } from "./map";
+import { mergeHistory } from "./merge";
 import { appendMatch } from "./sessions";
-import { upsertHistoryMatchInCloud } from "./cloud";
-import {
-  createHistoryStore,
-  mergeCloudHistory,
-  pushHistoryDocument,
-  resolveSignedInUserId,
-} from "./synced-store";
+import { fetchCloudHistory, upsertHistoryMatchInCloud } from "./cloud";
+import { createHistoryStore, resolveSignedInUserId } from "./synced-store";
+import { createLocalHistoryStore } from "./store";
 import type { HistoryMatch, HistoryTeammate } from "./types";
+
+export const MATCH_ACCEPTED_EVENT = "elovate-match-accepted";
 
 export type PendingMatchInvite = {
   id: string;
@@ -25,6 +25,14 @@ export type PendingMatchInvite = {
   summary: string;
   mode: Mode;
   inviter: HistoryTeammate;
+};
+
+export type AcceptedMatchPayload = {
+  match: HistoryMatch;
+  srAfter: number;
+  inviteeSlug: string | null;
+  inviterSlug: string | null;
+  sourceMatchId: string;
 };
 
 type InviteRecord = {
@@ -60,6 +68,43 @@ export function patchCalcSr(mode: Mode, sr: number): void {
   stored.srInput = String(sr);
   localStorage.setItem(key, JSON.stringify(stored));
   window.dispatchEvent(new Event(key));
+}
+
+export function wzMatchToProfileMatch(match: HistoryMatch): ProfileMatch | null {
+  if (match.mode !== "wz") return null;
+  return {
+    id: match.id,
+    createdAt: match.createdAt,
+    placement: match.placement,
+    squadElims: match.squadElims,
+    yourElims: match.yourElims,
+    net: match.net,
+    srAfter: match.srAfter,
+    teammates: match.teammates,
+  };
+}
+
+function broadcastAcceptedMatch(payload: AcceptedMatchPayload): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(MATCH_ACCEPTED_EVENT, { detail: payload }));
+}
+
+export function subscribeAcceptedMatch(
+  onAccept: (payload: AcceptedMatchPayload) => void,
+): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  function onEvent(event: Event) {
+    if (!(event instanceof CustomEvent)) return;
+    const detail = event.detail as AcceptedMatchPayload | undefined;
+    if (!detail?.match) return;
+    onAccept(detail);
+  }
+
+  window.addEventListener(MATCH_ACCEPTED_EVENT, onEvent);
+  return () => {
+    window.removeEventListener(MATCH_ACCEPTED_EVENT, onEvent);
+  };
 }
 
 function historyTeammateFromProfile(row: {
@@ -267,9 +312,10 @@ export async function acceptMatchInvite(inviteId: string): Promise<boolean> {
     .maybeSingle();
 
   const mode = parsed.source.mode;
-  await mergeCloudHistory(mode);
-  const store = createHistoryStore(mode);
-  const srBefore = currentSrFromHistory(store.load(), profile?.current_sr ?? 0);
+  const cloud = await fetchCloudHistory(supabase, userId, mode);
+  const local = createLocalHistoryStore(mode, userId);
+  const base = mergeHistory(local.load(), cloud);
+  const srBefore = currentSrFromHistory(base, profile?.current_sr ?? 0);
   const teammates = teammatesForAcceptedMatch({
     inviter: parsed.inviter,
     sourceTeammates: parsed.source.teammates,
@@ -279,14 +325,24 @@ export async function acceptMatchInvite(inviteId: string): Promise<boolean> {
   if (!draft) return false;
 
   const result = appendMatch(
-    store.load(),
+    base,
     { ...draft, imported: true },
     new Date(),
     parsed.id,
   );
-  if (!store.save(result.doc)) return false;
-  const flushed = await pushHistoryDocument(mode, result.doc);
+  if (!local.save(result.doc)) return false;
+  const flushed = await upsertHistoryMatchInCloud(
+    supabase,
+    userId,
+    result.match,
+    result.session,
+  );
   if (!flushed) return false;
+
+  await supabase
+    .from("profiles")
+    .update({ current_sr: result.match.srAfter })
+    .eq("id", userId);
 
   const { error: updateError } = await supabase
     .from("match_invites")
@@ -300,6 +356,13 @@ export async function acceptMatchInvite(inviteId: string): Promise<boolean> {
   if (updateError) return false;
 
   patchCalcSr(mode, result.match.srAfter);
+  broadcastAcceptedMatch({
+    match: result.match,
+    srAfter: result.match.srAfter,
+    inviteeSlug: profile?.slug ?? null,
+    inviterSlug: parsed.inviter.slug,
+    sourceMatchId: parsed.source.id,
+  });
   return true;
 }
 
