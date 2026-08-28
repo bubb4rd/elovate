@@ -60,7 +60,7 @@ export function ProfileBanner({
       {headerId === "top-250" ? (
         <img
           alt=""
-          src="/profile/headers/top-250.jpg"
+          src="/profile/headers/top-250.png"
           className="pointer-events-none absolute inset-0 size-full object-cover"
           draggable={false}
         />
