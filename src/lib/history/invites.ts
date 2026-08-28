@@ -10,6 +10,7 @@ import {
 } from "./invite-draft";
 import { rowToMatch } from "./map";
 import { appendMatch } from "./sessions";
+import { upsertHistoryMatchInCloud } from "./cloud";
 import {
   createHistoryStore,
   mergeCloudHistory,
@@ -111,6 +112,30 @@ async function profileIdsForSlugs(
   return new Map(data.map((row) => [row.slug.toLowerCase(), row.id]));
 }
 
+async function ensureSourceMatchInCloud(mode: Mode, matchId: string): Promise<boolean> {
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) return false;
+  const userId = await resolveSignedInUserId(supabase);
+  if (!userId) return false;
+
+  const { data: existing } = await supabase
+    .from("climb_matches")
+    .select("id")
+    .eq("id", matchId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (existing) return true;
+
+  const store = createHistoryStore(mode);
+  const doc = store.load();
+  const match = doc.matches.find((item) => item.id === matchId);
+  if (!match) return false;
+  const session = doc.sessions.find((item) => item.id === match.sessionId);
+  if (!session) return false;
+
+  return upsertHistoryMatchInCloud(supabase, userId, match, session);
+}
+
 export async function syncMatchInvites(args: {
   mode: Mode;
   matchId: string;
@@ -145,9 +170,8 @@ export async function syncMatchInvites(args: {
 
   if (added.length === 0) return true;
 
-  const store = createHistoryStore(args.mode);
-  const pushed = await pushHistoryDocument(args.mode, store.load());
-  if (!pushed) return false;
+  const ensured = await ensureSourceMatchInCloud(args.mode, args.matchId);
+  if (!ensured) return false;
 
   const rows = added
     .map((slug) => bySlug.get(slug))

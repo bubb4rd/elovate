@@ -113,11 +113,12 @@ export function rowsToDocument(
 }
 
 export function documentForMode(doc: HistoryDocument, mode: Mode): HistoryDocument {
-  const sessions = doc.sessions.filter((session) => session.mode === mode);
-  const ids = new Set(sessions.map((session) => session.id));
+  const matches = doc.matches.filter((match) => match.mode === mode);
+  const sessionIds = new Set(matches.map((match) => match.sessionId));
+  const sessions = doc.sessions.filter((session) => sessionIds.has(session.id));
   return {
     version: HISTORY_VERSION,
     sessions,
-    matches: doc.matches.filter((match) => match.mode === mode && ids.has(match.sessionId)),
+    matches,
   };
 }
