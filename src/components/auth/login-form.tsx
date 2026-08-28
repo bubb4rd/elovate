@@ -1,6 +1,7 @@
 "use client";
 
 import { DiscordLogo, EnvelopeSimple } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuthCompletionWatcher } from "@/components/auth/use-auth-completion-watcher";
 import { useActionCooldown } from "@/components/use-action-cooldown";
@@ -12,6 +13,7 @@ import {
   withCooldownLabel,
 } from "@/lib/action-cooldown";
 import { oauthCallbackUrl, stashAuthNext } from "@/lib/auth/oauth-return";
+import { destinationAfterSession } from "@/lib/auth/post-auth";
 import { safeNextPath } from "@/lib/auth/paths";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
@@ -19,7 +21,7 @@ import { cn } from "@/lib/utils";
 const ERROR_COPY: Record<string, string> = {
   auth: "Could not complete sign-in. Try again.",
   device:
-    "That link needs a fresh request on this device. Request a new email link here, then open it on this same phone or computer.",
+    "That email link is outdated. Request a new one below, then open the link or enter the code on this phone.",
   config: "Sign-in is not configured on this server.",
 };
 
@@ -30,10 +32,12 @@ export function LoginForm({
   nextPath?: string;
   errorCode?: string;
 }) {
+  const router = useRouter();
   const next = safeNextPath(nextPath, "/");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState<"email" | "discord" | null>(null);
+  const [busy, setBusy] = useState<"email" | "otp" | "discord" | null>(null);
   const [error, setError] = useState<string | null>(ERROR_COPY[errorCode ?? ""] ?? null);
   const completionPhase = useAuthCompletionWatcher({ enabled: sent, next });
   const cooldown = useActionCooldown();
@@ -70,7 +74,41 @@ export function LoginForm({
       return;
     }
     cooldown.start(DEFAULT_ACTION_COOLDOWN_SEC);
+    setOtp("");
     setSent(true);
+  }
+
+  async function verifyOtpCode() {
+    const trimmedEmail = email.trim();
+    const token = otp.replace(/\s+/g, "");
+    if (!trimmedEmail) {
+      setError("Enter an email address.");
+      return;
+    }
+    if (!token) {
+      setError("Enter the code from your email.");
+      return;
+    }
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) {
+      setError(ERROR_COPY.config);
+      return;
+    }
+    setBusy("otp");
+    setError(null);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: trimmedEmail,
+      token,
+      type: "email",
+    });
+    if (verifyError) {
+      setBusy(null);
+      setError(verifyError.message);
+      return;
+    }
+    const destination = await destinationAfterSession(supabase, next);
+    router.replace(`/auth/complete?next=${encodeURIComponent(destination)}`);
+    router.refresh();
   }
 
   async function signInDiscord() {
@@ -96,9 +134,10 @@ export function LoginForm({
   }
 
   const emailBusy = busy === "email";
+  const otpBusy = busy === "otp";
   const emailDisabled = busy != null || cooldown.cooling;
   const sendLabel = withCooldownLabel(
-    sent ? "Resend link" : "Email me a link",
+    sent ? "Resend email" : "Email me a link",
     cooldown.remaining,
   );
 
@@ -134,9 +173,9 @@ export function LoginForm({
                     "Link confirmed. Finishing sign-in in this tab."
                   ) : (
                     <>
-                      We sent a sign-in link to{" "}
-                      <span className="text-foreground">{email.trim()}</span>. Open it in any
-                      tab to continue — this page will update automatically.
+                      We sent a link and code to{" "}
+                      <span className="text-foreground">{email.trim()}</span>. Open the
+                      link on any device, or enter the code here.
                     </>
                   )}
                 </p>
@@ -151,8 +190,33 @@ export function LoginForm({
           </div>
           {completionPhase === "waiting" ? (
             <>
+              <form
+                className="space-y-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void verifyOtpCode();
+                }}
+              >
+                <label className="block text-[10px] font-medium tracking-[0.16em] text-muted uppercase">
+                  Code from email
+                  <Input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otp}
+                    disabled={busy != null}
+                    onChange={(event) => setOtp(event.target.value)}
+                    className="mt-1.5 tracking-[0.2em]"
+                    placeholder="12345678"
+                    maxLength={12}
+                  />
+                </label>
+                <Button type="submit" className="w-full" disabled={busy != null}>
+                  {otpBusy ? "Verifying…" : "Verify code"}
+                </Button>
+              </form>
               <Button
                 type="button"
+                variant="outline"
                 className="w-full"
                 disabled={emailDisabled}
                 onClick={() => {
@@ -167,6 +231,7 @@ export function LoginForm({
                 disabled={busy != null}
                 onClick={() => {
                   setSent(false);
+                  setOtp("");
                   setError(null);
                 }}
               >

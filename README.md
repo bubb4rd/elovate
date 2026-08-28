@@ -76,11 +76,14 @@ If `/auth/callback` is missing from Redirect URLs, Supabase falls back to Site U
 
 ### Magic-link email templates (required for cross-device sign-in)
 
-With `@supabase/ssr` PKCE, default `{{ .ConfirmationURL }}` links only work on the **same browser** that requested the email (code verifier is local). Hosted Auth templates must use `TokenHash` instead so opening the link on another phone/computer works:
+With `@supabase/ssr` PKCE, default `{{ .ConfirmationURL }}` links only work on the **same browser** that requested the email (code verifier is local). Hosted Auth templates must use `TokenHash` (and preferably include `{{ .Token }}` for manual code entry) so opening the link on another phone/computer works:
 
 ```html
-<a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=magiclink">Sign in</a>
+<p>{{ .Token }}</p>
+<a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email">Sign in</a>
 ```
+
+Also set `NEXT_PUBLIC_SITE_URL` to the primary site origin so auth redirects do not use Netlify deploy subdomains.
 
 Local copy: `supabase/templates/magic_link.html` (also used for confirmation in `config.toml`). Hosted templates are edited in Dashboard → Auth → Email Templates (or Management API); `config.toml` does not auto-deploy them.
 

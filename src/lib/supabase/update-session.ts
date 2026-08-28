@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { onboardingHref, shouldSkipOnboardingGate } from "@/lib/auth/paths";
+import { publicOrigin } from "@/lib/auth/public-origin";
 import { supabasePublishableKey, supabaseUrl } from "./env";
 
 function copyCookies(from: NextResponse, to: NextResponse) {
@@ -51,7 +52,9 @@ export async function updateSession(request: NextRequest) {
       const nextPath =
         pathname === "/login" ? "/" : `${pathname}${request.nextUrl.search}`;
       const dest = onboardingHref(nextPath);
-      const redirectResponse = NextResponse.redirect(new URL(dest, request.url));
+      const redirectResponse = NextResponse.redirect(
+        new URL(dest, publicOrigin(request)),
+      );
       return copyCookies(supabaseResponse, redirectResponse);
     }
   }

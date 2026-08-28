@@ -6,10 +6,12 @@ import {
 import { parseEmailOtpType } from "@/lib/auth/email-otp";
 import { destinationAfterSession } from "@/lib/auth/post-auth";
 import { safeNextPath } from "@/lib/auth/paths";
+import { publicOrigin } from "@/lib/auth/public-origin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = publicOrigin(request);
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const otpType = parseEmailOtpType(searchParams.get("type"));
@@ -23,17 +25,29 @@ export async function GET(request: Request) {
     return response;
   }
 
-  if (code || (tokenHash && otpType)) {
+  // Prefer token_hash (works cross-device) over PKCE code (same-browser only).
+  if (tokenHash && otpType) {
     const supabase = await createServerSupabaseClient();
     if (!supabase) {
       return redirect("/login?error=config");
     }
-    const { error } = code
-      ? await supabase.auth.exchangeCodeForSession(code)
-      : await supabase.auth.verifyOtp({
-          type: otpType!,
-          token_hash: tokenHash!,
-        });
+    const { error } = await supabase.auth.verifyOtp({
+      type: otpType,
+      token_hash: tokenHash,
+    });
+    if (!error) {
+      const destination = await destinationAfterSession(supabase, next);
+      return redirect(`/auth/complete?next=${encodeURIComponent(destination)}`);
+    }
+    return redirect("/login?error=auth");
+  }
+
+  if (code) {
+    const supabase = await createServerSupabaseClient();
+    if (!supabase) {
+      return redirect("/login?error=config");
+    }
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const destination = await destinationAfterSession(supabase, next);
       return redirect(`/auth/complete?next=${encodeURIComponent(destination)}`);
@@ -45,6 +59,7 @@ export async function GET(request: Request) {
     ) {
       return redirect("/login?error=device");
     }
+    return redirect("/login?error=auth");
   }
 
   return redirect("/login?error=auth");
