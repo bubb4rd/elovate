@@ -21,7 +21,7 @@ export {
   winStreak,
 } from "./sessions";
 export { createLocalHistoryStore, historyKey } from "./store";
-export { createHistoryStore } from "./synced-store";
+export { createHistoryStore, flushHistoryPush, mergeCloudHistory, pushHistoryDocument } from "./synced-store";
 export { mergeHistory } from "./merge";
 export {
   SESSION_SHARE_HEIGHT,
@@ -32,6 +32,15 @@ export {
   shareFilename,
   shareModeLabel,
 } from "./share";
+export {
+  acceptMatchInvite,
+  denyMatchInvite,
+  fetchPendingInvites,
+  retractMatchInvites,
+  subscribeMatchInvites,
+  syncMatchInvites,
+  type PendingMatchInvite,
+} from "./invites";
 export {
   HISTORY_VERSION,
   MAX_MATCHES_PER_MODE,

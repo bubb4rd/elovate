@@ -9,6 +9,8 @@ Photo upload on the WZ climb calculator calls Google Cloud Vision. Set one of:
 
 Enable the Vision API on the GCP project. Do not commit credential files.
 
+See `docs/WZ-07-ocr-optional.md` for operator setup and launch-without-keys checklist. Smoke: `./scripts/wz-07-ocr-smoke.sh`.
+
 ## Cutoff snapshots (Supabase)
 
 Live Warzone cutoff history is stored in Supabase. The home 24h gain uses that table only — never generated seed snapshots. Until about 24 hours of rows exist, the 24h sparkline stays hidden.
@@ -55,16 +57,19 @@ The job POSTs every 15 minutes. 24h stays empty until a snapshot is at least 24 
 
 ## Auth / profiles
 
-Push profile migrations to hosted with `supabase db push` (includes onboarding columns on `profiles`). Existing auth users without a profile row need either a re-signup (trigger) or a one-off insert matching `private.handle_new_user`. After sign-in, incomplete profiles are sent to `/onboarding`.
+Push profile migrations to hosted with `supabase db push` (includes onboarding columns on `profiles`). Existing auth users without a profile row are sent to `/onboarding` on sign-in; the wizard inserts their row. For bulk backfill of legacy orphans, run `supabase/scripts/backfill_orphan_profiles.sql` in the SQL editor. Smoke: `./scripts/wz-02-onboarding-smoke.sh` (see `docs/WZ-02-onboarding-smoke-results.md`). Profile privacy/themes/reputation: `./scripts/wz-06-profile-smoke.sh` (see `docs/WZ-06-profile-smoke-results.md`).
 
 ### Hosted Auth URL configuration (required for Discord / OAuth)
 
 In the [elovate Auth URL Configuration](https://supabase.com/dashboard/project/ioagctykwkspbwzyrfcb/auth/url-configuration):
 
 - **Site URL:** `https://elovatesr.netlify.app`
-- **Redirect URLs** (add all that apply):
+- **Redirect URLs** (add all that apply; match `supabase/config.toml`):
+  - `https://elovatesr.netlify.app`
   - `https://elovatesr.netlify.app/auth/callback`
+  - `http://127.0.0.1:3000`
   - `http://127.0.0.1:3000/auth/callback`
+  - `http://localhost:3000`
   - `http://localhost:3000/auth/callback`
 
 If `/auth/callback` is missing from Redirect URLs, Supabase falls back to Site URL and you land on `/?code=…` with no session.

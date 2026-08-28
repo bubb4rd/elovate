@@ -57,6 +57,16 @@ export function daysBetween(aIso: string, bIso: string): number {
   return Math.max(1, Math.round(Math.abs(b - a) / 86_400_000));
 }
 
+export function formatRelativeShort(iso: string, now = Date.now()): string {
+  const ms = Math.max(0, now - new Date(iso).getTime());
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
 export function formatLocalTime(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",

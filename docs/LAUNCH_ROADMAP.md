@@ -202,7 +202,9 @@ Run on production:
 2. `/wz` board loads; season switch works  
 3. `/wz/calc` session + share card; signed-in save succeeds  
 4. Login Discord → callback → session; magic link cross-tab complete  
+   Re-run: `./scripts/wz-01-auth-smoke.sh` (automated) + manual 2-tab magic link in browser (see `docs/WZ-01-auth-smoke-results.md`)
 5. New user → onboarding → profile slug  
+   Re-run: `./scripts/wz-02-onboarding-smoke.sh` (automated) + manual orphan-account wizard in browser (see `docs/WZ-02-onboarding-smoke-results.md`)
 6. `/players/[slug]` public view; private profile honored  
 7. `/desktop` opt-in (and logged-out email path) writes waitlist row  
 8. `/mp` still coming soon  

@@ -1,6 +1,7 @@
 "use client";
 
 import { MagnifyingGlass, Plus, Users, X } from "@phosphor-icons/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,17 @@ import {
 import {
   filterRecentTeammates,
   guestTeammateFromQuery,
+  isOwnTeammate,
   searchPublicProfiles,
 } from "@/lib/profile/search";
 import { cn } from "@/lib/utils";
+
+const CHIP_EASE = [0.16, 1, 0.3, 1] as const;
+
+export type TeammateViewer = {
+  slug: string;
+  displayName: string;
+};
 
 function initials(name: string): string {
   return name
@@ -109,47 +118,64 @@ function Chip({
 export function TeammatePicker({
   matchId,
   doc,
+  viewer = null,
   onTeammatesChange,
   onDismiss,
 }: {
   matchId: string;
   doc: HistoryDocument;
+  viewer?: TeammateViewer | null;
   onTeammatesChange: (teammates: HistoryTeammate[]) => void;
   onDismiss: () => void;
 }) {
   const searchId = useId();
+  const reduce = useReducedMotion();
   const [query, setQuery] = useState("");
   const [profiles, setProfiles] = useState<HistoryTeammate[]>([]);
   const [searching, setSearching] = useState(false);
 
-  const match = doc.matches.find((item) => item.id === matchId);
-  const selected = match?.teammates ?? [];
+  const chipMotion = reduce
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 520, damping: 36, mass: 0.55 };
+  const fade = reduce
+    ? { duration: 0 }
+    : { duration: 0.18, ease: CHIP_EASE };
+
+  const selected = useMemo(
+    () => doc.matches.find((item) => item.id === matchId)?.teammates ?? [],
+    [doc, matchId],
+  );
   const selectedKeys = useMemo(
     () => new Set(selected.map(teammateKey)),
     [selected],
   );
   const recents = useMemo(
-    () => recentTeammates(doc).filter((teammate) => !selectedKeys.has(teammateKey(teammate))),
-    [doc, selectedKeys],
+    () =>
+      recentTeammates(doc).filter(
+        (teammate) =>
+          !selectedKeys.has(teammateKey(teammate)) && !isOwnTeammate(teammate, viewer),
+      ),
+    [doc, selectedKeys, viewer],
   );
   const recentHits = filterRecentTeammates(recents, query);
   const guest = guestTeammateFromQuery(query);
   const atCap = selected.length >= MAX_TEAMMATES_PER_MATCH;
   const showResults = query.trim().length > 0;
+  const visibleProfiles = query.trim().length < 2 ? [] : profiles;
 
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) {
-      setProfiles([]);
-      setSearching(false);
-      return;
-    }
+    if (q.length < 2) return;
     let cancelled = false;
-    setSearching(true);
     const timer = window.setTimeout(() => {
+      setSearching(true);
       void searchPublicProfiles(q).then((hits) => {
         if (cancelled) return;
-        setProfiles(hits.filter((hit) => !selectedKeys.has(teammateKey(hit))));
+        setProfiles(
+          hits.filter(
+            (hit) => !selectedKeys.has(teammateKey(hit)) && !isOwnTeammate(hit, viewer),
+          ),
+        );
         setSearching(false);
       });
     }, 200);
@@ -157,19 +183,22 @@ export function TeammatePicker({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query, selectedKeys]);
+  }, [query, selectedKeys, viewer]);
 
-  const profileKeys = new Set(profiles.map(teammateKey));
+  const profileKeys = new Set(visibleProfiles.map(teammateKey));
   const recentKeys = new Set(recentHits.map(teammateKey));
   const showGuest =
     guest != null &&
     !atCap &&
+    !isOwnTeammate(guest, viewer) &&
     !selectedKeys.has(teammateKey(guest)) &&
     !recentKeys.has(teammateKey(guest)) &&
     !profileKeys.has(teammateKey(guest));
 
   function add(teammate: HistoryTeammate) {
-    if (atCap || selectedKeys.has(teammateKey(teammate))) return;
+    if (atCap || selectedKeys.has(teammateKey(teammate)) || isOwnTeammate(teammate, viewer)) {
+      return;
+    }
     onTeammatesChange([...selected, teammate]);
     setQuery("");
   }
@@ -217,29 +246,57 @@ export function TeammatePicker({
         </Button>
       </div>
 
-      {selected.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Selected teammates">
-          {selected.map((teammate) => (
-            <li key={teammateKey(teammate)}>
-              <Chip teammate={teammate} selected onRemove={() => remove(teammate)} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {selected.length > 0 ? (
+          <motion.ul
+            key="selected"
+            initial={reduce ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            transition={fade}
+            className="mt-3 flex flex-wrap gap-1.5 overflow-hidden"
+            aria-label="Selected teammates"
+          >
+            <AnimatePresence initial={false} mode="popLayout">
+              {selected.map((teammate) => (
+                <motion.li
+                  key={teammateKey(teammate)}
+                  layout
+                  initial={reduce ? false : { opacity: 0, scale: 0.86 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.86 }}
+                  transition={chipMotion}
+                >
+                  <Chip teammate={teammate} selected onRemove={() => remove(teammate)} />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </motion.ul>
+        ) : null}
+      </AnimatePresence>
 
       {recents.length > 0 && !showResults ? (
         <div className="mt-3">
           <p className="text-[10px] font-medium tracking-[0.12em] text-muted uppercase">Recent</p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
-            {recents.map((teammate) => (
-              <li key={teammateKey(teammate)}>
-                <Chip
-                  teammate={teammate}
-                  onClick={() => add(teammate)}
-                  disabled={atCap}
-                />
-              </li>
-            ))}
+            <AnimatePresence initial={false} mode="popLayout">
+              {recents.map((teammate) => (
+                <motion.li
+                  key={teammateKey(teammate)}
+                  layout
+                  initial={reduce ? false : { opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+                  transition={chipMotion}
+                >
+                  <Chip
+                    teammate={teammate}
+                    onClick={() => add(teammate)}
+                    disabled={atCap}
+                  />
+                </motion.li>
+              ))}
+            </AnimatePresence>
           </ul>
         </div>
       ) : null}
@@ -285,7 +342,7 @@ export function TeammatePicker({
                 </button>
               </li>
             ))}
-            {profiles.map((teammate) => (
+            {visibleProfiles.map((teammate) => (
               <li key={`profile-${teammateKey(teammate)}`}>
                 <button
                   type="button"
@@ -320,7 +377,7 @@ export function TeammatePicker({
                 </button>
               </li>
             ) : null}
-            {recentHits.length === 0 && profiles.length === 0 && !showGuest ? (
+            {recentHits.length === 0 && visibleProfiles.length === 0 && !showGuest ? (
               <li className="px-3 py-2 text-xs text-muted">
                 {searching ? "Searching…" : "No matches"}
               </li>

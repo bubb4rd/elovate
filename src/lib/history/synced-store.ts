@@ -12,6 +12,7 @@ const pending = new Map<Mode, ReturnType<typeof setTimeout>>();
 const pendingDoc = new Map<Mode, HistoryDocument>();
 const syncFailed = new Map<Mode, boolean>();
 const merging = new Set<Mode>();
+const pullReady = new Set<Mode>();
 
 type AuthClient = SupabaseClient<Database>;
 
@@ -50,6 +51,11 @@ async function pushNow(mode: Mode, doc: HistoryDocument): Promise<boolean> {
     return true;
   }
 
+  if (!pullReady.has(mode)) {
+    pendingDoc.set(mode, doc);
+    return true;
+  }
+
   const ok = await pushCloudHistory(supabase, userId, mode, doc);
   setSyncFailed(mode, !ok);
   return ok;
@@ -67,6 +73,43 @@ async function flushPush(mode: Mode): Promise<boolean> {
   return pushNow(mode, doc);
 }
 
+function clearScheduledPush(mode: Mode) {
+  pendingDoc.delete(mode);
+  const timer = pending.get(mode);
+  if (timer) {
+    clearTimeout(timer);
+    pending.delete(mode);
+  }
+}
+
+export async function pushHistoryDocument(
+  mode: Mode,
+  doc: HistoryDocument,
+  options?: { prune?: boolean },
+): Promise<boolean> {
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) {
+    setSyncFailed(mode, true);
+    return false;
+  }
+
+  const userId = await resolveSignedInUserId(supabase);
+  if (!userId) {
+    setSyncFailed(mode, false);
+    return false;
+  }
+
+  if (!pullReady.has(mode) && (options?.prune ?? true)) {
+    pendingDoc.set(mode, doc);
+    return true;
+  }
+
+  const ok = await pushCloudHistory(supabase, userId, mode, doc, options);
+  setSyncFailed(mode, !ok);
+  if (ok) clearScheduledPush(mode);
+  return ok;
+}
+
 async function pullAndMerge(
   mode: Mode,
   local: HistoryStore & { getSnapshot: () => string },
@@ -80,7 +123,9 @@ async function pullAndMerge(
   if (!userId) return;
 
   merging.add(mode);
+  pullReady.delete(mode);
   try {
+    await flushPush(mode);
     const cloud = await fetchCloudHistory(supabase, userId, mode);
     const merged = mergeHistory(local.load(), cloud);
     local.save(merged);
@@ -89,6 +134,12 @@ async function pullAndMerge(
     setSyncFailed(mode, !ok);
   } finally {
     merging.delete(mode);
+    pullReady.add(mode);
+    const queued = pendingDoc.get(mode);
+    if (queued) {
+      pendingDoc.delete(mode);
+      void pushNow(mode, queued);
+    }
   }
 }
 
@@ -121,6 +172,15 @@ function registerPageHideFlush() {
       void flushPush(mode);
     }
   });
+}
+
+export async function flushHistoryPush(mode: Mode): Promise<boolean> {
+  return flushPush(mode);
+}
+
+export async function mergeCloudHistory(mode: Mode): Promise<void> {
+  const local = createLocalHistoryStore(mode);
+  await pullAndMerge(mode, local);
 }
 
 export function createHistoryStore(mode: Mode): HistoryStore & {

@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(16);
 
 insert into auth.users (
   instance_id,
@@ -49,7 +49,26 @@ insert into auth.users (
   '',
   '',
   ''
+), (
+  '00000000-0000-0000-0000-000000000000',
+  'dddddddd-dddd-dddd-dddd-dddddddddddd',
+  'authenticated',
+  'authenticated',
+  'orphan@example.com',
+  crypt('password', gen_salt('bf')),
+  now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"user_name":"legacy","full_name":"Legacy Player"}'::jsonb,
+  now(),
+  now(),
+  '',
+  '',
+  '',
+  ''
 );
+
+delete from public.profiles
+where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
 
 select is(
   (select slug from public.profiles where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
@@ -62,12 +81,17 @@ select ok(
   'anon holds no insert grant on profiles'
 );
 select ok(
-  not has_table_privilege('authenticated', 'public.profiles', 'insert'),
-  'authenticated holds no insert grant on profiles'
+  has_column_privilege('authenticated', 'public.profiles', 'slug', 'INSERT'),
+  'authenticated can insert granted profile columns'
 );
 select ok(
   not has_table_privilege('authenticated', 'public.profile_grants', 'insert'),
   'authenticated holds no insert grant on profile_grants'
+);
+select is(
+  (select count(*)::int from public.profiles where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
+  0,
+  'orphan auth user has no profile row'
 );
 
 set local role anon;
@@ -82,6 +106,63 @@ select throws_ok(
   '42501',
   null,
   'anon cannot insert profiles'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub', 'dddddddd-dddd-dddd-dddd-dddddddddddd', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"dddddddd-dddd-dddd-dddd-dddddddddddd","role":"authenticated"}',
+  true
+);
+set local role authenticated;
+
+select lives_ok(
+  $$insert into public.profiles (
+      id,
+      slug,
+      display_name,
+      preferred_mode,
+      climb_goals,
+      current_sr,
+      onboarding_completed_at
+    ) values (
+      'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      'legacy-player',
+      'Legacy Player',
+      'wz',
+      array['top250']::text[],
+      4200,
+      now()
+    )$$,
+  'orphan auth user can insert own profile during onboarding'
+);
+select is(
+  (select slug from public.profiles where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
+  'legacy-player',
+  'orphan onboarding insert persists slug'
+);
+select throws_ok(
+  $$insert into public.profiles (
+      id,
+      slug,
+      display_name,
+      preferred_mode,
+      climb_goals,
+      current_sr,
+      onboarding_completed_at
+    ) values (
+      'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+      'stolen',
+      'Stolen',
+      'wz',
+      array['top250']::text[],
+      1,
+      now()
+    )$$,
+  '42501',
+  null,
+  'authenticated cannot insert profile for another user id'
 );
 
 reset role;

@@ -109,6 +109,16 @@ assert.deepEqual(
   ["Fresh", "Nova"],
 );
 
+const importedDoc = appendMatch(
+  laterTagged,
+  { ...mp(1090, 20), imported: true, teammates: [{ displayName: "Squadmate", slug: "other", avatarUrl: null }] },
+  new Date("2026-08-24T12:20:00.000Z"),
+).doc;
+assert.equal(
+  recentTeammates(importedDoc).some((teammate) => teammate.displayName === "Squadmate"),
+  false,
+);
+
 const parsedLegacy = parseDocument(
   JSON.stringify({
     version: 1,

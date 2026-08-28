@@ -77,6 +77,19 @@ export type DesktopWaitlistRow = {
   created_at: string;
 };
 
+export type MatchInviteStatus = "pending" | "accepted" | "denied";
+
+export type MatchInviteRow = {
+  id: string;
+  source_match_id: string;
+  inviter_id: string;
+  invitee_id: string;
+  status: MatchInviteStatus;
+  accepted_match_id: string | null;
+  created_at: string;
+  responded_at: string | null;
+};
+
 export type CastProfileVoteResult = {
   ups: number;
   downs: number;
@@ -195,6 +208,54 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      match_invites: {
+        Row: MatchInviteRow;
+        Insert: {
+          id?: string;
+          source_match_id: string;
+          inviter_id: string;
+          invitee_id: string;
+          status?: MatchInviteStatus;
+          accepted_match_id?: string | null;
+          created_at?: string;
+          responded_at?: string | null;
+        };
+        Update: {
+          status?: MatchInviteStatus;
+          accepted_match_id?: string | null;
+          responded_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "match_invites_inviter_id_fkey";
+            columns: ["inviter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "match_invites_invitee_id_fkey";
+            columns: ["invitee_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "match_invites_source_match_id_fkey";
+            columns: ["source_match_id"];
+            isOneToOne: false;
+            referencedRelation: "climb_matches";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "match_invites_accepted_match_id_fkey";
+            columns: ["accepted_match_id"];
+            isOneToOne: false;
+            referencedRelation: "climb_matches";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -206,6 +267,7 @@ export type Database = {
     CompositeTypes: Record<string, never>;
     Enums: {
       mode: Mode;
+      match_invite_status: MatchInviteStatus;
     };
   };
 };

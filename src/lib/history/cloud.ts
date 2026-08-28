@@ -3,7 +3,7 @@ import type { Mode } from "@/lib/data/types";
 import type { Database } from "@/lib/supabase/database";
 import { documentForMode, matchToRow, rowsToDocument, sessionToRow } from "./map";
 import { emptyDocument } from "./sessions";
-import type { HistoryDocument } from "./types";
+import type { HistoryDocument, HistoryMatch, HistorySession } from "./types";
 
 type Client = SupabaseClient<Database>;
 
@@ -40,13 +40,41 @@ async function syncProfileCurrentSr(
   return error == null;
 }
 
+/** Upsert a single match (+ session) without pruning other cloud rows. */
+export async function upsertHistoryMatchInCloud(
+  supabase: Client,
+  userId: string,
+  match: HistoryMatch,
+  session: HistorySession,
+): Promise<boolean> {
+  const { error: sessionError } = await supabase
+    .from("climb_sessions")
+    .upsert(sessionToRow(userId, session));
+  if (sessionError) return false;
+
+  const { error: matchError } = await supabase
+    .from("climb_matches")
+    .upsert(matchToRow(userId, match));
+  return matchError == null;
+}
+
 export async function pushCloudHistory(
   supabase: Client,
   userId: string,
   mode: Mode,
   doc: HistoryDocument,
+  options?: { prune?: boolean },
 ): Promise<boolean> {
+  const prune = options?.prune ?? true;
   const scoped = documentForMode(doc, mode);
+
+  if (prune && scoped.matches.length === 0) {
+    const cloud = await fetchCloudHistory(supabase, userId, mode);
+    if (documentForMode(cloud, mode).matches.length > 0) {
+      return false;
+    }
+  }
+
   const sessionRows = scoped.sessions.map((session) => sessionToRow(userId, session));
   const matchRows = scoped.matches.map((match) => matchToRow(userId, match));
   const keepSessionIds = sessionRows.map((row) => row.id);
@@ -59,6 +87,10 @@ export async function pushCloudHistory(
   if (matchRows.length > 0) {
     const { error } = await supabase.from("climb_matches").upsert(matchRows);
     if (error) return false;
+  }
+
+  if (!prune) {
+    return syncProfileCurrentSr(supabase, userId, mode, scoped);
   }
 
   if (keepMatchIds.length > 0) {
