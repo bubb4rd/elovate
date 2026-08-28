@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { RankPlate } from "@/components/rank-plate";
 import { RankTimeline } from "@/components/rank-timeline";
 import { SessionPanel } from "@/components/session-panel";
+import { MatchSubmitReceipt } from "@/components/match-submit-receipt";
 import { SaveClimbCta } from "@/components/save-climb-cta";
 import { SrInputMode, type EntryMode } from "@/components/sr-input-mode";
 import { SrScanPreview } from "@/components/sr-scan-preview";
 import { SrScreenshotUpload } from "@/components/sr-screenshot-upload";
 import { SrTicket } from "@/components/sr-ticket";
-import { TeammatePicker } from "@/components/teammate-picker";
+import { TeammatePicker, type TeammateViewer } from "@/components/teammate-picker";
 import { TickerNumeral } from "@/components/ticker-numeral";
 import { formatDelta, formatSr } from "@/lib/format";
 import { reverseElimKills, type ParsedSrBreakdown } from "@/lib/ocr";
@@ -46,8 +48,11 @@ import {
   deleteSession,
   endSession,
   openSession,
+  retractMatchInvites,
   setMatchTeammates,
+  syncMatchInvites,
   undoLastMatch,
+  type HistoryDocument,
   type HistoryTeammate,
   type NewMatch,
 } from "@/lib/history";
@@ -188,11 +193,13 @@ export function SrCalculator({
   cutoffSr,
   ladder,
   signedIn = false,
+  viewer = null,
 }: {
   mode: Mode;
   cutoffSr: number;
   ladder: BoardRung[];
   signedIn?: boolean;
+  viewer?: TeammateViewer | null;
 }) {
   const raw = useSyncExternalStore(
     (onChange) => subscribeCalc(mode, onChange),
@@ -222,6 +229,7 @@ export function SrCalculator({
   const [ocrResult, setOcrResult] = useState<ParsedSrBreakdown | null>(null);
   const [historySaveFailed, setHistorySaveFailed] = useState(false);
   const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
+  const [submitReceipt, setSubmitReceipt] = useState<"success" | "error" | null>(null);
   const [showAuthCta, setShowAuthCta] = useState(false);
   const rankCardRef = useRef<HTMLDivElement>(null);
   const [rankCardHeight, setRankCardHeight] = useState<number | undefined>();
@@ -270,6 +278,7 @@ export function SrCalculator({
 
   function startNextGame(next: Partial<StoredCalc>) {
     setPendingMatchId(null);
+    setSubmitReceipt(null);
     setShowAuthCta(false);
     patch(next);
   }
@@ -414,6 +423,7 @@ export function SrCalculator({
       const result = appendMatch(historyStore.load(), draft);
       recorded = historyStore.save(result.doc);
       if (recorded) {
+        setSubmitReceipt(null);
         setPendingMatchId(result.match.id);
         if (!signedIn) setShowAuthCta(true);
       }
@@ -432,6 +442,7 @@ export function SrCalculator({
   function setEntryModeSafe(next: EntryMode) {
     if (next === "photo") {
       setPendingMatchId(null);
+      setSubmitReceipt(null);
       setShowAuthCta(false);
     }
     setEntryMode(next);
@@ -469,6 +480,7 @@ export function SrCalculator({
       const result = appendMatch(historyStore.load(), draft);
       recorded = historyStore.save(result.doc);
       if (recorded) {
+        setSubmitReceipt(null);
         setPendingMatchId(result.match.id);
         if (!signedIn) setShowAuthCta(true);
       }
@@ -489,7 +501,9 @@ export function SrCalculator({
     const result = undoLastMatch(historyStore.load(), sr);
     if (!result) return;
     setPendingMatchId((current) => (current === result.removed.id ? null : current));
+    setSubmitReceipt(null);
     setShowAuthCta(false);
+    if (signedIn) void retractMatchInvites(result.removed.id);
     const ok = historyStore.save(result.doc);
     setHistorySaveFailed(!ok);
     patch({ sr: result.restoredSr, srInput: String(result.restoredSr) });
@@ -497,10 +511,30 @@ export function SrCalculator({
 
   function savePendingTeammates(teammates: HistoryTeammate[]) {
     if (!pendingMatchId) return;
+    const previous =
+      historyStore.load().matches.find((match) => match.id === pendingMatchId)?.teammates ?? [];
     const ok = historyStore.save(
       setMatchTeammates(historyStore.load(), pendingMatchId, teammates),
     );
     setHistorySaveFailed(!ok);
+    if (ok && signedIn) {
+      void syncMatchInvites({
+        mode,
+        matchId: pendingMatchId,
+        previous,
+        next: teammates,
+      });
+    }
+  }
+
+  function finishTeammates() {
+    setPendingMatchId(null);
+    setSubmitReceipt(historySaveFailed || cloudSyncFailed ? "error" : "success");
+  }
+
+  function startNewSubmission() {
+    setSubmitReceipt(null);
+    setPendingMatchId(null);
   }
 
   function endOpenSession() {
@@ -598,21 +632,18 @@ export function SrCalculator({
                 Typical Warzone nets at your rank. Edit if your lobby pays differently.
               </span>
               <ApplyGameBar {...applyBarState} onAdd={addSr} onCancel={cancel} />
-              {pendingMatchId || (!signedIn && showAuthCta) ? (
-                <div className="space-y-3">
-                  {pendingMatchId ? (
-                    <TeammatePicker
-                      matchId={pendingMatchId}
-                      doc={historyDoc}
-                      onTeammatesChange={savePendingTeammates}
-                      onDismiss={() => setPendingMatchId(null)}
-                    />
-                  ) : null}
-                  {signedIn || !showAuthCta ? null : (
-                    <SaveClimbCta nextPath={`/${mode}/calc`} />
-                  )}
-                </div>
-              ) : null}
+              <PostApplyPanel
+                mode={mode}
+                pendingMatchId={pendingMatchId}
+                submitReceipt={submitReceipt}
+                historyDoc={historyDoc}
+                viewer={viewer}
+                signedIn={signedIn}
+                showAuthCta={showAuthCta}
+                onTeammatesChange={savePendingTeammates}
+                onFinishTeammates={finishTeammates}
+                onNewMatch={startNewSubmission}
+              />
             </div>
           ) : null}
         </div>
@@ -668,21 +699,18 @@ export function SrCalculator({
           {mode === "wz" ? (
             <div className="mt-6 space-y-4">
               <SrInputMode value={entryMode} onChange={setEntryModeSafe} />
-              {pendingMatchId || (!signedIn && showAuthCta) ? (
-                <div className="space-y-3">
-                  {pendingMatchId ? (
-                    <TeammatePicker
-                      matchId={pendingMatchId}
-                      doc={historyDoc}
-                      onTeammatesChange={savePendingTeammates}
-                      onDismiss={() => setPendingMatchId(null)}
-                    />
-                  ) : null}
-                  {signedIn || !showAuthCta ? null : (
-                    <SaveClimbCta nextPath={`/${mode}/calc`} />
-                  )}
-                </div>
-              ) : null}
+              <PostApplyPanel
+                mode={mode}
+                pendingMatchId={pendingMatchId}
+                submitReceipt={submitReceipt}
+                historyDoc={historyDoc}
+                viewer={viewer}
+                signedIn={signedIn}
+                showAuthCta={showAuthCta}
+                onTeammatesChange={savePendingTeammates}
+                onFinishTeammates={finishTeammates}
+                onNewMatch={startNewSubmission}
+              />
               {entryMode === "photo" ? (
                 ocrResult ? (
                   <SrScanPreview
@@ -878,6 +906,67 @@ export function SrCalculator({
         net={ticketNet}
         capped={elimParts.capped}
       />
+    </div>
+  );
+}
+
+function PostApplyPanel({
+  mode,
+  pendingMatchId,
+  submitReceipt,
+  historyDoc,
+  viewer,
+  signedIn,
+  showAuthCta,
+  onTeammatesChange,
+  onFinishTeammates,
+  onNewMatch,
+}: {
+  mode: Mode;
+  pendingMatchId: string | null;
+  submitReceipt: "success" | "error" | null;
+  historyDoc: HistoryDocument;
+  viewer: TeammateViewer | null;
+  signedIn: boolean;
+  showAuthCta: boolean;
+  onTeammatesChange: (teammates: HistoryTeammate[]) => void;
+  onFinishTeammates: () => void;
+  onNewMatch: () => void;
+}) {
+  const reduce = useReducedMotion();
+  if (!pendingMatchId && !submitReceipt && (signedIn || !showAuthCta)) return null;
+  return (
+    <div className="space-y-3">
+      <AnimatePresence mode="wait" initial={false}>
+        {submitReceipt ? (
+          <motion.div
+            key="receipt"
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={reduce ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <MatchSubmitReceipt status={submitReceipt} onNewMatch={onNewMatch} />
+          </motion.div>
+        ) : pendingMatchId ? (
+          <motion.div
+            key="picker"
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={reduce ? { duration: 0 } : { duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <TeammatePicker
+              matchId={pendingMatchId}
+              doc={historyDoc}
+              viewer={viewer}
+              onTeammatesChange={onTeammatesChange}
+              onDismiss={onFinishTeammates}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+      {signedIn || !showAuthCta ? null : <SaveClimbCta nextPath={`/${mode}/calc`} />}
     </div>
   );
 }

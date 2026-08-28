@@ -21,8 +21,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const profile = await getProfile(slug);
-  return { title: profile?.displayName ?? "Player" };
+  const viewer = await getViewerProfile();
+  const profile = await getProfile(slug, viewer?.id);
+  if (!profile) return { title: "Player" };
+  if (profile.isPrivate && profile.id !== viewer?.id) {
+    return { title: "Private profile" };
+  }
+  return { title: profile.displayName };
 }
 
 export default async function PlayerPage({

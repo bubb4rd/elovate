@@ -78,7 +78,13 @@ export function SiteNav({
               Climb
             </ToolLink>
           </nav>
-        ) : null}
+        ) : (
+          <nav className="flex items-center gap-1 text-sm">
+            <ToolLink href="/desktop" active={false}>
+              Desktop
+            </ToolLink>
+          </nav>
+        )}
         <div className="ml-auto flex items-center gap-3">
           {cutoffSr != null ? (
             <NavCutoff

@@ -30,6 +30,8 @@ type HistoryMatchBase = {
   srAfter: number;
   net: number;
   teammates: HistoryTeammate[];
+  /** True when this row was created by accepting someone else's invite. */
+  imported?: boolean;
 };
 
 export type WzHistoryMatch = HistoryMatchBase & {

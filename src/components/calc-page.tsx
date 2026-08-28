@@ -49,6 +49,11 @@ export async function CalcPage({ mode }: { mode: Mode }) {
           cutoffSr={cutoffSr}
           ladder={ladder}
           signedIn={viewer != null}
+          viewer={
+            viewer
+              ? { slug: viewer.slug, displayName: viewer.displayName }
+              : null
+          }
         />
       </main>
       <SiteFooter

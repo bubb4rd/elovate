@@ -21,6 +21,23 @@ export function filterRecentTeammates(
   });
 }
 
+export function isOwnTeammate(
+  teammate: HistoryTeammate,
+  viewer: { slug?: string | null; displayName?: string | null } | null | undefined,
+): boolean {
+  if (!viewer) return false;
+  const slug = viewer.slug?.trim().toLowerCase();
+  if (slug) {
+    if (teammate.slug?.trim().toLowerCase() === slug) return true;
+    if (!teammate.slug && teammate.displayName.trim().toLowerCase() === slug) return true;
+  }
+  const name = viewer.displayName?.trim().toLowerCase();
+  if (name && !teammate.slug && teammate.displayName.trim().toLowerCase() === name) {
+    return true;
+  }
+  return false;
+}
+
 export function guestTeammateFromQuery(query: string): HistoryTeammate | null {
   if (validateDisplayName(query) != null) return null;
   return { displayName: query.trim(), slug: null, avatarUrl: null };

@@ -123,6 +123,15 @@ function registerPageHideFlush() {
   });
 }
 
+export async function flushHistoryPush(mode: Mode): Promise<boolean> {
+  return flushPush(mode);
+}
+
+export async function mergeCloudHistory(mode: Mode): Promise<void> {
+  const local = createLocalHistoryStore(mode);
+  await pullAndMerge(mode, local);
+}
+
 export function createHistoryStore(mode: Mode): HistoryStore & {
   getSnapshot: () => string;
   getSyncFailed: () => boolean;

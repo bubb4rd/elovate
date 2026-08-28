@@ -53,7 +53,11 @@ export function normalizeTeammates(raw: unknown): HistoryTeammate[] {
 }
 
 function withTeammates(match: HistoryMatch): HistoryMatch {
-  return { ...match, teammates: normalizeTeammates(match.teammates) };
+  return {
+    ...match,
+    teammates: normalizeTeammates(match.teammates),
+    imported: match.imported === true ? true : undefined,
+  };
 }
 
 export function parseDocument(raw: string): HistoryDocument {
@@ -218,7 +222,16 @@ export function appendMatch(
   doc: HistoryDocument,
   draft: NewMatch,
   now = new Date(),
+  matchId?: string,
 ): { doc: HistoryDocument; match: HistoryMatch; session: HistorySession } {
+  if (matchId) {
+    const existing = doc.matches.find((item) => item.id === matchId);
+    if (existing) {
+      const session = doc.sessions.find((item) => item.id === existing.sessionId);
+      if (session) return { doc, match: existing, session };
+    }
+  }
+
   const nowIso = now.toISOString();
   let sessions = [...doc.sessions];
   const matches = [...doc.matches];
@@ -248,10 +261,11 @@ export function appendMatch(
 
   const match = {
     ...draft,
-    id: createId(),
+    id: matchId ?? createId(),
     sessionId: open.id,
     createdAt: nowIso,
     teammates: normalizeTeammates(draft.teammates ?? []),
+    imported: draft.imported === true ? true : undefined,
   } as HistoryMatch;
   matches.push(match);
 
@@ -314,6 +328,7 @@ export function recentTeammates(
   const recents: HistoryTeammate[] = [];
   const ordered = [...doc.matches].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   for (const match of ordered) {
+    if (match.imported) continue;
     for (const teammate of match.teammates) {
       const key = teammateKey(teammate);
       if (seen.has(key)) continue;
