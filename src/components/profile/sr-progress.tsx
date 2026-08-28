@@ -1,16 +1,91 @@
-import { IRIDESCENT_SR } from "@/lib/ranked";
+import type { CSSProperties } from "react";
+import { IRIDESCENT_SR, rankFromSr } from "@/lib/ranked";
 import { formatSr } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const SEGMENT_COUNT = 24;
 
 function compactSr(value: number): string {
   if (value >= 1000) return `${Math.round(value / 1000)}k`;
   return formatSr(value);
 }
 
-function calloutAlignClass(markerPct: number): string {
-  if (markerPct <= 18) return "translate-x-0";
-  if (markerPct >= 82) return "-translate-x-full";
-  return "-translate-x-1/2";
+function scaleName(label: string): string {
+  if (label === "Iridescent") return "Iri";
+  if (label === "Top 250") return "Top250";
+  return label;
+}
+
+function filledSegmentCount(fill: number): number {
+  if (fill <= 0) return 0;
+  if (fill >= 1) return SEGMENT_COUNT;
+  return Math.min(SEGMENT_COUNT, Math.max(1, Math.round(fill * SEGMENT_COUNT)));
+}
+
+function roadState(currentSr: number, cutoffSr: number | null) {
+  const rank = rankFromSr(currentSr, cutoffSr);
+  const cutoff =
+    cutoffSr != null && cutoffSr > IRIDESCENT_SR ? cutoffSr : IRIDESCENT_SR + 10_000;
+
+  if (rank.division === "top250") {
+    return {
+      goalLabel: "Top 250",
+      start: IRIDESCENT_SR,
+      startLabel: "Iri",
+      end: rank.minSr,
+      endLabel: "Top250",
+      remaining: 0,
+    };
+  }
+
+  if (rank.division === "iridescent") {
+    return {
+      goalLabel: "Top 250",
+      start: IRIDESCENT_SR,
+      startLabel: "Iri",
+      end: cutoff,
+      endLabel: "Top250",
+      remaining: Math.max(0, cutoff - currentSr),
+    };
+  }
+
+  const end = rank.nextDivisionSr ?? IRIDESCENT_SR;
+  const next = rankFromSr(end, cutoffSr);
+  return {
+    goalLabel: next.divisionLabel,
+    start: rank.floorSr,
+    startLabel: scaleName(rank.divisionLabel),
+    end,
+    endLabel: scaleName(next.divisionLabel),
+    remaining: Math.max(0, end - currentSr),
+  };
+}
+
+function RemainingSpan({
+  filledCount,
+  remaining,
+}: {
+  filledCount: number;
+  remaining: number;
+}) {
+  const emptyCount = SEGMENT_COUNT - filledCount;
+  if (remaining <= 0 || emptyCount <= 0) return null;
+
+  return (
+    <div className="mt-1.5 flex h-6 gap-1" aria-hidden>
+      {filledCount > 0 ? <span className="min-w-0" style={{ flex: filledCount }} /> : null}
+      <div className="flex min-w-0 items-center" style={{ flex: emptyCount }}>
+        <span className="h-3 w-px shrink-0 bg-muted" />
+        <span className="h-0.5 min-w-1 flex-1 bg-muted/60" />
+        <span className="numeric mx-0.5 shrink-0 whitespace-nowrap rounded-[6px] border border-border bg-surface-elevated px-1.5 py-0.5 text-[11px] tracking-normal text-muted shadow-sm">
+          <span className="font-medium text-foreground">{formatSr(remaining)}</span>
+          <span> SR</span>
+        </span>
+        <span className="h-0.5 min-w-1 flex-1 bg-muted/60" />
+        <span className="h-3 w-px shrink-0 bg-muted" />
+      </div>
+    </div>
+  );
 }
 
 export function SrProgress({
@@ -20,75 +95,70 @@ export function SrProgress({
   currentSr: number;
   cutoffSr: number | null;
 }) {
-  const start = IRIDESCENT_SR;
-  const end =
-    cutoffSr != null && cutoffSr > start ? cutoffSr : start + 10_000;
-  const fill = Math.min(1, Math.max(0, (currentSr - start) / (end - start)));
+  const road = roadState(currentSr, cutoffSr);
+  const fill =
+    road.end > road.start
+      ? Math.min(1, Math.max(0, (currentSr - road.start) / (road.end - road.start)))
+      : 1;
   const pct = Math.round(fill * 100);
-  const remaining = Math.max(0, end - currentSr);
-  const markerPct = Math.min(100, Math.max(0, fill * 100));
-  const showCallout = remaining > 0;
+  const filledCount = filledSegmentCount(fill);
+  const remaining = road.remaining;
 
   return (
-    <div className="flex h-full flex-col justify-center gap-3 pr-2 pl-8 py-2">
-      <div className="relative pt-9">
-        {showCallout ? (
-          <div
-            className={cn(
-              "pointer-events-none absolute top-0 whitespace-nowrap rounded-[6px] border border-border bg-surface-elevated px-2 py-1 text-[11px] font-medium tracking-normal text-muted shadow-sm",
-              calloutAlignClass(markerPct),
-            )}
-            style={{ left: `${markerPct}%` }}
-            aria-hidden
-          >
-            <span className="numeric accent-glow text-foreground">{formatSr(remaining)}</span>
-            <span> SR </span>
-            <span aria-hidden>→</span>
-            <span> Top 250</span>
-          </div>
-        ) : null}
+    <div className="flex h-full flex-col justify-center gap-3 px-1 py-2" data-sr-progress>
+      <h2 className="text-sm font-medium text-foreground">Road to {road.goalLabel}</h2>
 
-        <div className="relative">
-          {showCallout ? (
-            <span
-              className="absolute top-1/2 z-10 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-accent shadow-[0_0_8px_color-mix(in_oklab,var(--accent)_50%,transparent)]"
-              style={{ left: `${markerPct}%` }}
-              aria-hidden
-            />
-          ) : null}
-
-          <div
-            className="h-2.5 overflow-hidden rounded-full bg-foreground/10"
-            role="progressbar"
-            aria-valuemin={start}
-            aria-valuemax={end}
-            aria-valuenow={currentSr}
-            aria-label={
-              showCallout
-                ? `${formatSr(remaining)} SR to Top 250, ${pct}% from Iridescent`
-                : `${pct}% from Iridescent to Top 250`
-            }
-          >
-            <span
-              className="profile-theme-gradient block h-full rounded-full"
-              style={{
-                width: `${pct}%`,
-                boxShadow: "0 0 12px color-mix(in oklab, var(--accent) 45%, transparent)",
-              }}
-            />
-          </div>
+      <div>
+        <div
+          className="flex h-10 gap-1 md:h-11"
+          role="progressbar"
+          aria-valuemin={road.start}
+          aria-valuemax={road.end}
+          aria-valuenow={currentSr}
+          aria-label={
+            remaining > 0
+              ? `${formatSr(remaining)} SR to ${road.goalLabel}, ${pct}% from ${road.startLabel}`
+              : `Reached ${road.goalLabel}`
+          }
+        >
+          {Array.from({ length: SEGMENT_COUNT }, (_, i) => {
+            const filled = i < filledCount;
+            return (
+              <span
+                key={i}
+                aria-hidden
+                data-head={filled && i === filledCount - 1 ? "true" : undefined}
+                className={cn(
+                  "min-w-0 flex-1 rounded-[6px]",
+                  filled
+                    ? "sr-progress-pill-fill"
+                    : "bg-foreground/[0.08] shadow-[inset_0_1px_2px_color-mix(in_oklab,var(--foreground)_14%,transparent)] ring-1 ring-foreground/12 ring-inset dark:bg-white/[0.11] dark:shadow-[inset_0_2px_3px_rgb(0_0_0/0.55)] dark:ring-white/14",
+                )}
+                style={
+                  filled
+                    ? ({
+                        "--sr-seg-count": SEGMENT_COUNT,
+                        "--sr-seg-pos": `${(i / (SEGMENT_COUNT - 1)) * 100}%`,
+                      } as CSSProperties)
+                    : undefined
+                }
+              />
+            );
+          })}
         </div>
-      </div>
 
-      <div className="flex items-start justify-between text-[11px] text-muted">
-        <p>
-          <span className="numeric text-foreground">{compactSr(start)}</span>
-          <span className="mt-0.5 block">Iri</span>
-        </p>
-        <p className="text-right">
-          <span className="numeric text-foreground">{compactSr(end)}</span>
-          <span className="mt-0.5 block">Top250</span>
-        </p>
+        <RemainingSpan filledCount={filledCount} remaining={remaining} />
+
+        <div className="mt-1 flex items-start justify-between text-[11px] text-muted">
+          <p>
+            <span className="numeric text-foreground">{compactSr(road.start)}</span>
+            <span className="mt-0.5 block">{road.startLabel}</span>
+          </p>
+          <p className="text-right">
+            <span className="numeric text-foreground">{compactSr(road.end)}</span>
+            <span className="mt-0.5 block">{road.endLabel}</span>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import {
 import type { CutoffPoint } from "@/lib/data/types";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileMatch, ProfileView } from "@/lib/profile/types";
+import { deploymentFee } from "@/lib/ranked";
 
 function seriesPointFromAccept(payload: {
   createdAt: string;
@@ -107,6 +108,7 @@ export function ProfilePageContent({
     firstSr != null && lastSr != null ? lastSr - firstSr : srDelta;
   const up = liveSrDelta != null && liveSrDelta > 0;
   const down = liveSrDelta != null && liveSrDelta < 0;
+  const fee = deploymentFee(currentSr, profile.cutoffSr);
 
   return (
     <ProfileThemeProvider themeId={pageThemeId}>
@@ -136,37 +138,47 @@ export function ProfilePageContent({
         />
         <div className="order-2 flex flex-col gap-8 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-18">
           <div className="min-h-40">
-            <div className="mb-2 px-1 text-right">
-              <p className="flex items-center justify-end gap-1.5">
-                <span className="numeric accent-glow text-4xl font-semibold tracking-tight text-accent md:text-5xl">
-                  {formatSr(currentSr)}
-                </span>
-                {up && liveSrDelta != null ? (
-                  <SiteTooltip label={`${formatDelta(liveSrDelta)} SR`} align="end">
-                    <span
-                      tabIndex={0}
-                      aria-label={`Up ${formatDelta(liveSrDelta)} SR`}
-                      className="rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    >
-                      <CaretUp weight="bold" className="size-5 text-accent" aria-hidden />
-                    </span>
-                  </SiteTooltip>
-                ) : null}
-                {down && liveSrDelta != null ? (
-                  <SiteTooltip label={`${formatDelta(Math.abs(liveSrDelta))} SR`} align="end">
-                    <span
-                      tabIndex={0}
-                      aria-label={`Down ${formatDelta(Math.abs(liveSrDelta))} SR`}
-                      className="rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    >
-                      <CaretDown weight="bold" className="size-5 text-negative" aria-hidden />
-                    </span>
-                  </SiteTooltip>
-                ) : null}
-              </p>
-              <p className="mt-1 text-[10px] font-medium tracking-[0.18em] text-muted uppercase">
-                Current SR
-              </p>
+            <div className="mb-2 flex items-end justify-end gap-6 px-1">
+              <div className="text-right">
+                <p className="numeric text-xl font-semibold tracking-tight text-muted md:text-2xl">
+                  {fee > 0 ? `-${fee}` : "Free"}
+                </p>
+                <p className="mt-1 text-[9px] font-medium tracking-[0.18em] text-muted uppercase">
+                  Deployment fee
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="flex items-center justify-end gap-1.5">
+                  <span className="numeric accent-glow text-4xl font-semibold tracking-tight text-accent md:text-5xl">
+                    {formatSr(currentSr)}
+                  </span>
+                  {up && liveSrDelta != null ? (
+                    <SiteTooltip label={`${formatDelta(liveSrDelta)} SR`} align="end">
+                      <span
+                        tabIndex={0}
+                        aria-label={`Up ${formatDelta(liveSrDelta)} SR`}
+                        className="rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        <CaretUp weight="bold" className="size-5 text-accent" aria-hidden />
+                      </span>
+                    </SiteTooltip>
+                  ) : null}
+                  {down && liveSrDelta != null ? (
+                    <SiteTooltip label={`${formatDelta(Math.abs(liveSrDelta))} SR`} align="end">
+                      <span
+                        tabIndex={0}
+                        aria-label={`Down ${formatDelta(Math.abs(liveSrDelta))} SR`}
+                        className="rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        <CaretDown weight="bold" className="size-5 text-negative" aria-hidden />
+                      </span>
+                    </SiteTooltip>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-[10px] font-medium tracking-[0.18em] text-muted uppercase">
+                  Current SR
+                </p>
+              </div>
             </div>
             {series.length < 2 ? (
               <p className="flex h-full items-center text-sm text-muted">No SR history yet.</p>
