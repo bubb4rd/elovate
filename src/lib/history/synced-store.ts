@@ -110,9 +110,11 @@ export async function pushHistoryDocument(
   return ok;
 }
 
+type LocalStore = HistoryStore & { getSnapshot: () => string };
+
 async function pullAndMerge(
   mode: Mode,
-  local: HistoryStore & { getSnapshot: () => string },
+  localRef: { current: LocalStore; userId: string | null },
   onChange?: () => void,
 ): Promise<void> {
   if (merging.has(mode)) return;
@@ -121,6 +123,15 @@ async function pullAndMerge(
 
   const userId = await resolveSignedInUserId(supabase);
   if (!userId) return;
+
+  if (localRef.userId !== userId) {
+    localRef.userId = userId;
+    localRef.current = createLocalHistoryStore(mode, userId);
+    pullReady.delete(mode);
+    clearScheduledPush(mode);
+  }
+
+  const local = localRef.current;
 
   merging.add(mode);
   pullReady.delete(mode);
@@ -179,8 +190,12 @@ export async function flushHistoryPush(mode: Mode): Promise<boolean> {
 }
 
 export async function mergeCloudHistory(mode: Mode): Promise<void> {
-  const local = createLocalHistoryStore(mode);
-  await pullAndMerge(mode, local);
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) return;
+  const userId = await resolveSignedInUserId(supabase);
+  if (!userId) return;
+  const localRef = { current: createLocalHistoryStore(mode, userId), userId };
+  await pullAndMerge(mode, localRef);
 }
 
 export function createHistoryStore(mode: Mode): HistoryStore & {
@@ -189,17 +204,24 @@ export function createHistoryStore(mode: Mode): HistoryStore & {
   subscribeSync: (onChange: () => void) => () => void;
 } {
   registerPageHideFlush();
-  const local = createLocalHistoryStore(mode);
+  const localRef: { current: LocalStore; userId: string | null } = {
+    current: createLocalHistoryStore(mode, null),
+    userId: null,
+  };
+
+  function bindLocalSubscribe(onChange: () => void) {
+    return localRef.current.subscribe(onChange);
+  }
 
   return {
-    load: () => local.load(),
+    load: () => localRef.current.load(),
     save(doc) {
-      const ok = local.save(doc);
+      const ok = localRef.current.save(doc);
       if (ok) schedulePush(mode, doc);
       return ok;
     },
     subscribe(onChange) {
-      const unsubLocal = local.subscribe(onChange);
+      let unsubLocal = bindLocalSubscribe(onChange);
       const supabase = createBrowserSupabaseClient();
       const { data } = supabase?.auth.onAuthStateChange((event) => {
         if (
@@ -208,16 +230,24 @@ export function createHistoryStore(mode: Mode): HistoryStore & {
           event === "INITIAL_SESSION" ||
           event === "TOKEN_REFRESHED"
         ) {
-          void pullAndMerge(mode, local, onChange);
+          void pullAndMerge(mode, localRef, () => {
+            unsubLocal();
+            unsubLocal = bindLocalSubscribe(onChange);
+            onChange();
+          });
         }
       }) ?? { data: { subscription: { unsubscribe() {} } } };
-      void pullAndMerge(mode, local, onChange);
+      void pullAndMerge(mode, localRef, () => {
+        unsubLocal();
+        unsubLocal = bindLocalSubscribe(onChange);
+        onChange();
+      });
       return () => {
         unsubLocal();
         data.subscription.unsubscribe();
       };
     },
-    getSnapshot: () => local.getSnapshot(),
+    getSnapshot: () => localRef.current.getSnapshot(),
     getSyncFailed: () => syncFailed.get(mode) ?? false,
     subscribeSync(onChange) {
       if (typeof window === "undefined") return () => {};

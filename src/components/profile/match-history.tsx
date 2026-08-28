@@ -1,6 +1,7 @@
 "use client";
 
 import { Skull, Trophy } from "@phosphor-icons/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -15,8 +16,10 @@ import {
 import type { ProfileMatch, ProfileTeammate } from "@/lib/profile/types";
 import { cn } from "@/lib/utils";
 
-const MATCH_LIMIT = 5;
+export const MATCH_LIMIT = 5;
 const MAX_TEAMMATES = 3;
+const EASE = [0.16, 1, 0.3, 1] as const;
+export const MATCH_HIGHLIGHT_MS = 1400;
 
 function netClass(net: number) {
   if (net > 0) return "accent-glow text-accent";
@@ -166,7 +169,13 @@ function TeammateStack({ teammates }: { teammates: ProfileTeammate[] }) {
   );
 }
 
-function MatchRow({ match }: { match: ProfileMatch }) {
+function MatchRow({
+  match,
+  highlighted,
+}: {
+  match: ProfileMatch;
+  highlighted: boolean;
+}) {
   const placementDef = WZ_PLACEMENTS.find((item) => item.id === match.placement);
   const placement =
     placementDef?.label ?? match.placement;
@@ -174,7 +183,12 @@ function MatchRow({ match }: { match: ProfileMatch }) {
   const elimSr = elimSrBreakdown(match.squadElims, match.yourElims).elimSr;
 
   return (
-    <li className="flex items-start gap-3 py-3">
+    <div
+      className={cn(
+        "flex items-start gap-3 py-3 transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        highlighted && "bg-accent/10",
+      )}
+    >
       <span className="mt-[1.375rem] inline-flex shrink-0 items-center gap-1 rounded-[4px] border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground">
         {match.placement === "first" ? (
           <Trophy
@@ -224,24 +238,75 @@ function MatchRow({ match }: { match: ProfileMatch }) {
           </div>
         </div>
       </div>
-    </li>
+    </div>
   );
 }
 
-export function MatchHistory({ matches }: { matches: ProfileMatch[] }) {
+export function MatchHistory({
+  matches,
+  enteredId = null,
+  highlightId = null,
+}: {
+  matches: ProfileMatch[];
+  enteredId?: string | null;
+  highlightId?: string | null;
+}) {
+  const reduce = useReducedMotion();
   const recent = matches.slice(0, MATCH_LIMIT);
+  const itemTransition = reduce
+    ? { duration: 0.12 }
+    : { duration: 0.32, ease: EASE, layout: { duration: 0.32, ease: EASE } };
 
   return (
     <ProfileBlob title="Match history" className="h-full min-h-80">
-      {recent.length === 0 ? (
-        <p className="text-sm text-muted">No matches logged yet.</p>
-      ) : (
-        <ol className="divide-y divide-border">
-          {recent.map((match) => (
-            <MatchRow key={match.id} match={match} />
-          ))}
-        </ol>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {recent.length === 0 ? (
+          <motion.p
+            key="empty"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 0.18, ease: EASE }}
+            className="text-sm text-muted"
+          >
+            No matches logged yet.
+          </motion.p>
+        ) : (
+          <motion.ol
+            key="list"
+            initial={false}
+            exit={reduce ? { opacity: 0 } : { opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 0.16, ease: EASE }}
+            className="divide-y divide-border"
+          >
+            <AnimatePresence initial={false}>
+              {recent.map((match) => {
+                const entering = match.id === enteredId;
+                return (
+                  <motion.li
+                    key={match.id}
+                    layout
+                    initial={
+                      entering && !reduce
+                        ? { opacity: 0, y: -8, height: 0 }
+                        : false
+                    }
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                    transition={itemTransition}
+                    className="overflow-hidden"
+                  >
+                    <MatchRow
+                      match={match}
+                      highlighted={highlightId === match.id}
+                    />
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+          </motion.ol>
+        )}
+      </AnimatePresence>
     </ProfileBlob>
   );
 }

@@ -128,4 +128,40 @@ const parsedLegacy = parseDocument(
 );
 assert.deepEqual(parsedLegacy.matches[0]?.teammates, []);
 
+const inviterSessionId = "e809d5eb-7a70-4d87-8737-f785e90ba1a2";
+const contaminated = {
+  version: 1 as const,
+  sessions: [
+    {
+      id: inviterSessionId,
+      mode: "wz" as const,
+      startedAt: "2026-08-24T12:00:00.000Z",
+      endedAt: null,
+      startSr: 10000,
+    },
+  ],
+  matches: [],
+};
+const importedAccept = appendMatch(
+  contaminated,
+  {
+    mode: "wz",
+    srBefore: 5000,
+    srAfter: 5080,
+    net: 80,
+    placement: "top6",
+    squadElims: 8,
+    yourElims: 3,
+    fee: 50,
+    placementSr: 50,
+    elimSr: 80,
+    capped: false,
+    teammates: [],
+    imported: true,
+  },
+  new Date("2026-08-24T12:30:00.000Z"),
+  "512353b7-cd19-4932-a76a-bc1b18e6d36f",
+);
+assert.notEqual(importedAccept.session.id, inviterSessionId);
+
 console.log("history session rules ok");

@@ -33,12 +33,16 @@ export {
   shareModeLabel,
 } from "./share";
 export {
+  MATCH_ACCEPTED_EVENT,
   acceptMatchInvite,
   denyMatchInvite,
   fetchPendingInvites,
   retractMatchInvites,
+  subscribeAcceptedMatch,
   subscribeMatchInvites,
   syncMatchInvites,
+  wzMatchToProfileMatch,
+  type AcceptedMatchPayload,
   type PendingMatchInvite,
 } from "./invites";
 export {
