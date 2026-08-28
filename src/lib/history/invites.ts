@@ -32,8 +32,13 @@ type InviteRecord = {
   inviter: HistoryTeammate;
 };
 
-function calcKey(mode: Mode): string {
-  return `elovate-calc-sr-${mode}`;
+function isMissingMatchInvitesTable(message: string): boolean {
+  return /match_invites/i.test(message) && /schema cache|does not exist|relation/i.test(message);
+}
+
+function logInviteError(context: string, message: string): void {
+  if (isMissingMatchInvitesTable(message)) return;
+  console.error(`[match-invites] ${context}`, message);
 }
 
 export function patchCalcSr(mode: Mode, sr: number): void {
@@ -189,7 +194,7 @@ export async function fetchPendingInvites(): Promise<PendingMatchInvite[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[match-invites] fetch failed", error.message);
+    logInviteError("fetch failed", error.message);
     return [];
   }
   if (!data) return [];
