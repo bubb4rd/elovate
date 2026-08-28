@@ -67,6 +67,34 @@ async function flushPush(mode: Mode): Promise<boolean> {
   return pushNow(mode, doc);
 }
 
+function clearScheduledPush(mode: Mode) {
+  pendingDoc.delete(mode);
+  const timer = pending.get(mode);
+  if (timer) {
+    clearTimeout(timer);
+    pending.delete(mode);
+  }
+}
+
+export async function pushHistoryDocument(mode: Mode, doc: HistoryDocument): Promise<boolean> {
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) {
+    setSyncFailed(mode, true);
+    return false;
+  }
+
+  const userId = await resolveSignedInUserId(supabase);
+  if (!userId) {
+    setSyncFailed(mode, false);
+    return false;
+  }
+
+  const ok = await pushCloudHistory(supabase, userId, mode, doc);
+  setSyncFailed(mode, !ok);
+  if (ok) clearScheduledPush(mode);
+  return ok;
+}
+
 async function pullAndMerge(
   mode: Mode,
   local: HistoryStore & { getSnapshot: () => string },

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -523,14 +523,39 @@ export function SrCalculator({
         matchId: pendingMatchId,
         previous,
         next: teammates,
+      }).then((invited) => {
+        if (!invited) setHistorySaveFailed(true);
       });
     }
   }
 
   function finishTeammates() {
+    if (pendingMatchId && signedIn) {
+      const match = historyStore.load().matches.find((item) => item.id === pendingMatchId);
+      if (match && match.teammates.length > 0) {
+        void syncMatchInvites({
+          mode,
+          matchId: pendingMatchId,
+          previous: [],
+          next: match.teammates,
+        });
+      }
+    }
     setPendingMatchId(null);
     setSubmitReceipt(historySaveFailed || cloudSyncFailed ? "error" : "success");
   }
+
+  useEffect(() => {
+    if (!signedIn || !pendingMatchId) return;
+    const match = historyStore.load().matches.find((item) => item.id === pendingMatchId);
+    if (!match || match.teammates.length === 0) return;
+    void syncMatchInvites({
+      mode,
+      matchId: pendingMatchId,
+      previous: [],
+      next: match.teammates,
+    });
+  }, [signedIn, pendingMatchId, mode, historyStore]);
 
   function startNewSubmission() {
     setSubmitReceipt(null);

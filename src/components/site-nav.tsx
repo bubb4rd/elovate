@@ -66,25 +66,17 @@ export function SiteNav({
           </Link>
           <ModeSelect mode={liveMode} tool={tool} />
         </div>
-        {mode ? (
-          <nav className="flex items-center gap-1 text-sm">
-            <ToolLink href={boardHref} active={tool === "board"}>
-              Board
-            </ToolLink>
-            <span className="text-border/80" aria-hidden>
-              |
-            </span>
-            <ToolLink href={calcHref} active={tool === "calc"}>
-              Climb
-            </ToolLink>
-          </nav>
-        ) : (
-          <nav className="flex items-center gap-1 text-sm">
-            <ToolLink href="/desktop" active={false}>
-              Desktop
-            </ToolLink>
-          </nav>
-        )}
+        <nav className="flex items-center gap-1 text-sm">
+          <ToolLink href={boardHref} active={tool === "board"}>
+            Board
+          </ToolLink>
+          <span className="text-border/80" aria-hidden>
+            |
+          </span>
+          <ToolLink href={calcHref} active={tool === "calc"}>
+            Climb
+          </ToolLink>
+        </nav>
         <div className="ml-auto flex items-center gap-3">
           {cutoffSr != null ? (
             <NavCutoff

@@ -12,7 +12,7 @@
 | DESK-04 | `desktop_waitlist` + RLS | **PASS** | Migration `20260827213830_create_desktop_waitlist.sql`; pgTAP test |
 | DESK-05 | Dedupe + confirmation UX | **PASS** | Unique `lower(email)` index; “You’re on the list” / “already on the list” |
 | DESK-06 | Ops export SQL | **PASS** | `supabase/scripts/export_desktop_waitlist.sql` |
-| DESK-07 | Nav/footer Desktop link | **PASS** | `site-footer.tsx`, `site-nav.tsx` |
+| DESK-07 | Nav/footer Desktop link | **PASS** | `site-footer.tsx` (footer only; nav shows Board/Climb) |
 
 ## Automated checks
 

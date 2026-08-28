@@ -12,8 +12,8 @@ import { rowToMatch } from "./map";
 import { appendMatch } from "./sessions";
 import {
   createHistoryStore,
-  flushHistoryPush,
   mergeCloudHistory,
+  pushHistoryDocument,
   resolveSignedInUserId,
 } from "./synced-store";
 import type { HistoryMatch, HistoryTeammate } from "./types";
@@ -90,26 +90,38 @@ function parseInviteRecord(row: {
   };
 }
 
+// Disambiguate climb_matches FK (source_match_id vs accepted_match_id).
 const INVITE_SELECT =
-  "id, created_at, inviter:profiles!inviter_id(display_name, slug, avatar_url), source:climb_matches!source_match_id(*)";
+  "id, created_at, inviter:profiles!match_invites_inviter_id_fkey(display_name, slug, avatar_url), source:climb_matches!match_invites_source_match_id_fkey(*)";
+
+async function profileIdsForSlugs(
+  slugs: string[],
+): Promise<Map<string, string>> {
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase || slugs.length === 0) return new Map();
+
+  const { data, error } = await supabase.from("profiles").select("id, slug").in("slug", slugs);
+  if (error || !data) return new Map();
+
+  return new Map(data.map((row) => [row.slug.toLowerCase(), row.id]));
+}
 
 export async function syncMatchInvites(args: {
   mode: Mode;
   matchId: string;
   previous: HistoryTeammate[];
   next: HistoryTeammate[];
-}): Promise<void> {
+}): Promise<boolean> {
   const { added, removed } = teammateSlugDiff(args.previous, args.next);
-  if (added.length === 0 && removed.length === 0) return;
+  if (added.length === 0 && removed.length === 0) return true;
 
   const supabase = createBrowserSupabaseClient();
-  if (!supabase) return;
+  if (!supabase) return false;
   const userId = await resolveSignedInUserId(supabase);
-  if (!userId) return;
+  if (!userId) return false;
 
   const slugs = [...new Set([...added, ...removed])];
-  const { data: profiles } = await supabase.from("profiles").select("id, slug").in("slug", slugs);
-  const bySlug = new Map((profiles ?? []).map((row) => [row.slug.toLowerCase(), row.id]));
+  const bySlug = await profileIdsForSlugs(slugs);
 
   if (removed.length > 0) {
     const inviteeIds = removed
@@ -126,10 +138,11 @@ export async function syncMatchInvites(args: {
     }
   }
 
-  if (added.length === 0) return;
+  if (added.length === 0) return true;
 
-  const flushed = await flushHistoryPush(args.mode);
-  if (!flushed) return;
+  const store = createHistoryStore(args.mode);
+  const pushed = await pushHistoryDocument(args.mode, store.load());
+  if (!pushed) return false;
 
   const rows = added
     .map((slug) => bySlug.get(slug))
@@ -139,12 +152,13 @@ export async function syncMatchInvites(args: {
       inviter_id: userId,
       invitee_id: inviteeId,
     }));
-  if (rows.length === 0) return;
+  if (rows.length === 0) return true;
 
-  await supabase.from("match_invites").upsert(rows, {
+  const { error } = await supabase.from("match_invites").upsert(rows, {
     onConflict: "source_match_id,invitee_id",
     ignoreDuplicates: true,
   });
+  return error == null;
 }
 
 export async function retractMatchInvites(matchId: string): Promise<void> {
@@ -174,7 +188,11 @@ export async function fetchPendingInvites(): Promise<PendingMatchInvite[]> {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
-  if (error || !data) return [];
+  if (error) {
+    console.error("[match-invites] fetch failed", error.message);
+    return [];
+  }
+  if (!data) return [];
 
   const invites: PendingMatchInvite[] = [];
   for (const row of data) {
@@ -234,7 +252,7 @@ export async function acceptMatchInvite(inviteId: string): Promise<boolean> {
     parsed.id,
   );
   if (!store.save(result.doc)) return false;
-  const flushed = await flushHistoryPush(mode);
+  const flushed = await pushHistoryDocument(mode, result.doc);
   if (!flushed) return false;
 
   const { error: updateError } = await supabase

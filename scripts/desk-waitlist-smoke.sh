@@ -37,10 +37,6 @@ footer_links_desktop() {
   rg -q 'href="/desktop"' src/components/site-footer.tsx
 }
 
-nav_links_desktop() {
-  rg -q 'href="/desktop"' src/components/site-nav.tsx
-}
-
 waitlist_migration_exists() {
   test -f supabase/migrations/20260827213830_create_desktop_waitlist.sql
 }
@@ -76,7 +72,6 @@ echo
 run_check "DESK-01 /desktop loads on prod" desktop_page_loads
 run_check "DESK-02 home teaser links /desktop" home_teaser_links_desktop
 run_check "DESK-07 footer links /desktop" footer_links_desktop
-run_check "DESK-07 nav links /desktop" nav_links_desktop
 run_check "DESK-04 waitlist migration exists" waitlist_migration_exists
 run_check "DESK-04 waitlist RLS test exists" waitlist_rls_test_exists
 run_check "DESK-05 email dedupe index in migration" waitlist_dedupe_in_migration
