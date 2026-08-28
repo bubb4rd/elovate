@@ -22,41 +22,27 @@ const MAX_TEAMMATES = 3;
 const EASE = [0.16, 1, 0.3, 1] as const;
 export const MATCH_HIGHLIGHT_MS = 1400;
 
-const panelTransition = { duration: 0.22, ease: EASE };
+const panelTransition = { duration: 0.28, ease: EASE };
 const metricVariants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 6 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.32, ease: EASE },
-  },
-  exit: {
-    opacity: 0,
-    y: 6,
-    transition: { duration: 0.14, ease: EASE },
+    transition: { duration: 0.24, ease: EASE },
   },
 };
 const metricsContainerVariants = {
   hidden: {},
   show: {
-    transition: { staggerChildren: 0.045, delayChildren: 0.04 },
-  },
-  exit: {
-    transition: { staggerChildren: 0.03, staggerDirection: -1 as const },
+    transition: { staggerChildren: 0.035, delayChildren: 0.04 },
   },
 };
 const chipVariants = {
-  hidden: { opacity: 0, scale: 0.92, y: 4 },
+  hidden: { opacity: 0, scale: 0.96 },
   show: {
     opacity: 1,
     scale: 1,
-    y: 0,
-    transition: { duration: 0.28, ease: EASE },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.96,
-    transition: { duration: 0.12, ease: EASE },
+    transition: { duration: 0.22, ease: EASE },
   },
 };
 
@@ -136,7 +122,7 @@ function SrMetricColumn({
           transition={
             reduceMotion
               ? { duration: 0 }
-              : { duration: 0.42, delay: 0.08, ease: EASE }
+              : { duration: 0.38, delay: 0.06, ease: EASE }
           }
         />
       </div>
@@ -324,7 +310,6 @@ function MatchRowExpanded({
         variants={reduceMotion ? undefined : metricsContainerVariants}
         initial={reduceMotion ? false : "hidden"}
         animate="show"
-        exit="exit"
       >
         <SrMetricColumn
           label="Placement"
@@ -506,6 +491,10 @@ function MatchRow({
   onExpand: () => void;
   onMinimize: () => void;
 }) {
+  const swapTransition = reduceMotion
+    ? { duration: 0 }
+    : panelTransition;
+
   return (
     <div
       className={cn(
@@ -513,14 +502,14 @@ function MatchRow({
         highlighted && "bg-accent/10",
       )}
     >
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false} mode="popLayout">
         {expanded ? (
           <motion.div
             key="expanded"
-            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-            transition={reduceMotion ? { duration: 0 } : panelTransition}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+            transition={swapTransition}
           >
             <MatchRowExpanded
               match={match}
@@ -533,10 +522,10 @@ function MatchRow({
         ) : (
           <motion.div
             key="minimized"
-            initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+            initial={reduceMotion ? false : { opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-            transition={reduceMotion ? { duration: 0 } : panelTransition}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+            transition={swapTransition}
           >
             <button
               type="button"
@@ -585,9 +574,9 @@ export function MatchHistory({
   const itemTransition = reduce
     ? { duration: 0.12 }
     : {
-        duration: 0.28,
+        duration: 0.22,
         ease: EASE,
-        layout: { type: "spring" as const, stiffness: 420, damping: 38, mass: 0.7 },
+        layout: { duration: 0.28, ease: EASE },
       };
 
   return (
@@ -619,7 +608,7 @@ export function MatchHistory({
                 return (
                   <motion.li
                     key={match.id}
-                    layout
+                    layout="position"
                     initial={
                       entering && !reduce
                         ? { opacity: 0, y: -10 }
@@ -628,7 +617,6 @@ export function MatchHistory({
                     animate={{ opacity: 1, y: 0 }}
                     exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
                     transition={itemTransition}
-                    className="overflow-hidden"
                   >
                     <MatchRow
                       match={match}
