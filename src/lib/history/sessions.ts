@@ -224,7 +224,8 @@ export function appendMatch(
   now = new Date(),
   matchId?: string,
 ): { doc: HistoryDocument; match: HistoryMatch; session: HistorySession } {
-  if (matchId) {
+  const imported = draft.imported === true;
+  if (matchId && !imported) {
     const existing = doc.matches.find((item) => item.id === matchId);
     if (existing) {
       const session = doc.sessions.find((item) => item.id === existing.sessionId);
@@ -234,9 +235,21 @@ export function appendMatch(
 
   const nowIso = now.toISOString();
   let sessions = [...doc.sessions];
-  const matches = [...doc.matches];
+  const matches = imported
+    ? doc.matches.filter((item) => item.id !== matchId)
+    : [...doc.matches];
+  if (imported && matchId) {
+    const removed = doc.matches.find((item) => item.id === matchId);
+    if (removed) {
+      sessions = sessions.filter(
+        (session) =>
+          session.id !== removed.sessionId ||
+          matches.some((match) => match.sessionId === session.id),
+      );
+    }
+  }
 
-  let open = sessions.find((session) => session.endedAt == null);
+  let open = imported ? undefined : sessions.find((session) => session.endedAt == null);
   if (open) {
     const owned = sessionMatches({ ...doc, sessions, matches }, open.id);
     if (isSessionIdle(open, owned, now)) {

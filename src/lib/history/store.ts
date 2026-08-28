@@ -2,19 +2,23 @@ import type { Mode } from "@/lib/data/types";
 import { emptyDocument, enforceCap, parseDocument } from "./sessions";
 import type { HistoryDocument, HistoryStore } from "./types";
 
-export function historyKey(mode: Mode): string {
+export function historyKey(mode: Mode, userId?: string | null): string {
+  if (userId) return `elovate-history-${mode}-${userId}`;
   return `elovate-history-${mode}`;
 }
 
-function historyEvent(mode: Mode): string {
-  return `elovate-history-${mode}`;
+function historyEvent(mode: Mode, userId?: string | null): string {
+  return historyKey(mode, userId);
 }
 
-export function createLocalHistoryStore(mode: Mode): HistoryStore & {
+export function createLocalHistoryStore(
+  mode: Mode,
+  userId?: string | null,
+): HistoryStore & {
   getSnapshot: () => string;
 } {
-  const key = historyKey(mode);
-  const eventName = historyEvent(mode);
+  const key = historyKey(mode, userId);
+  const eventName = historyEvent(mode, userId);
 
   return {
     load() {
