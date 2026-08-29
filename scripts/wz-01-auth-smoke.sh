@@ -43,9 +43,11 @@ auth_complete_reachable() {
 }
 
 invalid_callback_rejected() {
+  # Curl has no PKCE verifier, so exchange fails with a code-verifier message and
+  # the app redirects to error=device. Other auth failures use error=auth.
   local headers
   headers=$(curl -sI "$PROD_ORIGIN/auth/callback?code=invalid-wz01")
-  printf '%s' "$headers" | rg -qi "location:.*login\\?error=auth"
+  printf '%s' "$headers" | rg -qi "location:.*login\\?error=(auth|device)"
 }
 
 discord_oauth_ok() {
@@ -73,7 +75,7 @@ echo
 
 run_check "production login page configured" login_page_configured
 run_check "production /auth/complete reachable" auth_complete_reachable
-run_check "invalid callback code -> login?error=auth" invalid_callback_rejected
+run_check "invalid callback code -> login?error=auth|device" invalid_callback_rejected
 run_check "prod /auth/callback redirect allowlisted" redirect_allowed "$PROD_ORIGIN/auth/callback"
 run_check "prod bare origin redirect allowlisted" redirect_allowed "$PROD_ORIGIN"
 run_check "local 127.0.0.1 callback allowlisted" redirect_allowed "http://127.0.0.1:3000/auth/callback"

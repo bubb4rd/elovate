@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { Mode } from "@/lib/data/types";
 import { parseDocument } from "./sessions";
-import { createHistoryStore } from "./synced-store";
+import { createHistoryStore, flushHistoryPush } from "./synced-store";
 
 export function useHistory(mode: Mode) {
   const store = useMemo(() => createHistoryStore(mode), [mode]);
@@ -13,5 +13,6 @@ export function useHistory(mode: Mode) {
     store.getSyncFailed,
     () => false,
   );
-  return { doc: parseDocument(raw), store, cloudSyncFailed };
+  const retrySync = useCallback(async () => flushHistoryPush(mode), [mode]);
+  return { doc: parseDocument(raw), store, cloudSyncFailed, retrySync };
 }

@@ -246,6 +246,7 @@ export function SessionPanel({
   currentSr,
   ticketOpen,
   saveFailed,
+  onRetrySync,
   onUndo,
   onEnd,
   onDelete,
@@ -254,6 +255,7 @@ export function SessionPanel({
   currentSr: number;
   ticketOpen: boolean;
   saveFailed: boolean;
+  onRetrySync?: () => Promise<boolean>;
   onUndo: () => void;
   onEnd: () => void;
   onDelete: (sessionId: string) => void;
@@ -261,6 +263,7 @@ export function SessionPanel({
   const [pastSectionOpen, setPastSectionOpen] = useState(false);
   const [expandedPastId, setExpandedPastId] = useState<string | null>(null);
   const [sharing, setSharing] = useState<SessionSummary | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -401,9 +404,27 @@ export function SessionPanel({
         ) : null}
 
         {saveFailed ? (
-          <p className="border-t border-dashed border-white/15 px-3.5 py-2 text-[11px] text-zinc-500">
-            Couldn&apos;t save history to your account.
-          </p>
+          <div className="border-t border-dashed border-negative/30 bg-negative/5 px-3.5 py-2.5">
+            <p className="text-[11px] font-medium text-negative">
+              Couldn&apos;t sync climb history
+            </p>
+            <p className="mt-0.5 text-[11px] leading-snug text-zinc-400">
+              Saved on this device. Sign in and retry to back up to your account.
+            </p>
+            {onRetrySync ? (
+              <button
+                type="button"
+                disabled={retrying}
+                onClick={() => {
+                  setRetrying(true);
+                  void onRetrySync().finally(() => setRetrying(false));
+                }}
+                className="mt-2 rounded-[4px] border border-white/12 px-2 py-0.5 text-[10px] font-medium text-zinc-200 transition-colors hover:border-white/20 hover:text-white disabled:opacity-50"
+              >
+                {retrying ? "Retrying…" : "Retry sync"}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </aside>
     </div>

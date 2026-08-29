@@ -37,7 +37,23 @@ export async function TrackerPage({
   const live =
     season && isLiveWzBoard(mode, seasonId) ? await getLiveWzBoard() : null;
   const history = await liveWzHistoryFor(live, seasonId);
-  const series = history.series.length > 0 ? history.series : seedSeries;
+  const liveOnlySeries =
+    live != null
+      ? [
+          {
+            capturedAt: live.fetchedAt,
+            cutoffSr: live.cutoffSr,
+            rank1Sr: live.rank1Sr,
+            deltaCutoff: null,
+          },
+        ]
+      : [];
+  const series =
+    history.series.length > 0
+      ? history.series
+      : live
+        ? liveOnlySeries
+        : seedSeries;
   const rows = live?.rows ?? board?.rows;
   const metrics =
     live && seedMetrics

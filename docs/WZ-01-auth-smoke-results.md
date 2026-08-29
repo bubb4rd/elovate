@@ -13,7 +13,7 @@
 | 2 | Netlify + Supabase redirect allowlists cover both origins | **PASS** | All six URLs from [`supabase/config.toml`](../supabase/config.toml) return HTTP 302 from `/auth/v1/authorize` (not rejected). Discord `redirect_uri` = `https://ioagctykwkspbwzyrfcb.supabase.co/auth/v1/callback`. Production login renders Discord button (Supabase env configured on Netlify). |
 | 3 | Local redirect URLs work for dev smoke | **PASS** (allowlist) | `127.0.0.1` and `localhost` callback URLs allowlisted on hosted Supabase. Full local stack E2E not run: `supabase start` failed (Docker/Colima socket). README synced with `config.toml` bare-origin entries. |
 | 4 | Returning Discord user restores session without dead-end redirect | **PASS** | Session cookie on `/login` → HTTP 307 to `/onboarding` (no login form, no `/?code=`). Protected `/settings` honors session (307 to onboarding gate). Recent Discord sign-in in prod DB: 2026-08-27. |
-| 5 | Cold Discord login lands in-session (not `/?code=`) | **PASS** (infra + history) | OAuth chain: Discord → Supabase → `redirect_to=https://elovatesr.netlify.app/auth/callback`. Invalid `code` at callback → `/login?error=auth` (exchange path works). Successful Discord login recorded 2026-08-27. Full cold OAuth not re-run (requires Discord consent in browser). |
+| 5 | Cold Discord login lands in-session (not `/?code=`) | **PASS** (infra + history) | OAuth chain: Discord → Supabase → `redirect_to=https://elovatesr.netlify.app/auth/callback`. Invalid `code` at callback without PKCE verifier → `/login?error=device` (or `error=auth` for other failures). Successful Discord login recorded 2026-08-27. Full cold OAuth not re-run (requires Discord consent in browser). |
 
 ## Automated checks
 

@@ -306,7 +306,7 @@ function MatchRowExpanded({
         <PlacementBadge match={match} />
       </motion.span>
       <motion.div
-        className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] gap-3"
+        className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]"
         variants={reduceMotion ? undefined : metricsContainerVariants}
         initial={reduceMotion ? false : "hidden"}
         animate="show"
@@ -548,11 +548,15 @@ export function MatchHistory({
   enteredId = null,
   highlightId = null,
   personalLabel = "you",
+  showClimbCta = false,
+  calcHref = "/wz/calc",
 }: {
   matches: ProfileMatch[];
   enteredId?: string | null;
   highlightId?: string | null;
   personalLabel?: string;
+  showClimbCta?: boolean;
+  calcHref?: string;
 }) {
   const reduce = useReducedMotion();
   const recent = matches.slice(0, MATCH_LIMIT);
@@ -580,7 +584,15 @@ export function MatchHistory({
       };
 
   return (
-    <ProfileBlob title="Match history" className="h-full min-h-80">
+    <ProfileBlob
+      title={
+        <>
+          Recent matches{" "}
+          <span className="text-foreground/75">({recent.length})</span>
+        </>
+      }
+      className="h-full min-h-80"
+    >
       <AnimatePresence mode="wait" initial={false}>
         {recent.length === 0 ? (
           <motion.p
@@ -592,6 +604,17 @@ export function MatchHistory({
             className="text-sm text-muted"
           >
             No matches logged yet.
+            {showClimbCta ? (
+              <>
+                {" "}
+                <Link
+                  href={calcHref}
+                  className="font-medium text-accent transition-colors hover:text-accent/80"
+                >
+                  Log your first match in Climb →
+                </Link>
+              </>
+            ) : null}
           </motion.p>
         ) : (
           <motion.ol
