@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import Link from "next/link";
 import { CutoffChart } from "@/components/cutoff-chart";
 import { MATCH_HIGHLIGHT_MS, MATCH_LIMIT, MatchHistory } from "@/components/profile/match-history";
 import { ProfileHero, ProfileIdentity } from "@/components/profile/profile-hero";
@@ -14,6 +15,7 @@ import {
   wzMatchToProfileMatch,
 } from "@/lib/history";
 import type { CutoffPoint } from "@/lib/data/types";
+import type { FriendStatus } from "@/lib/friends";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileMatch, ProfileView } from "@/lib/profile/types";
 import { deploymentFee } from "@/lib/ranked";
@@ -36,11 +38,15 @@ export function ProfilePageContent({
   srDelta,
   canEdit,
   isSignedIn,
+  friendStatus = "none",
+  friendRequestId = null,
 }: {
   profile: ProfileView;
   srDelta: number | null;
   canEdit: boolean;
   isSignedIn: boolean;
+  friendStatus?: FriendStatus;
+  friendRequestId?: string | null;
 }) {
   const [pageThemeId, setPageThemeId] = useState<ProfilePageThemeId>(profile.pageThemeId);
   const [displayName, setDisplayName] = useState(profile.displayName);
@@ -132,8 +138,12 @@ export function ProfilePageContent({
           pageThemeId={pageThemeId}
           displayName={displayName}
           avatarUrl={avatarUrl}
+          currentSr={currentSr}
+          cutoffSr={profile.cutoffSr}
           canEdit={canEdit}
           isSignedIn={isSignedIn}
+          friendStatus={friendStatus}
+          friendRequestId={friendRequestId}
           className="order-1 lg:col-start-1 lg:row-start-1"
         />
         <div className="order-2 flex flex-col gap-8 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-18">
@@ -181,7 +191,17 @@ export function ProfilePageContent({
               </div>
             </div>
             {series.length < 2 ? (
-              <p className="flex h-full items-center text-sm text-muted">No SR history yet.</p>
+              <div className="flex flex-col gap-2 py-4 text-sm text-muted">
+                <p>No SR history yet.</p>
+                {canEdit ? (
+                  <Link
+                    href={`/${profile.mode}/calc`}
+                    className="w-fit font-medium text-accent transition-colors hover:text-accent/80"
+                  >
+                    Log matches in Climb to start tracking →
+                  </Link>
+                ) : null}
+              </div>
             ) : (
               <CutoffChart
                 series={series}
@@ -196,12 +216,14 @@ export function ProfilePageContent({
             <SrProgress currentSr={currentSr} cutoffSr={profile.cutoffSr} />
           </div>
         </div>
-        <div className="order-3 min-h-80 lg:col-start-1 lg:row-start-2">
+        <div className="order-3 lg:col-start-1 lg:row-start-2">
           <MatchHistory
             matches={matches}
             enteredId={enteredId}
             highlightId={highlightId}
             personalLabel={canEdit ? "you" : displayName}
+            showClimbCta={canEdit}
+            calcHref={`/${profile.mode}/calc`}
           />
         </div>
       </div>

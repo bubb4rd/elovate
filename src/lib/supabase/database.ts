@@ -90,6 +90,43 @@ export type MatchInviteRow = {
   responded_at: string | null;
 };
 
+export type FriendRequestStatus = "pending" | "accepted" | "declined";
+
+export type FriendRequestRow = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: FriendRequestStatus;
+  created_at: string;
+  responded_at: string | null;
+};
+
+export type FriendStatusValue = "none" | "pending_out" | "pending_in" | "friends";
+
+export type FriendStatusResult = {
+  status: FriendStatusValue;
+  request_id?: string;
+};
+
+export type FriendLeaderboardRpcRow = {
+  profile_id: string;
+  slug: string;
+  display_name: string;
+  avatar_url: string | null;
+  current_sr: number;
+  rank: number;
+  is_viewer: boolean;
+};
+
+export type PendingFriendRequestRpcRow = {
+  id: string;
+  created_at: string;
+  requester_id: string;
+  requester_slug: string;
+  requester_display_name: string;
+  requester_avatar_url: string | null;
+};
+
 export type CastProfileVoteResult = {
   ups: number;
   downs: number;
@@ -256,6 +293,37 @@ export type Database = {
           },
         ];
       };
+      friend_requests: {
+        Row: FriendRequestRow;
+        Insert: {
+          id?: string;
+          requester_id: string;
+          addressee_id: string;
+          status?: FriendRequestStatus;
+          created_at?: string;
+          responded_at?: string | null;
+        };
+        Update: {
+          status?: FriendRequestStatus;
+          responded_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "friend_requests_requester_id_fkey";
+            columns: ["requester_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "friend_requests_addressee_id_fkey";
+            columns: ["addressee_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -263,11 +331,32 @@ export type Database = {
         Args: { target_id: string; vote: number };
         Returns: CastProfileVoteResult;
       };
+      send_friend_request: {
+        Args: { target_id: string };
+        Returns: FriendStatusResult;
+      };
+      respond_friend_request: {
+        Args: { request_id: string; accept: boolean };
+        Returns: FriendStatusResult;
+      };
+      get_friend_status: {
+        Args: { target_id: string };
+        Returns: FriendStatusResult;
+      };
+      get_friend_leaderboard: {
+        Args: Record<string, never>;
+        Returns: FriendLeaderboardRpcRow[];
+      };
+      get_pending_friend_requests: {
+        Args: Record<string, never>;
+        Returns: PendingFriendRequestRpcRow[];
+      };
     };
     CompositeTypes: Record<string, never>;
     Enums: {
       mode: Mode;
       match_invite_status: MatchInviteStatus;
+      friend_request_status: FriendRequestStatus;
     };
   };
 };

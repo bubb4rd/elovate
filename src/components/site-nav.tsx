@@ -23,7 +23,7 @@ export function SiteNav({
   mode?: Mode;
   seasons: Season[];
   seasonId?: string;
-  tool?: "board" | "calc";
+  tool?: "board" | "calc" | "friends";
   cutoffSr?: number;
   nextUpdateAt?: string;
   boardStatus?: BoardFreshnessStatus;
@@ -63,7 +63,7 @@ export function SiteNav({
             />
             <BrandWordmark />
           </Link>
-          <ModeSelect mode={liveMode} tool={tool} />
+          <ModeSelect mode={liveMode} tool={tool === "calc" ? "calc" : "board"} />
         </div>
         <nav className="hidden items-center gap-1 text-sm md:flex">
           <ToolLink href={boardHref} active={tool === "board"}>
@@ -74,6 +74,12 @@ export function SiteNav({
           </span>
           <ToolLink href={calcHref} active={tool === "calc"}>
             Climb
+          </ToolLink>
+          <span className="text-border/80" aria-hidden>
+            |
+          </span>
+          <ToolLink href="/friends" active={tool === "friends"}>
+            Friends
           </ToolLink>
         </nav>
         <div className="ml-auto flex items-center gap-2 md:gap-3">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { PencilSimple } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
+import { FriendRequestButton } from "@/components/friends/friend-request-button";
 import {
   ProfileEditModal,
   type ProfileEditDraft,
@@ -11,9 +12,11 @@ import {
 import { ElovateStaffBadge } from "@/components/profile/elovate-staff-badge";
 import { ProfileBanner } from "@/components/profile/profile-banner";
 import { ReputationChip } from "@/components/profile/reputation-chip";
+import type { FriendStatus } from "@/lib/friends";
 import type { ProfileHeaderId } from "@/lib/profile/headers";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileView } from "@/lib/profile/types";
+import { rankFromSr } from "@/lib/ranked";
 import { cn } from "@/lib/utils";
 
 export function ProfileHero({
@@ -91,19 +94,29 @@ export function ProfileIdentity({
   pageThemeId,
   displayName,
   avatarUrl,
+  currentSr,
+  cutoffSr,
   canEdit,
   isSignedIn,
+  friendStatus = "none",
+  friendRequestId = null,
   className,
 }: {
   profile: ProfileView;
   pageThemeId: ProfilePageThemeId;
   displayName: string;
   avatarUrl: string;
+  currentSr: number;
+  cutoffSr: number | null;
   canEdit: boolean;
   isSignedIn: boolean;
+  friendStatus?: FriendStatus;
+  friendRequestId?: string | null;
   className?: string;
 }) {
   const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
+  const rank =
+    currentSr > 0 ? rankFromSr(currentSr, cutoffSr).label : null;
 
   return (
     <div
@@ -150,6 +163,28 @@ export function ProfileIdentity({
           />
         </div>
         <p className="mt-1 text-sm text-muted">{profile.handle}</p>
+        {!canEdit && profile.id ? (
+          <div className="mt-2">
+            <FriendRequestButton
+              targetProfileId={profile.id}
+              targetSlug={profile.slug}
+              initialStatus={friendStatus}
+              initialRequestId={friendRequestId}
+              isSignedIn={isSignedIn}
+            />
+          </div>
+        ) : null}
+        {rank || profile.seasonName ? (
+          <p className="mt-1.5 text-sm text-muted">
+            {rank ? (
+              <span className="font-medium text-foreground">{rank}</span>
+            ) : null}
+            {rank && profile.seasonName ? (
+              <span className="mx-1.5 text-border">·</span>
+            ) : null}
+            {profile.seasonName ? <span>{profile.seasonName}</span> : null}
+          </p>
+        ) : null}
       </div>
     </div>
   );

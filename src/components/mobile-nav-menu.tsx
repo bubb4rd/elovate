@@ -1,6 +1,6 @@
 "use client";
 
-import { List, SignIn, UserPlus, X } from "@phosphor-icons/react";
+import { List, SignIn, UserPlus, UsersThree, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { BoardPodiumIcon, ClimbSessionIcon } from "@/components/icons";
@@ -17,7 +17,7 @@ export function MobileNavMenu({
 }: {
   boardHref: string;
   calcHref: string;
-  tool?: "board" | "calc";
+  tool?: "board" | "calc" | "friends";
   loginNext?: string;
   signedIn: boolean;
 }) {
@@ -91,6 +91,14 @@ export function MobileNavMenu({
             onSelect={() => setOpen(false)}
           >
             Climb
+          </MenuLink>
+          <MenuLink
+            href="/friends"
+            active={tool === "friends"}
+            icon={<UsersThree weight="bold" className="size-3.5" />}
+            onSelect={() => setOpen(false)}
+          >
+            Friends
           </MenuLink>
           {signedIn ? null : (
             <>

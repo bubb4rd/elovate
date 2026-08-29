@@ -12,7 +12,7 @@ export async function NavSession({
   loginNext?: string;
   boardHref: string;
   calcHref: string;
-  tool?: "board" | "calc";
+  tool?: "board" | "calc" | "friends";
 }) {
   const viewer = await getViewerProfile();
   return (

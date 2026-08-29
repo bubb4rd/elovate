@@ -7,6 +7,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { formatRelativeShort } from "@/lib/format";
 import {
+  fetchPendingFriendRequests,
+  respondFriendRequest,
+  subscribeFriendRequests,
+  type PendingFriendRequest,
+} from "@/lib/friends";
+import {
   acceptMatchInvite,
   denyMatchInvite,
   fetchPendingInvites,
@@ -174,6 +180,142 @@ function InviteRow({
   );
 }
 
+function FriendRequestRow({
+  request,
+  busy,
+  accepted,
+  reduce,
+  onAccept,
+  onDeny,
+  onClose,
+}: {
+  request: PendingFriendRequest;
+  busy: boolean;
+  accepted: boolean;
+  reduce: boolean | null;
+  onAccept: () => void;
+  onDeny: () => void;
+  onClose: () => void;
+}) {
+  const name = request.requester.displayName;
+  const slug = request.requester.slug;
+  const spring = reduce
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 420, damping: 28, mass: 0.7 };
+  const fade = reduce ? { duration: 0 } : { duration: 0.22, ease: EASE };
+
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-2 px-3 py-2 transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        accepted && "bg-accent/10",
+      )}
+    >
+      <span className="relative mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[9px] font-semibold text-muted">
+        {request.requester.avatarUrl ? (
+          <Image
+            src={request.requester.avatarUrl}
+            alt=""
+            width={28}
+            height={28}
+            className="size-full object-cover"
+          />
+        ) : (
+          initials(name)
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <AnimatePresence mode="wait" initial={false}>
+          {accepted ? (
+            <motion.div
+              key="accepted"
+              role="status"
+              initial={reduce ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={fade}
+            >
+              <p className="text-xs font-medium leading-snug text-foreground">
+                You are now friends
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-muted">
+                {name}
+                <span className="text-muted/80"> · {formatRelativeShort(request.createdAt)}</span>
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="pending"
+              initial={false}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
+              transition={fade}
+            >
+              <p className="text-xs leading-snug text-foreground">
+                <Link
+                  href={`/players/${slug}`}
+                  onClick={onClose}
+                  className="font-medium hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  @{slug}
+                </Link>
+                {" sent you a friend request"}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-muted">
+                {name}
+                <span className="text-muted/80"> · {formatRelativeShort(request.createdAt)}</span>
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      <div className="flex h-7 shrink-0 items-center gap-0.5">
+        <AnimatePresence mode="wait" initial={false}>
+          {accepted ? (
+            <motion.span
+              key="done"
+              initial={reduce ? false : { opacity: 0, scale: 0.72 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.86 }}
+              transition={spring}
+              className="flex size-7 items-center justify-center text-accent"
+              aria-hidden
+            >
+              <CheckCircle weight="fill" className="size-4" />
+            </motion.span>
+          ) : (
+            <motion.div
+              key="actions"
+              className="flex items-center gap-0.5"
+              initial={false}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+              transition={fade}
+            >
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`Accept friend request from ${name}`}
+                onClick={onAccept}
+                className="flex size-7 items-center justify-center rounded-[6px] text-accent hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+              >
+                <Check weight="bold" className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`Decline friend request from ${name}`}
+                onClick={onDeny}
+                className="flex size-7 items-center justify-center rounded-[6px] text-muted hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+              >
+                <X weight="bold" className="size-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 export function NavNotifications() {
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -182,18 +324,22 @@ export function NavNotifications() {
   const countRef = useRef(0);
   const [open, setOpen] = useState(false);
   const [invites, setInvites] = useState<PendingMatchInvite[]>([]);
+  const [friendRequests, setFriendRequests] = useState<PendingFriendRequest[]>([]);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [acceptedId, setAcceptedId] = useState<string | null>(null);
   const [listGone, setListGone] = useState(true);
   const reduce = useReducedMotion();
-  const count = invites.length;
+  const count = invites.length + friendRequests.length;
   countRef.current = count;
 
   const refresh = useCallback(() => {
-    void fetchPendingInvites().then((next) => {
-      if (settlingRef.current) return;
-      setInvites(next);
-    });
+    void Promise.all([fetchPendingInvites(), fetchPendingFriendRequests()]).then(
+      ([nextInvites, nextFriends]) => {
+        if (settlingRef.current) return;
+        setInvites(nextInvites);
+        setFriendRequests(nextFriends);
+      },
+    );
   }, []);
 
   useEffect(() => {
@@ -205,23 +351,26 @@ export function NavNotifications() {
 
   useEffect(() => {
     refresh();
-    const unsubscribe = subscribeMatchInvites(refresh);
+    const unsubInvites = subscribeMatchInvites(refresh);
+    const unsubFriends = subscribeFriendRequests(refresh);
     function onFocus() {
       refresh();
     }
     window.addEventListener("focus", onFocus);
     return () => {
-      unsubscribe();
+      unsubInvites();
+      unsubFriends();
       window.removeEventListener("focus", onFocus);
     };
   }, [refresh]);
 
   useEffect(() => {
-    if (invites.length > 0) setListGone(false);
-  }, [invites.length]);
+    if (count > 0) setListGone(false);
+  }, [count]);
 
   useEffect(() => {
     if (!open) return;
+    refresh();
 
     function onPointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
@@ -236,9 +385,9 @@ export function NavNotifications() {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, refresh]);
 
-  async function respond(id: string, action: "accept" | "deny") {
+  async function respondInvite(id: string, action: "accept" | "deny") {
     setPendingId(id);
     const ok = action === "accept" ? await acceptMatchInvite(id) : await denyMatchInvite(id);
     if (!ok) {
@@ -265,10 +414,40 @@ export function NavNotifications() {
     setPendingId(null);
   }
 
+  async function respondFriend(id: string, accept: boolean) {
+    setPendingId(id);
+    const result = await respondFriendRequest(id, accept);
+    if (!result.ok) {
+      refresh();
+      if (aliveRef.current) setPendingId(null);
+      return;
+    }
+
+    if (accept) {
+      settlingRef.current = id;
+      setAcceptedId(id);
+      await wait(reduce ? 0 : ACCEPT_HOLD_MS);
+      settlingRef.current = null;
+      if (!aliveRef.current) return;
+      setFriendRequests((current) => current.filter((req) => req.id !== id));
+      setAcceptedId(null);
+      setPendingId(null);
+      refresh();
+      return;
+    }
+
+    if (!aliveRef.current) return;
+    setFriendRequests((current) => current.filter((req) => req.id !== id));
+    setPendingId(null);
+  }
+
   const showList = count > 0 || !listGone;
   const itemTransition = reduce
     ? { duration: 0.12 }
     : { duration: 0.32, ease: EASE, layout: { duration: 0.32, ease: EASE } };
+
+  const ariaLabel =
+    count > 0 ? `Notifications, ${count} pending` : "Notifications";
 
   return (
     <div ref={rootRef} className="relative">
@@ -277,7 +456,7 @@ export function NavNotifications() {
         aria-expanded={open}
         aria-haspopup="true"
         aria-controls={menuId}
-        aria-label={count > 0 ? `Match invites, ${count} pending` : "Match invites"}
+        aria-label={ariaLabel}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           "relative flex size-8 items-center justify-center rounded-[6px]",
@@ -306,13 +485,13 @@ export function NavNotifications() {
         <div
           id={menuId}
           role="region"
-          aria-label="Match invites"
+          aria-label="Notifications"
           className="absolute top-full right-0 mt-1.5 w-80 overflow-hidden rounded-[6px] border border-border bg-surface-elevated py-1 shadow-sm"
           style={{ zIndex: zIndex.overlay }}
         >
           <AnimatePresence initial={false} mode="wait">
             {showList ? (
-              <motion.ul
+              <motion.div
                 key="list"
                 initial={false}
                 exit={reduce ? { opacity: 0 } : { opacity: 0 }}
@@ -324,11 +503,57 @@ export function NavNotifications() {
                     if (countRef.current === 0) setListGone(true);
                   }}
                 >
+                  {friendRequests.length > 0 ? (
+                    <motion.p
+                      key="friends-label"
+                      layout
+                      className="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase"
+                    >
+                      Friend requests
+                    </motion.p>
+                  ) : null}
+                  {friendRequests.map((request) => {
+                    const busy = pendingId === request.id;
+                    return (
+                      <motion.div
+                        key={`friend-${request.id}`}
+                        layout
+                        initial={false}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                        transition={itemTransition}
+                        className="overflow-hidden border-b border-border"
+                      >
+                        <FriendRequestRow
+                          request={request}
+                          busy={busy}
+                          accepted={acceptedId === request.id}
+                          reduce={reduce}
+                          onAccept={() => {
+                            void respondFriend(request.id, true);
+                          }}
+                          onDeny={() => {
+                            void respondFriend(request.id, false);
+                          }}
+                          onClose={() => setOpen(false)}
+                        />
+                      </motion.div>
+                    );
+                  })}
+                  {invites.length > 0 ? (
+                    <motion.p
+                      key="invites-label"
+                      layout
+                      className="px-3 pt-2 pb-1 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase"
+                    >
+                      Match invites
+                    </motion.p>
+                  ) : null}
                   {invites.map((invite) => {
                     const busy = pendingId === invite.id;
                     return (
-                      <motion.li
-                        key={invite.id}
+                      <motion.div
+                        key={`invite-${invite.id}`}
                         layout
                         initial={false}
                         animate={{ opacity: 1, height: "auto" }}
@@ -342,18 +567,18 @@ export function NavNotifications() {
                           accepted={acceptedId === invite.id}
                           reduce={reduce}
                           onAccept={() => {
-                            void respond(invite.id, "accept");
+                            void respondInvite(invite.id, "accept");
                           }}
                           onDeny={() => {
-                            void respond(invite.id, "deny");
+                            void respondInvite(invite.id, "deny");
                           }}
                           onClose={() => setOpen(false)}
                         />
-                      </motion.li>
+                      </motion.div>
                     );
                   })}
                 </AnimatePresence>
-              </motion.ul>
+              </motion.div>
             ) : (
               <motion.p
                 key="empty"
@@ -363,7 +588,7 @@ export function NavNotifications() {
                 transition={{ duration: reduce ? 0 : 0.18, ease: EASE }}
                 className="px-3 py-4 text-center text-xs text-muted"
               >
-                No match invites
+                No friend requests or match invites
               </motion.p>
             )}
           </AnimatePresence>

@@ -10,6 +10,7 @@ import {
   listSeasons,
   overlayLiveMetrics,
 } from "@/lib/data/queries";
+import { getFriendStatusServer } from "@/lib/friends/server";
 import { getProfile } from "@/lib/profile/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
@@ -25,7 +26,13 @@ export async function generateMetadata({
   const profile = await getProfile(slug, viewer?.id);
   if (!profile) return { title: "Player" };
   if (profile.isPrivate && profile.id !== viewer?.id) {
-    return { title: "Private profile" };
+    const friend =
+      viewer && profile.id
+        ? await getFriendStatusServer(profile.id)
+        : { status: "none" as const };
+    if (friend.status !== "friends") {
+      return { title: "Private profile" };
+    }
   }
   return { title: profile.displayName };
 }
@@ -39,7 +46,16 @@ export default async function PlayerPage({
   const viewer = await getViewerProfile();
   const profile = await getProfile(slug, viewer?.id);
   if (!profile) notFound();
-  if (profile.isPrivate && profile.id !== viewer?.id) notFound();
+
+  const canEdit = Boolean(viewer && profile.id && viewer.id === profile.id);
+  const friend =
+    viewer && profile.id && !canEdit
+      ? await getFriendStatusServer(profile.id)
+      : { status: "none" as const, requestId: null };
+
+  if (profile.isPrivate && !canEdit && friend.status !== "friends") {
+    notFound();
+  }
 
   const season = getActiveSeason();
   const seasons = listSeasons();
@@ -72,8 +88,10 @@ export default async function PlayerPage({
           key={`${profile.source}-${profile.slug}`}
           profile={profileWithLive}
           srDelta={srDelta}
-          canEdit={Boolean(viewer && profile.id && viewer.id === profile.id)}
+          canEdit={canEdit}
           isSignedIn={Boolean(viewer)}
+          friendStatus={friend.status}
+          friendRequestId={friend.requestId}
         />
       </main>
       <SiteFooter />
