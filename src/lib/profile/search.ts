@@ -45,6 +45,7 @@ export function guestTeammateFromQuery(query: string): HistoryTeammate | null {
 
 export async function searchPublicProfiles(
   query: string,
+  options?: { excludeViewer?: boolean },
 ): Promise<HistoryTeammate[]> {
   const sanitized = sanitizeIlike(query);
   if (sanitized.length < 2) return [];
@@ -55,6 +56,7 @@ export async function searchPublicProfiles(
   const { data: claimsData } = await supabase.auth.getClaims();
   const viewerId =
     typeof claimsData?.claims?.sub === "string" ? claimsData.claims.sub : null;
+  const excludeViewer = options?.excludeViewer ?? true;
 
   const pattern = `"%${sanitized}%"`;
   let request = supabase
@@ -64,7 +66,7 @@ export async function searchPublicProfiles(
     .or(`display_name.ilike.${pattern},slug.ilike.${pattern}`)
     .limit(PROFILE_SEARCH_LIMIT);
 
-  if (viewerId) request = request.neq("id", viewerId);
+  if (excludeViewer && viewerId) request = request.neq("id", viewerId);
 
   const { data, error } = await request;
   if (error || !data) return [];
@@ -72,6 +74,7 @@ export async function searchPublicProfiles(
   const seen = new Set<string>();
   const results: HistoryTeammate[] = [];
   for (const row of data) {
+    if (!row.slug) continue;
     const teammate: HistoryTeammate = {
       displayName: row.display_name,
       slug: row.slug,

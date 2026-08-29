@@ -533,8 +533,8 @@ export function SrCalculator({
   return (
     <div
       className={cn(
-        "mt-4 max-md:pb-[16rem] md:pb-8",
-        ticketOpen && "max-md:pb-[31rem]",
+        "mt-4 max-md:pb-24 md:pb-8",
+        ticketOpen && "max-md:pb-[18rem]",
       )}
     >
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(280px,0.85fr)_minmax(360px,1.15fr)]">

@@ -1,6 +1,6 @@
-import { MobileNavMenu } from "@/components/mobile-nav-menu";
 import { NavAccount } from "@/components/nav-account";
 import { NavNotifications } from "@/components/nav-notifications";
+import { NavUserSearch } from "@/components/nav-user-search";
 import { getViewerProfile } from "@/lib/auth/viewer";
 
 export async function NavSession({
@@ -17,15 +17,15 @@ export async function NavSession({
   const viewer = await getViewerProfile();
   return (
     <div className="flex items-center gap-1">
-      <MobileNavMenu
+      <NavUserSearch />
+      {viewer ? <NavNotifications /> : null}
+      <NavAccount
+        viewer={viewer}
+        loginNext={loginNext}
         boardHref={boardHref}
         calcHref={calcHref}
         tool={tool}
-        loginNext={loginNext}
-        signedIn={Boolean(viewer)}
       />
-      {viewer ? <NavNotifications /> : null}
-      <NavAccount viewer={viewer} loginNext={loginNext} />
     </div>
   );
 }
