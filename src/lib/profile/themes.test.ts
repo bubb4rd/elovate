@@ -12,10 +12,16 @@ assert.deepEqual(PROFILE_PAGE_THEME_IDS, [
   "diamond",
   "crimson",
   "iridescent",
+  "ember",
+  "ocean",
+  "forest",
+  "nebula",
 ]);
 
 assert.equal(isProfilePageThemeId("gold"), true);
 assert.equal(isProfilePageThemeId("platinum"), true);
+assert.equal(isProfilePageThemeId("ember"), true);
+assert.equal(isProfilePageThemeId("nebula"), true);
 assert.equal(isProfilePageThemeId("default"), false);
 
 assert.equal(profilePageTheme("gold").label, "Gold");

@@ -5,6 +5,10 @@ export const PROFILE_PAGE_THEME_IDS = [
   "diamond",
   "crimson",
   "iridescent",
+  "ember",
+  "ocean",
+  "forest",
+  "nebula",
 ] as const;
 
 export type ProfilePageThemeId = (typeof PROFILE_PAGE_THEME_IDS)[number];
@@ -70,6 +74,38 @@ export const PROFILE_PAGE_THEMES: readonly ProfilePageTheme[] = [
     accentFg: "#0a0a0b",
     glow: "#F5C7E8",
     gradient: IRIDESCENT_GRADIENT,
+  },
+  {
+    id: "ember",
+    label: "Ember",
+    accent: "#ff6b35",
+    accentFg: "#201b12",
+    glow: "#ff9a6c",
+    gradient: "linear-gradient(90deg, #ffd4a8 0%, #ff6b35 50%, #c026d3 100%)",
+  },
+  {
+    id: "ocean",
+    label: "Ocean",
+    accent: "#22d3ee",
+    accentFg: "#0a0a0b",
+    glow: "#67e8f9",
+    gradient: "linear-gradient(90deg, #b8e8ff 0%, #22d3ee 50%, #0e7490 100%)",
+  },
+  {
+    id: "forest",
+    label: "Forest",
+    accent: "#22c55e",
+    accentFg: "#0a0a0b",
+    glow: "#4ade80",
+    gradient: "linear-gradient(90deg, #bbf7d0 0%, #22c55e 50%, #14532d 100%)",
+  },
+  {
+    id: "nebula",
+    label: "Nebula",
+    accent: "#c084fc",
+    accentFg: "#f4f4f5",
+    glow: "#e879f9",
+    gradient: "linear-gradient(90deg, #d8b4fe 0%, #e879f9 50%, #581c87 100%)",
   },
 ];
 
