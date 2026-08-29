@@ -1,5 +1,6 @@
 export const PROFILE_PAGE_THEME_IDS = [
   "gold",
+  "silver",
   "platinum",
   "diamond",
   "crimson",
@@ -29,6 +30,14 @@ export const PROFILE_PAGE_THEMES: readonly ProfilePageTheme[] = [
     accentFg: "#201b12",
     glow: "#f2c81d",
     gradient: "linear-gradient(90deg, #fcf8c5 0%, #f2c81d 50%, #ca8d0b 100%)",
+  },
+  {
+    id: "silver",
+    label: "Silver",
+    accent: "#c4ced9",
+    accentFg: "#0a0a0b",
+    glow: "#e4eaf0",
+    gradient: "linear-gradient(90deg, #eef2f6 0%, #c4ced9 40%, #8f9aad 75%, #5c6b7a 100%)",
   },
   {
     id: "platinum",

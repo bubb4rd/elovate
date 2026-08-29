@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ProfileThemePicker } from "@/components/profile/profile-theme-picker";
 import { LinkedAccounts } from "@/components/profile/linked-accounts";
 import {
   SettingsRow,
@@ -15,6 +16,10 @@ import { formatSnapshotTime } from "@/lib/format";
 import type { AccountSettings } from "@/lib/profile/settings";
 import { saveAccountSettings } from "@/lib/profile/settings";
 import { DISPLAY_NAME_MAX_LEN } from "@/lib/profile/slug";
+import {
+  writeStoredPageTheme,
+  type ProfilePageThemeId,
+} from "@/lib/profile/themes";
 
 export function SettingsContent({ settings }: { settings: AccountSettings }) {
   const router = useRouter();
@@ -22,6 +27,7 @@ export function SettingsContent({ settings }: { settings: AccountSettings }) {
   const [isPrivate, setIsPrivate] = useState(settings.isPrivate);
   const [notifyCutoff, setNotifyCutoff] = useState(settings.notifyCutoff);
   const [notifyClimb, setNotifyClimb] = useState(settings.notifyClimb);
+  const [pageThemeId, setPageThemeId] = useState<ProfilePageThemeId>(settings.pageThemeId);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +71,36 @@ export function SettingsContent({ settings }: { settings: AccountSettings }) {
     if (!ok) setNotifyClimb(!next);
   }
 
+  async function selectPageTheme(next: ProfilePageThemeId) {
+    const previous = pageThemeId;
+    setPageThemeId(next);
+    writeStoredPageTheme(settings.slug, next);
+    const ok = await patch("theme", { pageThemeId: next });
+    if (!ok) {
+      setPageThemeId(previous);
+      writeStoredPageTheme(settings.slug, previous);
+      return;
+    }
+    setMessage("Profile theme updated.");
+  }
+
   return (
     <div className="space-y-6">
+      <SettingsSection
+        title="Appearance"
+        description="Accent colors and gradients on your public profile."
+      >
+        <div className="px-4 py-4 md:px-5">
+          <ProfileThemePicker
+            selectedThemeId={pageThemeId}
+            onSelect={(next) => {
+              void selectPageTheme(next);
+            }}
+            disabled={saving === "theme"}
+          />
+        </div>
+      </SettingsSection>
+
       <SettingsSection
         title="Account"
         description="Your public identity on elovate."

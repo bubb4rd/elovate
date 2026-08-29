@@ -7,6 +7,7 @@ import {
 
 assert.deepEqual(PROFILE_PAGE_THEME_IDS, [
   "gold",
+  "silver",
   "platinum",
   "diamond",
   "crimson",
@@ -18,7 +19,9 @@ assert.equal(isProfilePageThemeId("platinum"), true);
 assert.equal(isProfilePageThemeId("default"), false);
 
 assert.equal(profilePageTheme("gold").label, "Gold");
+assert.equal(profilePageTheme("silver").label, "Silver");
 assert.equal(profilePageTheme("iridescent").label, "Iridescent");
+assert.match(profilePageTheme("silver").gradient, /linear-gradient/);
 assert.match(profilePageTheme("platinum").gradient, /linear-gradient/);
 assert.equal(
   profilePageTheme("iridescent").gradient,

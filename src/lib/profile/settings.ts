@@ -1,5 +1,6 @@
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import type { Database } from "@/lib/supabase/database";
+import type { ProfilePageThemeId } from "./themes";
 
 export type AccountSettings = {
   userId: string;
@@ -10,10 +11,14 @@ export type AccountSettings = {
   isPrivate: boolean;
   notifyCutoff: boolean;
   notifyClimb: boolean;
+  pageThemeId: ProfilePageThemeId;
 };
 
 export type SettingsPatch = Partial<
-  Pick<AccountSettings, "displayName" | "isPrivate" | "notifyCutoff" | "notifyClimb">
+  Pick<
+    AccountSettings,
+    "displayName" | "isPrivate" | "notifyCutoff" | "notifyClimb" | "pageThemeId"
+  >
 >;
 
 export async function saveAccountSettings(
@@ -33,6 +38,7 @@ export async function saveAccountSettings(
   if (patch.isPrivate != null) payload.is_private = patch.isPrivate;
   if (patch.notifyCutoff != null) payload.notify_cutoff = patch.notifyCutoff;
   if (patch.notifyClimb != null) payload.notify_climb = patch.notifyClimb;
+  if (patch.pageThemeId != null) payload.page_theme_id = patch.pageThemeId;
 
   if (Object.keys(payload).length === 0) return { ok: true };
 
