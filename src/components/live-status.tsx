@@ -65,13 +65,12 @@ export function LiveStatus({
 
   return (
     <span className="group relative inline-flex">
-      <button
-        type="button"
+      <span
         className={cn(
-          "inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.12em] focus-visible:outline-none focus-visible:ring-2",
+          "inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.12em]",
           frozen
-            ? "border-border bg-surface text-muted focus-visible:ring-border"
-            : "border-accent/40 bg-accent/10 text-accent focus-visible:ring-accent",
+            ? "border-border bg-surface text-muted"
+            : "border-accent/40 bg-accent/10 text-accent",
         )}
         aria-label={`${badge}. ${label}`}
       >
@@ -80,7 +79,7 @@ export function LiveStatus({
           aria-hidden
         />
         {badge}
-      </button>
+      </span>
       <span
         role="tooltip"
         className={cn(

@@ -14,6 +14,9 @@ import { formatDelta, formatSr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { BoardRow } from "@/lib/data/types";
 
+const ROW_GRID =
+  "grid grid-cols-[3.25rem_minmax(0,1fr)_4.25rem_4.25rem] md:grid-cols-[4.5rem_minmax(0,1fr)_5.5rem_5.5rem]";
+
 function RankCell({ rank, deltaRank }: { rank: number; deltaRank: number | null }) {
   if (deltaRank === null || deltaRank === 0) {
     return <span className="numeric">{rank}</span>;
@@ -115,7 +118,7 @@ export function BoardTable({
   });
 
   return (
-    <div className="flex h-[min(22rem,48dvh)] min-h-0 min-w-0 flex-col overflow-hidden lg:h-full">
+    <div className="flex min-h-0 min-w-0 flex-col lg:h-full lg:overflow-hidden">
       <div className="flex shrink-0 items-center gap-2.5 pb-3">
         <label className="relative min-w-0 flex-1" htmlFor="player-search">
           <span className="sr-only">Player Name</span>
@@ -153,42 +156,51 @@ export function BoardTable({
           <Microphone size={18} weight="fill" aria-hidden />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[640px] border-collapse text-left text-base lg:min-w-0">
-          <caption className="sr-only">Top 250 ranked players</caption>
-          <thead className="sticky top-0 z-10 bg-background">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b border-border">
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    scope="col"
-                    className="px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-muted"
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className={cn(
-                  "border-b border-border/60 transition-colors duration-150 hover:bg-accent/10",
-                  row.original.isCutoff && "border-l-2 border-l-accent bg-accent/10",
-                )}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-2.5">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div role="table" aria-label="Top 250 ranked players" className="flex min-h-0 flex-col lg:flex-1">
+        {table.getHeaderGroups().map((hg) => (
+          <div key={hg.id} role="rowgroup" className="shrink-0">
+            <div
+              role="row"
+              className={cn(ROW_GRID, "border-b border-border")}
+            >
+              {hg.headers.map((header) => (
+                <div
+                  key={header.id}
+                  role="columnheader"
+                  className="px-3 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-muted md:px-4"
+                >
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        <div role="rowgroup" className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overflow-x-hidden">
+          {table.getRowModel().rows.map((row) => (
+            <div
+              key={row.id}
+              role="row"
+              className={cn(
+                ROW_GRID,
+                "border-b border-border/60 transition-colors duration-150 hover:bg-accent/10",
+                row.original.isCutoff && "border-l-2 border-l-accent bg-accent/10",
+              )}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <div
+                  key={cell.id}
+                  role="cell"
+                  className={cn(
+                    "min-w-0 px-3 py-2.5 md:px-4",
+                    cell.column.id === "player" && "truncate",
+                  )}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

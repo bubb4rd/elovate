@@ -257,7 +257,7 @@ export function CutoffChart({
       <div
         className={cn(
           "flex items-center px-4 text-sm text-muted",
-          fill && "h-full min-h-[28rem] lg:min-h-0",
+          fill && "h-full min-h-0",
         )}
         style={height ? { height } : undefined}
       >
@@ -416,7 +416,7 @@ export function CutoffChart({
 
   if (bare || object) {
     return (
-      <div className={cn("flex w-full flex-col", fill && "h-full min-h-[28rem] lg:min-h-0")}>
+      <div className={cn("flex w-full flex-col", fill && "h-full min-h-0")}>
         {plot}
       </div>
     );
@@ -426,7 +426,7 @@ export function CutoffChart({
     <div
       className={cn(
         "relative flex w-full flex-col",
-        fill && "h-full min-h-[28rem] lg:min-h-0",
+        fill && "h-full min-h-0",
       )}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-start pr-1 pt-1">

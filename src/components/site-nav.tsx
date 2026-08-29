@@ -47,11 +47,24 @@ export function SiteNav({
       style={{ zIndex: zIndex.nav }}
     >
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-x-3 px-4 md:gap-x-4">
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
+          {cutoffSr != null ? (
+            <NavCutoff
+              cutoffSr={cutoffSr}
+              nextUpdateAt={nextUpdateAt}
+              boardStatus={boardStatus}
+              align="start"
+              href="/"
+              className="md:hidden"
+            />
+          ) : null}
           <Link
             href="/"
             aria-label="elovate"
-            className="inline-flex items-center gap-1.5 text-base font-semibold tracking-tight text-foreground"
+            className={cn(
+              "items-center gap-1.5 text-base font-semibold tracking-tight text-foreground",
+              cutoffSr != null ? "hidden md:inline-flex" : "inline-flex",
+            )}
           >
             <Image
               src={icon}
@@ -88,6 +101,7 @@ export function SiteNav({
               cutoffSr={cutoffSr}
               nextUpdateAt={nextUpdateAt}
               boardStatus={boardStatus}
+              className="hidden md:flex"
             />
           ) : null}
           <NavSession
