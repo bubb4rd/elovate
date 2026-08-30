@@ -4,6 +4,7 @@ import {
   CaretDown,
   ClockCounterClockwise,
   GearSix,
+  List,
   SignIn,
   SignOut,
   User,
@@ -312,7 +313,7 @@ export function NavAccount({
               open && "bg-surface text-foreground",
             )}
           >
-            <User weight="bold" className="size-4" />
+            <List weight="bold" className="size-4" />
           </button>
         </>
       )}

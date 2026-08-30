@@ -140,7 +140,7 @@ export function NavUserSearch() {
         placeholder="Search users"
         autoComplete="off"
         enterKeyHint="search"
-        className="h-8 pl-9 pr-8"
+        className="h-8 pl-9 pr-8 focus-visible:ring-0"
       />
       <button
         type="button"

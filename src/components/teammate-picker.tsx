@@ -313,7 +313,7 @@ export function TeammatePicker({
           placeholder={atCap ? "Squad full" : "Search or add a name"}
           autoComplete="off"
           disabled={atCap}
-          className="h-9 pl-9"
+          className="h-9 pl-9 focus-visible:ring-0"
         />
         {showResults ? (
           <ul
