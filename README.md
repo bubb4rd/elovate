@@ -55,6 +55,12 @@ supabase db query --linked -f supabase/cron/schedule_poll_wz_cutoff.sql
 
 The job POSTs every 15 minutes. 24h stays empty until a snapshot is at least 24 hours older than the latest live fetch.
 
+## Error monitoring (ops)
+
+Uncaught UI crashes and server `console.error` lines land in **Netlify Function / SSR logs**. Cutoff ingest and database issues land in **Supabase** Edge Function + Postgres/Auth logs. Grep prefixes: `[ops]`, `[ocr]`, `[friends]`, `[match-invites]`.
+
+See `docs/OPS-06-error-monitoring.md` for dashboard links, expected-vs-incident, and Sep 7 check cadence.
+
 ## Auth / profiles
 
 Push profile migrations to hosted with `supabase db push` (includes onboarding columns on `profiles`). Existing auth users without a profile row are sent to `/onboarding` on sign-in; the wizard inserts their row. For bulk backfill of legacy orphans, run `supabase/scripts/backfill_orphan_profiles.sql` in the SQL editor. Smoke: `./scripts/wz-02-onboarding-smoke.sh` (see `docs/WZ-02-onboarding-smoke-results.md`). Profile privacy/themes/reputation: `./scripts/wz-06-profile-smoke.sh` (see `docs/WZ-06-profile-smoke-results.md`).
