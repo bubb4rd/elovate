@@ -224,6 +224,7 @@ export function ProfilePageContent({
             personalLabel={canEdit ? "you" : displayName}
             showClimbCta={canEdit}
             calcHref={`/${profile.mode}/calc`}
+            viewAllHref={canEdit ? "/history" : undefined}
           />
         </div>
       </div>

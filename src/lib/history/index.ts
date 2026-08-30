@@ -1,4 +1,5 @@
 export {
+  allSummaries,
   appendMatch,
   canUndoLast,
   deleteSession,

@@ -8,6 +8,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { formatDelta, formatLocalDay, formatLocalTime, formatSr } from "@/lib/format";
@@ -372,7 +373,7 @@ export function SessionPanel({
                 <div className="flex items-center justify-between gap-2">
                   <p className="flex items-center gap-1.5 text-sm font-medium tracking-wide text-zinc-400">
                     <ClimbSessionIcon className="size-3.5 accent-glow" />
-                    <span className="accent-glow bg-linear-to-r from-[#fcf8c5] via-[#f2c81d] to-[#ca8d0b] bg-clip-text text-transparent">
+                    <span className="accent-glow theme-heading">
                       Climb
                     </span>{" "}
                     Session
@@ -474,6 +475,13 @@ export function SessionPanel({
                   </ul>
                 </details>
               ) : null}
+
+              <Link
+                href="/history"
+                className="relative flex items-center justify-center border-t border-dashed border-white/15 px-3.5 py-2 text-[11px] font-medium text-zinc-400 transition-colors hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent"
+              >
+                View all history
+              </Link>
 
               {saveFailed ? (
                 <div className="border-t border-dashed border-negative/30 bg-negative/5 px-3.5 py-2.5">

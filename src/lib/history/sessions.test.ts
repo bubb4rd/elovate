@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  allSummaries,
   appendMatch,
   canUndoLast,
   deleteSession,
@@ -7,6 +8,7 @@ import {
   endSession,
   openSession,
   parseDocument,
+  pastSummaries,
   recentTeammates,
   setMatchTeammates,
   summarizeSession,
@@ -163,5 +165,16 @@ const importedAccept = appendMatch(
   "512353b7-cd19-4932-a76a-bc1b18e6d36f",
 );
 assert.notEqual(importedAccept.session.id, inviterSessionId);
+
+assert.deepEqual(allSummaries(emptyDocument()), []);
+assert.equal(allSummaries(first.doc).length, 1);
+assert.equal(allSummaries(first.doc)[0]?.session.endedAt, null);
+assert.equal(allSummaries(closed).length, 1);
+assert.ok(allSummaries(closed)[0]?.session.endedAt);
+assert.equal(pastSummaries(rolled.doc).length, 1);
+assert.equal(allSummaries(rolled.doc).length, 2);
+assert.equal(allSummaries(rolled.doc)[0]?.session.endedAt, null);
+assert.equal(allSummaries(rolled.doc)[0]?.session.id, rolled.session.id);
+assert.equal(allSummaries(rolled.doc)[1]?.session.endedAt, "2026-08-24T12:10:00.000Z");
 
 console.log("history session rules ok");

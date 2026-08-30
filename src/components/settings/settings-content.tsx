@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProfileThemePicker } from "@/components/profile/profile-theme-picker";
+import { ProfileThemeProvider } from "@/components/profile/profile-theme-provider";
 import { LinkedAccounts } from "@/components/profile/linked-accounts";
 import {
   SettingsRow,
@@ -85,7 +86,8 @@ export function SettingsContent({ settings }: { settings: AccountSettings }) {
   }
 
   return (
-    <div className="space-y-6">
+    <ProfileThemeProvider themeId={pageThemeId}>
+      <div className="space-y-6">
       <SettingsSection
         title="Appearance"
         description="Accent colors and gradients on your public profile."
@@ -219,6 +221,7 @@ export function SettingsContent({ settings }: { settings: AccountSettings }) {
 
       {message ? <p className="text-sm text-muted">{message}</p> : null}
       {error ? <p className="text-sm text-negative">{error}</p> : null}
-    </div>
+      </div>
+    </ProfileThemeProvider>
   );
 }

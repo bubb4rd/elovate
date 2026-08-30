@@ -104,8 +104,23 @@ body {
   filter: drop-shadow(0 0 12px color-mix(in oklab, var(--profile-glow) 35%, transparent));
 }
 
+.profile-theme-gradient {
+  background: linear-gradient(90deg, #fcf8c5 0%, #f2c81d 50%, #ca8d0b 100%);
+}
+
 .profile-themed .profile-theme-gradient {
   background: var(--profile-gradient);
+}
+
+.theme-heading {
+  background-image: linear-gradient(90deg, var(--geebung-600) 0%, var(--geebung-500) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.profile-themed .theme-heading {
+  background-image: var(--profile-gradient);
 }
 
 .profile-themed .sr-progress-pill-fill {

@@ -1,4 +1,4 @@
-import { FriendsSignedIn, FriendsSignedOut } from "@/components/friends/friends-page-content";
+import { HistoryPageContent } from "@/components/history/history-page-content";
 import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -15,10 +15,10 @@ import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Friends",
+  title: "History",
 };
 
-export default async function FriendsPage() {
+export default async function HistoryPage() {
   const viewer = await getViewerProfile();
   const season = getActiveSeason();
   const seasons = listSeasons();
@@ -37,19 +37,14 @@ export default async function FriendsPage() {
         mode="wz"
         seasons={seasons}
         seasonId={season.id}
-        tool="friends"
         cutoffSr={cutoffSr}
         nextUpdateAt={live?.nextUpdateAt}
-        loginNext="/friends"
+        loginNext="/history"
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-7">
-        {viewer ? (
-          <ViewerThemeShell themeId={viewer.pageThemeId}>
-            <FriendsSignedIn slug={viewer.slug} displayName={viewer.displayName} />
-          </ViewerThemeShell>
-        ) : (
-          <FriendsSignedOut />
-        )}
+        <ViewerThemeShell themeId={viewer?.pageThemeId}>
+          <HistoryPageContent signedIn={Boolean(viewer)} />
+        </ViewerThemeShell>
       </main>
       <SiteFooter />
     </div>

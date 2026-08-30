@@ -66,14 +66,13 @@ function ChartTooltip({
         <span className="text-muted"> {stamp.time}</span>
       </p>
       <div className="mt-1 flex items-center justify-center gap-1">
-        {delta != null && delta < 0 ? <ChartDelta delta={delta} /> : null}
         <p
           className="numeric text-3xl font-semibold leading-none tracking-tight text-foreground"
           aria-label={`${labelName} ${formatSr(point.cutoffSr)}`}
         >
           {formatSr(point.cutoffSr)}
         </p>
-        {delta != null && delta > 0 ? <ChartDelta delta={delta} /> : null}
+        {delta != null && delta !== 0 ? <ChartDelta delta={delta} /> : null}
       </div>
     </div>
   );

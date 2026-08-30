@@ -5,12 +5,14 @@ import { BrandWordmark } from "@/components/brand-wordmark";
 import { ModeSelect } from "@/components/mode-select";
 import { NavCutoff } from "@/components/nav-cutoff";
 import { NavSession } from "@/components/nav-session";
+import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import type { BoardFreshnessStatus } from "@/components/live-status";
+import { getViewerProfile } from "@/lib/auth/viewer";
 import { zIndex } from "@/lib/z-index";
 import { cn } from "@/lib/utils";
 import type { Mode, Season } from "@/lib/data/types";
 
-export function SiteNav({
+export async function SiteNav({
   mode,
   seasons,
   seasonId,
@@ -29,6 +31,7 @@ export function SiteNav({
   boardStatus?: BoardFreshnessStatus;
   loginNext?: string;
 }) {
+  const viewer = await getViewerProfile();
   const liveMode = mode ?? "wz";
   const activeSeason = seasons.find((s) => s.isActive);
   const onArchivedBoard = Boolean(
@@ -42,10 +45,11 @@ export function SiteNav({
   const calcHref = mode ? `/${mode}/calc` : "/wz/calc";
 
   return (
-    <header
-      className="sticky top-0 shrink-0 bg-background/95 backdrop-blur"
-      style={{ zIndex: zIndex.nav }}
-    >
+    <ViewerThemeShell themeId={viewer?.pageThemeId}>
+      <header
+        className="sticky top-0 shrink-0 bg-background/95 backdrop-blur"
+        style={{ zIndex: zIndex.nav }}
+      >
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-x-3 px-4 md:gap-x-4">
         <div className="flex min-w-0 shrink-0 items-center gap-2">
           {cutoffSr != null ? (
@@ -112,7 +116,8 @@ export function SiteNav({
           />
         </div>
       </div>
-    </header>
+      </header>
+    </ViewerThemeShell>
   );
 }
 

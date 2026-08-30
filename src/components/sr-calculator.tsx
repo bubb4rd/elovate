@@ -627,7 +627,7 @@ export function SrCalculator({
         <div>
           <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
             <h1 className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 font-semibold tracking-tight">
-              <span className="accent-glow bg-linear-to-r from-geebung-600 to-geebung-500 bg-clip-text text-4xl text-transparent md:text-5xl">
+              <span className="accent-glow theme-heading text-4xl md:text-5xl">
                 Climb
               </span>
               <span className="text-2xl text-muted">to</span>

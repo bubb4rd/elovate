@@ -129,6 +129,14 @@ export function pastSummaries(doc: HistoryDocument): SessionSummary[] {
     .sort((a, b) => b.session.startedAt.localeCompare(a.session.startedAt));
 }
 
+/** Open session first (if it has games), then closed sessions newest first. */
+export function allSummaries(doc: HistoryDocument): SessionSummary[] {
+  const past = pastSummaries(doc);
+  const open = openSummary(doc);
+  if (open && open.games > 0) return [open, ...past];
+  return past;
+}
+
 function lastActivityIso(session: HistorySession, matches: HistoryMatch[]): string {
   return matches.at(-1)?.createdAt ?? session.startedAt;
 }

@@ -1,4 +1,5 @@
 import { RememberMode } from "@/components/remember-mode";
+import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -43,22 +44,24 @@ export async function CalcPage({ mode }: { mode: Mode }) {
         loginNext={calcHref}
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5">
-        <SrCalculator
-          mode={mode}
-          cutoffSr={cutoffSr}
-          ladder={ladder}
-          signedIn={viewer != null}
-          profileSr={viewer?.currentSr ?? null}
-          viewer={
-            viewer
-              ? {
-                  id: viewer.id,
-                  slug: viewer.slug,
-                  displayName: viewer.displayName,
-                }
-              : null
-          }
-        />
+        <ViewerThemeShell themeId={viewer?.pageThemeId}>
+          <SrCalculator
+            mode={mode}
+            cutoffSr={cutoffSr}
+            ladder={ladder}
+            signedIn={viewer != null}
+            profileSr={viewer?.currentSr ?? null}
+            viewer={
+              viewer
+                ? {
+                    id: viewer.id,
+                    slug: viewer.slug,
+                    displayName: viewer.displayName,
+                  }
+                : null
+            }
+          />
+        </ViewerThemeShell>
       </main>
       <SiteFooter
         calcHref={calcHref}

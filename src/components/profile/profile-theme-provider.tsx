@@ -28,3 +28,14 @@ export function ProfileThemeProvider({
     </div>
   );
 }
+
+export function ViewerThemeShell({
+  themeId,
+  children,
+}: {
+  themeId?: ProfilePageThemeId | null;
+  children: ReactNode;
+}) {
+  if (!themeId) return children;
+  return <ProfileThemeProvider themeId={themeId}>{children}</ProfileThemeProvider>;
+}

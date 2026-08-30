@@ -87,6 +87,7 @@ function SrMetricColumn({
   max,
   footer,
   reduceMotion = false,
+  fillImmediately = false,
 }: {
   label: string;
   icon?: React.ReactNode;
@@ -94,8 +95,10 @@ function SrMetricColumn({
   max: number;
   footer?: React.ReactNode;
   reduceMotion?: boolean;
+  fillImmediately?: boolean;
 }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  const skipEntrance = reduceMotion || fillImmediately;
 
   return (
     <motion.div
@@ -117,10 +120,10 @@ function SrMetricColumn({
             width: `${pct}%`,
             boxShadow: "0 0 8px color-mix(in oklab, var(--accent) 40%, transparent)",
           }}
-          initial={reduceMotion ? false : { scaleX: 0 }}
+          initial={skipEntrance ? false : { scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={
-            reduceMotion
+            skipEntrance
               ? { duration: 0 }
               : { duration: 0.38, delay: 0.06, ease: EASE }
           }
@@ -267,7 +270,7 @@ function PlacementBadge({
         <Trophy
           weight="fill"
           className={cn(
-            "shrink-0 text-geebung-400 drop-shadow-[0_0_6px_color-mix(in_oklab,var(--geebung-400)_45%,transparent)]",
+            "shrink-0 text-accent drop-shadow-[0_0_6px_color-mix(in_oklab,var(--accent)_45%,transparent)]",
             compact ? "size-3" : "size-3.5",
           )}
           aria-hidden
@@ -284,12 +287,14 @@ function MatchRowExpanded({
   canMinimize,
   onMinimize,
   reduceMotion,
+  fillImmediately,
 }: {
   match: ProfileMatch;
   personalLabel: string;
   canMinimize: boolean;
   onMinimize: () => void;
   reduceMotion: boolean;
+  fillImmediately: boolean;
 }) {
   const placementDef = WZ_PLACEMENTS.find((item) => item.id === match.placement);
   const placementSr = placementDef?.placementSr ?? 0;
@@ -317,6 +322,7 @@ function MatchRowExpanded({
           value={placementSr}
           max={WZ_PLACEMENT_MAX}
           reduceMotion={reduceMotion}
+          fillImmediately={fillImmediately}
           footer={
             <p className="numeric mt-1 text-[10px] text-muted/80">
               {formatLocalTime(match.createdAt)}
@@ -329,6 +335,7 @@ function MatchRowExpanded({
           value={elimSr}
           max={WZ_ELIM_CAP}
           reduceMotion={reduceMotion}
+          fillImmediately={fillImmediately}
           footer={
             <ElimCounts
               squadElims={match.squadElims}
@@ -479,6 +486,7 @@ function MatchRow({
   personalLabel,
   canMinimize,
   reduceMotion,
+  fillImmediately,
   onExpand,
   onMinimize,
 }: {
@@ -488,6 +496,7 @@ function MatchRow({
   personalLabel: string;
   canMinimize: boolean;
   reduceMotion: boolean;
+  fillImmediately: boolean;
   onExpand: () => void;
   onMinimize: () => void;
 }) {
@@ -517,6 +526,7 @@ function MatchRow({
               canMinimize={canMinimize}
               onMinimize={onMinimize}
               reduceMotion={reduceMotion}
+              fillImmediately={fillImmediately}
             />
           </motion.div>
         ) : (
@@ -550,6 +560,9 @@ export function MatchHistory({
   personalLabel = "you",
   showClimbCta = false,
   calcHref = "/wz/calc",
+  viewAllHref,
+  limit = MATCH_LIMIT,
+  embedded = false,
 }: {
   matches: ProfileMatch[];
   enteredId?: string | null;
@@ -557,9 +570,12 @@ export function MatchHistory({
   personalLabel?: string;
   showClimbCta?: boolean;
   calcHref?: string;
+  viewAllHref?: string;
+  limit?: number;
+  embedded?: boolean;
 }) {
   const reduce = useReducedMotion();
-  const recent = matches.slice(0, MATCH_LIMIT);
+  const recent = matches.slice(0, limit);
   const latestId = recent[0]?.id ?? null;
   const recentKey = recent.map((match) => match.id).join(",");
   const [expandedId, setExpandedId] = useState<string | null>(latestId);
@@ -583,16 +599,7 @@ export function MatchHistory({
         layout: { duration: 0.28, ease: EASE },
       };
 
-  return (
-    <ProfileBlob
-      title={
-        <>
-          Recent matches{" "}
-          <span className="text-foreground/75">({recent.length})</span>
-        </>
-      }
-      className="h-full min-h-80"
-    >
+  const list = (
       <AnimatePresence mode="wait" initial={false}>
         {recent.length === 0 ? (
           <motion.p
@@ -622,7 +629,11 @@ export function MatchHistory({
             initial={false}
             exit={reduce ? { opacity: 0 } : { opacity: 0 }}
             transition={{ duration: reduce ? 0 : 0.16, ease: EASE }}
-            className="divide-y divide-border"
+            className={cn(
+              embedded
+                ? "[&>li:not(:last-child)]:border-b [&>li:not(:last-child)]:border-border"
+                : "divide-y divide-border",
+            )}
           >
             <AnimatePresence initial={false}>
               {recent.map((match) => {
@@ -648,6 +659,7 @@ export function MatchHistory({
                       personalLabel={personalLabel}
                       canMinimize={expanded && match.id !== latestId}
                       reduceMotion={Boolean(reduce)}
+                      fillImmediately={embedded}
                       onExpand={() => setExpandedId(match.id)}
                       onMinimize={() => setExpandedId(latestId)}
                     />
@@ -658,6 +670,31 @@ export function MatchHistory({
           </motion.ol>
         )}
       </AnimatePresence>
+  );
+
+  if (embedded) return list;
+
+  return (
+    <ProfileBlob
+      title={
+        <span className="flex items-center justify-between gap-3">
+          <span>
+            Recent matches{" "}
+            <span className="text-foreground/75">({recent.length})</span>
+          </span>
+          {viewAllHref ? (
+            <Link
+              href={viewAllHref}
+              className="text-xs font-medium tracking-normal text-accent transition-colors hover:text-accent/80"
+            >
+              View all
+            </Link>
+          ) : null}
+        </span>
+      }
+      className="h-full min-h-80"
+    >
+      {list}
     </ProfileBlob>
   );
 }

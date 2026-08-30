@@ -2,9 +2,11 @@ import { BoardTable } from "@/components/board-table";
 import { CutoffChart } from "@/components/cutoff-chart";
 import { HeadingMetrics } from "@/components/heading-metrics";
 import { RememberMode } from "@/components/remember-mode";
+import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import type { BoardFreshnessStatus } from "@/components/live-status";
+import { getViewerProfile } from "@/lib/auth/viewer";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getBoard,
@@ -59,6 +61,7 @@ export async function TrackerPage({
       ? overlayLiveMetrics(seedMetrics, live, history.change24h)
       : seedMetrics;
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
+  const viewer = await getViewerProfile();
 
   if (!season || !board || !metrics || !rows) {
     return (
@@ -82,29 +85,31 @@ export async function TrackerPage({
         tool="board"
       />
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-7 py-4 lg:min-h-0">
-        <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-semibold tracking-tight">
-            <span className="accent-glow bg-linear-to-r from-geebung-600 to-geebung-500 bg-clip-text text-4xl text-transparent md:text-5xl">
-              Top 250
-            </span>
-            <span className="text-2xl text-muted">{modeLabel}</span>
-          </h1>
-          <HeadingMetrics metrics={metrics} showCutoff={false} />
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:grid-rows-1 lg:gap-10 lg:overflow-hidden">
-          <div className="order-2 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
-            <BoardTable rows={rows} linkPlayers={false} />
+        <ViewerThemeShell themeId={viewer?.pageThemeId}>
+          <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-semibold tracking-tight">
+              <span className="accent-glow theme-heading text-4xl md:text-5xl">
+                Top 250
+              </span>
+              <span className="text-2xl text-muted">{modeLabel}</span>
+            </h1>
+            <HeadingMetrics metrics={metrics} showCutoff={false} />
           </div>
+          <div className="mt-4 grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:grid-rows-1 lg:gap-10 lg:overflow-hidden">
+            <div className="order-2 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
+              <BoardTable rows={rows} linkPlayers={false} />
+            </div>
 
-          <aside className="order-1 h-52 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
-            <CutoffChart
-              series={series}
-              liveCutoffSr={metrics.cutoffSr}
-              nextUpdateAt={live?.nextUpdateAt}
-              boardStatus={boardStatus}
-            />
-          </aside>
-        </div>
+            <aside className="order-1 h-52 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
+              <CutoffChart
+                series={series}
+                liveCutoffSr={metrics.cutoffSr}
+                nextUpdateAt={live?.nextUpdateAt}
+                boardStatus={boardStatus}
+              />
+            </aside>
+          </div>
+        </ViewerThemeShell>
       </main>
       <SiteFooter
         calcHref={`/${mode}/calc`}

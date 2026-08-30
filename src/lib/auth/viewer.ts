@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isProfilePageThemeId, type ProfilePageThemeId } from "@/lib/profile/themes";
 
 export type ViewerProfile = {
   id: string;
@@ -7,9 +9,10 @@ export type ViewerProfile = {
   avatarUrl: string | null;
   currentSr: number;
   onboardingComplete: boolean;
+  pageThemeId: ProfilePageThemeId;
 };
 
-export async function getViewerProfile(): Promise<ViewerProfile | null> {
+export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> => {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return null;
 
@@ -19,7 +22,9 @@ export async function getViewerProfile(): Promise<ViewerProfile | null> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, slug, display_name, avatar_url, current_sr, onboarding_completed_at")
+    .select(
+      "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -31,8 +36,13 @@ export async function getViewerProfile(): Promise<ViewerProfile | null> {
       avatarUrl: null,
       currentSr: 0,
       onboardingComplete: false,
+      pageThemeId: "gold",
     };
   }
+
+  const pageThemeId: ProfilePageThemeId = isProfilePageThemeId(data.page_theme_id)
+    ? data.page_theme_id
+    : "gold";
 
   return {
     id: data.id,
@@ -41,8 +51,9 @@ export async function getViewerProfile(): Promise<ViewerProfile | null> {
     avatarUrl: data.avatar_url,
     currentSr: typeof data.current_sr === "number" ? data.current_sr : 0,
     onboardingComplete: data.onboarding_completed_at != null,
+    pageThemeId,
   };
-}
+});
 
 export async function isViewerOnboardingComplete(): Promise<{
   complete: boolean;

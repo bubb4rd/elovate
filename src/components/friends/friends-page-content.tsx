@@ -85,7 +85,7 @@ export function FriendsSignedIn({
     <div className="py-6 md:py-8">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="accent-glow bg-linear-to-r from-geebung-600 to-geebung-500 bg-clip-text text-4xl font-semibold tracking-tight text-transparent md:text-5xl">
+          <h1 className="accent-glow theme-heading text-4xl font-semibold tracking-tight md:text-5xl">
             Friends
           </h1>
           <p className="mt-2 text-sm text-muted">

@@ -2,6 +2,7 @@
 
 import {
   CaretDown,
+  ClockCounterClockwise,
   GearSix,
   SignIn,
   SignOut,
@@ -192,6 +193,14 @@ export function NavAccount({
             onSelect={closeMenu}
           >
             Profile
+          </MenuLink>
+          <MenuLink
+            href="/history"
+            active={pathname === "/history"}
+            icon={<ClockCounterClockwise weight="bold" className="size-3.5" />}
+            onSelect={closeMenu}
+          >
+            History
           </MenuLink>
           <MenuLink
             href="/settings"
