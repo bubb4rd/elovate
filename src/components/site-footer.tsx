@@ -1,28 +1,26 @@
 import Link from "next/link";
+import { SnapshotTimeChip } from "@/components/snapshot-time-chip";
 import { cn } from "@/lib/utils";
 
 export function SiteFooter({
-  freshness,
+  capturedAt,
   calcHref = "/wz/calc",
   className,
 }: {
-  freshness?: string;
+  capturedAt?: string;
   calcHref?: string;
   className?: string;
 }) {
   return (
-    <footer className="shrink-0 border-t border-border">
+    <footer className="shrink-0 overflow-visible border-t border-border">
       <div
         className={cn(
-          "mx-auto flex max-w-[1400px] flex-col gap-3 px-4 py-8 text-sm text-muted md:flex-row md:items-center md:justify-between",
+          "mx-auto flex max-w-[1400px] flex-col items-center gap-3 px-4 py-8 text-sm text-muted md:flex-row md:items-center md:justify-between",
           className,
         )}
       >
-        <p>
-          Not affiliated with Activision, Treyarch, or Raven.
-        </p>
-        {freshness ? <p className="numeric">{freshness}</p> : null}
-        <nav className="flex flex-wrap gap-4">
+        {capturedAt ? <SnapshotTimeChip iso={capturedAt} /> : null}
+        <nav className="flex flex-wrap justify-center gap-4 md:ml-auto md:justify-end">
           <Link href="/wz" className="hover:text-foreground">
             Warzone
           </Link>

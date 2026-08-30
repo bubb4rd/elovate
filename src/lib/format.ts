@@ -67,6 +67,98 @@ export function formatRelativeShort(iso: string, now = Date.now()): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+export function formatChipTime(
+  iso: string,
+  timeZone = "UTC",
+): { date: string; time: string; zone: string } {
+  if (timeZone === "UTC") return formatUtcChipTime(iso);
+  const date = new Date(iso);
+  const datePart = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone,
+    hour12: true,
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+    hour12: true,
+  }).format(date);
+  const zonePart =
+    new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "short",
+      hour12: true,
+    })
+      .formatToParts(date)
+      .find((part) => part.type === "timeZoneName")?.value ?? timeZone;
+  return { date: datePart, time: timePart, zone: zonePart };
+}
+
+const UTC_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+export function formatUtcChipTime(iso: string): {
+  date: string;
+  time: string;
+  zone: "UTC";
+} {
+  const date = new Date(iso);
+  const hours24 = date.getUTCHours();
+  const hour12 = hours24 % 12 || 12;
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  return {
+    date: `${UTC_MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}`,
+    time: `${hour12}:${minutes} ${hours24 >= 12 ? "PM" : "AM"}`,
+    zone: "UTC",
+  };
+}
+
+export function formatSlashDateTime(
+  iso: string,
+  timeZone = "UTC",
+): { date: string; time: string } {
+  const date = new Date(iso);
+  if (timeZone === "UTC") {
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const hours24 = date.getUTCHours();
+    const hour12 = hours24 % 12 || 12;
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+    return {
+      date: `${month}/${day}`,
+      time: `${hour12}:${minutes} ${hours24 >= 12 ? "PM" : "AM"}`,
+    };
+  }
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    date: `${get("month")}/${get("day")}`,
+    time: `${get("hour")}:${get("minute")} ${get("dayPeriod")}`.trim(),
+  };
+}
+
 export function formatLocalTime(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",

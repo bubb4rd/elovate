@@ -12,7 +12,6 @@ import {
   listSeasons,
   overlayLiveMetrics,
 } from "@/lib/data/queries";
-import { formatSnapshotTime } from "@/lib/format";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Mode } from "@/lib/data/types";
 
@@ -63,9 +62,7 @@ export async function CalcPage({ mode }: { mode: Mode }) {
       </main>
       <SiteFooter
         calcHref={calcHref}
-        freshness={
-          capturedAt ? `Last snapshot ${formatSnapshotTime(capturedAt)}` : undefined
-        }
+        capturedAt={capturedAt}
       />
     </div>
   );

@@ -8,7 +8,6 @@ import {
   getSeason,
   listSeasons,
 } from "@/lib/data/queries";
-import { formatSnapshotTime } from "@/lib/format";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -54,13 +53,7 @@ export default async function SeasonArchive({
         <h2 className="text-lg font-semibold">Multiplayer</h2>
         <p className="py-4 text-muted">elovate Multiplayer coming soon.</p>
       </main>
-      <SiteFooter
-        freshness={
-          wz
-            ? `Last snapshot ${formatSnapshotTime(wz.capturedAt)}`
-            : "No snapshot for this season yet."
-        }
-      />
+      <SiteFooter capturedAt={wz?.capturedAt} />
     </div>
   );
 }

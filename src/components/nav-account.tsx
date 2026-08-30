@@ -13,6 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BoardPodiumIcon, ClimbMark, ClimbSessionIcon } from "@/components/icons";
 import type { ViewerProfile } from "@/lib/auth/viewer";
 import { loginHref, registerHref } from "@/lib/auth/paths";
@@ -46,8 +47,10 @@ export function NavAccount({
   const pathname = usePathname();
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
 
   const prevPathname = useRef(pathname);
 
@@ -61,9 +64,11 @@ export function NavAccount({
     if (!open) return;
 
     function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     }
 
     function onKeyDown(event: KeyboardEvent) {
@@ -77,6 +82,37 @@ export function NavAccount({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function place() {
+      placeMenu();
+    }
+
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
+  function placeMenu() {
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+    });
+  }
+
+  function toggleMenu() {
+    if (!open) placeMenu();
+    setOpen((value) => !value);
+  }
 
   function closeMenu() {
     window.setTimeout(() => setOpen(false), 0);
@@ -100,14 +136,15 @@ export function NavAccount({
 
   const menu = open ? (
     <div
+      ref={menuRef}
       id={menuId}
       role="menu"
       aria-label={viewer ? "Account" : "Site"}
       className={cn(
-        "absolute top-full right-0 mt-1.5 w-52 overflow-hidden rounded-[6px] border border-border bg-surface-elevated py-1 shadow-sm",
+        "fixed isolate w-52 overflow-hidden rounded-[6px] border border-border bg-surface-elevated py-1 shadow-sm",
         !viewer && "md:hidden",
       )}
-      style={{ zIndex: zIndex.overlay }}
+      style={{ top: menuPos.top, right: menuPos.right, zIndex: zIndex.overlay }}
     >
       {viewer ? (
         <div className="border-b border-border px-3 py-2 sm:hidden">
@@ -206,7 +243,7 @@ export function NavAccount({
           aria-expanded={open}
           aria-haspopup="menu"
           aria-controls={menuId}
-          onClick={() => setOpen((value) => !value)}
+          onClick={toggleMenu}
           className={cn(
             "flex items-center gap-2 rounded-[6px] px-1.5 py-1 text-left",
             "hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
@@ -259,7 +296,7 @@ export function NavAccount({
             aria-haspopup="menu"
             aria-controls={menuId}
             aria-label={open ? "Close menu" : "Open menu"}
-            onClick={() => setOpen((value) => !value)}
+            onClick={toggleMenu}
             className={cn(
               "flex size-8 items-center justify-center rounded-[6px] text-muted md:hidden",
               "hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
@@ -270,7 +307,9 @@ export function NavAccount({
           </button>
         </>
       )}
-      {menu}
+      {typeof document !== "undefined" && menu
+        ? createPortal(menu, document.body)
+        : null}
     </div>
   );
 }

@@ -16,7 +16,6 @@ import {
   listSeasons,
   overlayLiveMetrics,
 } from "@/lib/data/queries";
-import { formatSnapshotTime } from "@/lib/format";
 import type { Mode } from "@/lib/data/types";
 
 export async function TrackerPage({
@@ -109,7 +108,7 @@ export async function TrackerPage({
       </main>
       <SiteFooter
         calcHref={`/${mode}/calc`}
-        freshness={`Last snapshot ${formatSnapshotTime(capturedAt ?? metrics.capturedAt)}`}
+        capturedAt={capturedAt ?? metrics.capturedAt}
         className="px-7 py-8 lg:py-3"
       />
     </div>

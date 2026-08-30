@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import {
+  FriendInviteCallout,
+  shouldShowFriendInvite,
+} from "@/components/friends/friend-invite-callout";
 import { FriendLeaderboard } from "@/components/friends/friend-leaderboard";
 import { FriendRequestsPanel } from "@/components/friends/friend-requests-panel";
 import { loginHref, registerHref } from "@/lib/auth/paths";
@@ -42,7 +46,13 @@ export function FriendsSignedOut() {
   );
 }
 
-export function FriendsSignedIn() {
+export function FriendsSignedIn({
+  slug,
+  displayName,
+}: {
+  slug: string;
+  displayName: string;
+}) {
   const [rows, setRows] = useState<FriendLeaderboardRow[] | null>(null);
   const [requests, setRequests] = useState<PendingFriendRequest[]>([]);
 
@@ -89,7 +99,12 @@ export function FriendsSignedIn() {
       {rows == null ? (
         <p className="py-8 text-sm text-muted">Loading leaderboard…</p>
       ) : (
-        <FriendLeaderboard rows={rows} />
+        <>
+          <FriendLeaderboard rows={rows} />
+          {shouldShowFriendInvite(rows.filter((row) => !row.isViewer).length) ? (
+            <FriendInviteCallout slug={slug} displayName={displayName} />
+          ) : null}
+        </>
       )}
     </div>
   );

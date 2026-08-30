@@ -12,7 +12,6 @@ import {
   listSeasons,
   overlayLiveMetrics,
 } from "@/lib/data/queries";
-import { formatSnapshotTime } from "@/lib/format";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -54,13 +53,7 @@ export default async function Home() {
       </section>
       <ModePick mp={mp} wz={wz} />
       <DesktopHomeTeaser />
-      <SiteFooter
-        freshness={
-          capturedAt
-            ? `Last snapshot ${formatSnapshotTime(capturedAt)}`
-            : undefined
-        }
-      />
+      <SiteFooter capturedAt={capturedAt} />
     </div>
   );
 }

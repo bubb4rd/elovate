@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   Area,
@@ -15,11 +16,32 @@ import {
   useCartesianScale,
 } from "recharts";
 import { LiveStatus, type BoardFreshnessStatus } from "@/components/live-status";
-import { formatChartTime, formatDay, formatDelta, formatSr } from "@/lib/format";
+import { formatChartTime, formatDay, formatSlashDateTime, formatSr } from "@/lib/format";
+import { readTimeZoneCookie, UTC_TIME_ZONE } from "@/lib/time-preference";
 import { cn } from "@/lib/utils";
 import type { CutoffPoint } from "@/lib/data/types";
 
 type ChartRow = CutoffPoint & { t: number };
+
+function ChartDelta({ delta }: { delta: number }) {
+  const up = delta > 0;
+  const Icon = up ? CaretUp : CaretDown;
+  const amount = formatSr(Math.abs(delta));
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-px numeric text-sm font-semibold leading-none",
+        up ? "text-accent" : "text-negative",
+      )}
+    >
+      <Icon size={16} weight="bold" aria-hidden />
+      {amount}
+      <span className="sr-only">
+        {up ? `up ${amount}` : `down ${amount}`}
+      </span>
+    </span>
+  );
+}
 
 function ChartTooltip({
   active,
@@ -32,17 +54,27 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.[0]) return null;
   const point = payload[0].payload;
+  const stamp = formatSlashDateTime(
+    point.capturedAt,
+    readTimeZoneCookie() ?? UTC_TIME_ZONE,
+  );
+  const delta = point.deltaCutoff;
   return (
-    <div className="rounded-[6px] border border-border bg-surface-elevated px-3 py-2 text-xs shadow-sm">
-      <p>{formatChartTime(point.capturedAt)}</p>
-      <p className="numeric mt-1 text-foreground">
-        {labelName} {formatSr(point.cutoffSr)}
+    <div className="rounded-[6px] border border-border bg-surface-elevated px-4 py-2 shadow-sm">
+      <p className="numeric text-center text-[11px] leading-none tracking-wide">
+        <span className="text-foreground/75">{stamp.date}</span>
+        <span className="text-muted"> {stamp.time}</span>
       </p>
-      <p className="numeric text-muted">
-        {point.deltaCutoff === null
-          ? "first sample"
-          : `${formatDelta(point.deltaCutoff)} vs prior day`}
-      </p>
+      <div className="mt-1 flex items-center justify-center gap-1">
+        {delta != null && delta < 0 ? <ChartDelta delta={delta} /> : null}
+        <p
+          className="numeric text-3xl font-semibold leading-none tracking-tight text-foreground"
+          aria-label={`${labelName} ${formatSr(point.cutoffSr)}`}
+        >
+          {formatSr(point.cutoffSr)}
+        </p>
+        {delta != null && delta > 0 ? <ChartDelta delta={delta} /> : null}
+      </div>
     </div>
   );
 }
@@ -167,13 +199,22 @@ function LiveCutoffAnnotation({
       {portalNode
         ? createPortal(
             <motion.div
-              className="pointer-events-none absolute z-40 -translate-x-full pr-3 text-right"
-              style={{ left: labelLeft, top: labelTop }}
-              initial={reduce ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
+              className="pointer-events-none absolute pr-3 text-right"
+              style={{
+                top: labelTop,
+                right: `calc(100% - ${labelLeft}px)`,
+              }}
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={fade}
             >
-              <p className="numeric accent-glow text-3xl font-semibold leading-none tracking-tight text-accent">
+              <p
+                className="numeric text-3xl font-semibold leading-none tracking-tight text-accent"
+                style={{
+                  textShadow:
+                    "0 0 12px color-mix(in oklab, var(--accent) 35%, transparent)",
+                }}
+              >
                 {formatSr(cutoffSr)}
               </p>
               <div className="pointer-events-auto mt-1.5 flex items-center justify-end gap-1.5 text-xs font-medium text-muted">
@@ -275,7 +316,7 @@ export function CutoffChart({
         ref={(node) => {
           if (node !== calloutLayer) setCalloutLayer(node);
         }}
-        className="pointer-events-none absolute inset-0 z-40"
+        className="pointer-events-none absolute inset-0 isolate"
       />
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
@@ -352,6 +393,13 @@ export function CutoffChart({
           <Tooltip
             content={<ChartTooltip labelName={valueLabel} />}
             cursor={object ? false : { stroke: "var(--border)" }}
+            isAnimationActive={false}
+            wrapperStyle={{
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              boxShadow: "none",
+            }}
           />
           <Area
             type={curveType}

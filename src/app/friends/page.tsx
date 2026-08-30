@@ -42,7 +42,11 @@ export default async function FriendsPage() {
         loginNext="/friends"
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-7">
-        {viewer ? <FriendsSignedIn /> : <FriendsSignedOut />}
+        {viewer ? (
+          <FriendsSignedIn slug={viewer.slug} displayName={viewer.displayName} />
+        ) : (
+          <FriendsSignedOut />
+        )}
       </main>
       <SiteFooter />
     </div>
