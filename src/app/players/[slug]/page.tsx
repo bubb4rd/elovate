@@ -64,7 +64,10 @@ export default async function PlayerPage({
   const history = await liveWzHistoryFor(live, season.id);
   const metrics =
     live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
+          avgPerDaySeason: history.avgPerDaySeason,
+          avgPerDay7d: history.avgPerDay7d,
+        })
       : seedMetrics;
   const cutoffSr = metrics?.cutoffSr ?? profile.cutoffSr ?? IRIDESCENT_SR;
   const profileWithLive = { ...profile, cutoffSr };
@@ -83,7 +86,7 @@ export default async function PlayerPage({
         cutoffSr={cutoffSr}
         nextUpdateAt={live?.nextUpdateAt}
       />
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-[1400px] flex-1 md:px-4 md:py-6">
         <ProfilePageContent
           key={`${profile.source}-${profile.slug}`}
           profile={profileWithLive}

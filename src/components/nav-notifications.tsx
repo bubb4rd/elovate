@@ -19,20 +19,12 @@ import {
   subscribeMatchInvites,
   type PendingMatchInvite,
 } from "@/lib/history";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const ACCEPT_HOLD_MS = 720;
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -71,18 +63,14 @@ function InviteRow({
         accepted && "bg-accent/10",
       )}
     >
-      <span className="relative mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[9px] font-semibold text-muted">
-        {invite.inviter.avatarUrl ? (
-          <Image
-            src={invite.inviter.avatarUrl}
-            alt=""
-            width={28}
-            height={28}
-            className="size-full object-cover"
-          />
-        ) : (
-          initials(name)
-        )}
+      <span className="relative mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface">
+        <Image
+          src={avatarOrDefault(invite.inviter.avatarUrl)}
+          alt=""
+          width={28}
+          height={28}
+          className="size-full object-cover"
+        />
       </span>
       <div className="min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>
@@ -211,18 +199,14 @@ function FriendRequestRow({
         accepted && "bg-accent/10",
       )}
     >
-      <span className="relative mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[9px] font-semibold text-muted">
-        {request.requester.avatarUrl ? (
-          <Image
-            src={request.requester.avatarUrl}
-            alt=""
-            width={28}
-            height={28}
-            className="size-full object-cover"
-          />
-        ) : (
-          initials(name)
-        )}
+      <span className="relative mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface">
+        <Image
+          src={avatarOrDefault(request.requester.avatarUrl)}
+          alt=""
+          width={28}
+          height={28}
+          className="size-full object-cover"
+        />
       </span>
       <div className="min-w-0 flex-1">
         <AnimatePresence mode="wait" initial={false}>

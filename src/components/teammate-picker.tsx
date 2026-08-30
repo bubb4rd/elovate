@@ -19,6 +19,7 @@ import {
   isOwnTeammate,
   searchPublicProfiles,
 } from "@/lib/profile/search";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { cn } from "@/lib/utils";
 
 const CHIP_EASE = [0.16, 1, 0.3, 1] as const;
@@ -28,15 +29,6 @@ export type TeammateViewer = {
   slug: string;
   displayName: string;
 };
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 function TeammateAvatar({
   teammate,
@@ -48,15 +40,16 @@ function TeammateAvatar({
   return (
     <span
       className={cn(
-        "relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-[9px] font-semibold text-muted",
+        "relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background",
         className,
       )}
     >
-      {teammate.avatarUrl ? (
-        <img src={teammate.avatarUrl} alt="" className="size-full object-cover" />
-      ) : (
-        initials(teammate.displayName)
-      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={avatarOrDefault(teammate.avatarUrl)}
+        alt=""
+        className="size-full object-cover"
+      />
     </span>
   );
 }

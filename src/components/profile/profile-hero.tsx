@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { PencilSimple } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { FriendRequestButton } from "@/components/friends/friend-request-button";
@@ -13,6 +12,7 @@ import { ElovateStaffBadge } from "@/components/profile/elovate-staff-badge";
 import { ProfileBanner } from "@/components/profile/profile-banner";
 import { ReputationChip } from "@/components/profile/reputation-chip";
 import type { FriendStatus } from "@/lib/friends";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import type { ProfileHeaderId } from "@/lib/profile/headers";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileView } from "@/lib/profile/types";
@@ -40,12 +40,15 @@ export function ProfileHero({
 
   return (
     <section>
-      <div className="relative">
+      <div className="relative z-0">
         <motion.div
           layout={!reduce}
           transition={{ duration: reduce ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
-          <ProfileBanner headerId={equipped} />
+          <ProfileBanner
+            headerId={equipped}
+            className="rounded-none md:rounded-2xl"
+          />
         </motion.div>
         {canEdit ? (
           <motion.button
@@ -112,64 +115,53 @@ export function ProfileIdentity({
   const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
 
   return (
-    <div
-      className={cn(
-        "relative z-10 grid grid-cols-1 items-start gap-x-5 gap-y-3 pl-12 pr-6 sm:grid-cols-[auto_minmax(0,1fr)] md:pl-28 md:pr-10 lg:pl-18",
-        className,
-      )}
-    >
-      <div className="relative size-32 shrink-0 overflow-hidden rounded-full ring-2 ring-accent md:size-36">
-        {avatarUrl.startsWith("data:") ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="" className="size-full object-cover" />
-        ) : avatarUrl ? (
-          <Image
-            src={avatarUrl}
+    <div className={cn("relative z-10", className)}>
+      <div className="flex flex-row items-start gap-3 md:gap-5 md:pl-28 md:pr-10 lg:pl-18">
+        <span className="profile-page-avatar relative z-10" aria-hidden={!avatarUrl}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={avatarOrDefault(avatarUrl)}
             alt=""
-            width={144}
-            height={144}
-            priority
-            className="size-full object-cover"
+            width={88}
+            height={88}
+            decoding="async"
+            className="size-full rounded-full object-cover"
           />
-        ) : (
-          <span className="flex size-full items-center justify-center bg-surface text-2xl font-semibold text-muted">
-            {displayName.trim().slice(0, 2).toUpperCase() || "?"}
-          </span>
-        )}
-      </div>
+        </span>
 
-      <div className="min-w-0 sm:pt-18">
-        <div className="flex min-w-0 w-full flex-col gap-3 min-[1315px]:flex-row min-[1315px]:items-start min-[1315px]:gap-4">
-          <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                {displayName}
-              </h1>
-              {isStaff ? <ElovateStaffBadge /> : null}
+        <div className="min-w-0 flex-1 pt-16 md:pt-18">
+          <div className="flex min-w-0 items-start justify-between gap-3 min-[1315px]:gap-4">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <h1 className="text-xl font-bold tracking-tight md:text-3xl md:font-semibold">
+                  {displayName}
+                </h1>
+                {isStaff ? <ElovateStaffBadge /> : null}
+              </div>
+              <p className="text-[15px] text-muted">{profile.handle}</p>
             </div>
-            <p className="text-sm text-muted">{profile.handle}</p>
-          </div>
 
-          <div className="flex w-fit max-w-full shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center min-[1315px]:ml-auto">
-            <ReputationChip
-              profileId={profile.id}
-              profileSlug={profile.slug}
-              votes={profile.votes}
-              viewerVote={profile.viewerVote}
-              canChangeVote={profile.canChangeVote}
-              isSignedIn={isSignedIn}
-              isOwnProfile={canEdit}
-              themeId={pageThemeId}
-            />
-            {!canEdit && profile.id ? (
-              <FriendRequestButton
-                targetProfileId={profile.id}
-                targetSlug={profile.slug}
-                initialStatus={friendStatus}
-                initialRequestId={friendRequestId}
+            <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+              <ReputationChip
+                profileId={profile.id}
+                profileSlug={profile.slug}
+                votes={profile.votes}
+                viewerVote={profile.viewerVote}
+                canChangeVote={profile.canChangeVote}
                 isSignedIn={isSignedIn}
+                isOwnProfile={canEdit}
+                themeId={pageThemeId}
               />
-            ) : null}
+              {!canEdit && profile.id ? (
+                <FriendRequestButton
+                  targetProfileId={profile.id}
+                  targetSlug={profile.slug}
+                  initialStatus={friendStatus}
+                  initialRequestId={friendRequestId}
+                  isSignedIn={isSignedIn}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

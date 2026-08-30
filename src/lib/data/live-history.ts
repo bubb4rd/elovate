@@ -1,9 +1,27 @@
 import { createAnonSupabaseClient } from "@/lib/supabase/server";
-import { windowCutoffHistory, type StoredCutoff } from "./cutoff-window";
+import {
+  avgPerDayFromCutoffs,
+  windowCutoffHistory,
+  type StoredCutoff,
+} from "./cutoff-window";
 import type { CutoffPoint, LiveWzBoard, Mode } from "./types";
 
 export type { StoredCutoff };
-export { windowCutoffHistory };
+export { avgPerDayFromCutoffs, windowCutoffHistory };
+
+export type LiveWzHistory = {
+  change24h: number | null;
+  series: CutoffPoint[];
+  avgPerDaySeason: number | null;
+  avgPerDay7d: number | null;
+};
+
+const EMPTY_HISTORY: LiveWzHistory = {
+  change24h: null,
+  series: [],
+  avgPerDaySeason: null,
+  avgPerDay7d: null,
+};
 
 export async function getStoredCutoffSnapshots(
   mode: Mode,
@@ -31,16 +49,21 @@ export async function getStoredCutoffSnapshots(
 export async function liveWzHistoryFor(
   live: LiveWzBoard | null,
   seasonId: string,
-): Promise<{ change24h: number | null; series: CutoffPoint[] }> {
-  if (!live) return { change24h: null, series: [] };
+): Promise<LiveWzHistory> {
+  if (!live) return EMPTY_HISTORY;
   try {
     const snapshots = await getStoredCutoffSnapshots("wz", seasonId);
-    return windowCutoffHistory(snapshots, {
+    const windowed = windowCutoffHistory(snapshots, {
       fetchedAt: live.fetchedAt,
       cutoffSr: live.cutoffSr,
       rank1Sr: live.rank1Sr,
     });
+    const avgs = avgPerDayFromCutoffs(snapshots, {
+      fetchedAt: live.fetchedAt,
+      cutoffSr: live.cutoffSr,
+    });
+    return { ...windowed, ...avgs };
   } catch {
-    return { change24h: null, series: [] };
+    return EMPTY_HISTORY;
   }
 }

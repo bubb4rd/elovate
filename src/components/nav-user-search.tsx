@@ -7,27 +7,20 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import type { HistoryTeammate } from "@/lib/history";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { searchPublicProfiles } from "@/lib/profile/search";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
-
 function ResultAvatar({ person }: { person: HistoryTeammate }) {
   return (
-    <span className="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-[9px] font-semibold text-muted">
-      {person.avatarUrl ? (
-        <img src={person.avatarUrl} alt="" className="size-full object-cover" />
-      ) : (
-        initials(person.displayName)
-      )}
+    <span className="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={avatarOrDefault(person.avatarUrl)}
+        alt=""
+        className="size-full object-cover"
+      />
     </span>
   );
 }

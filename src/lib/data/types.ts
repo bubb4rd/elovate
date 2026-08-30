@@ -58,8 +58,8 @@ export type CutoffPoint = {
 export type BoardMetrics = {
   cutoffSr: number;
   change24h: number | null;
-  avgPerDaySeason: number;
-  avgPerDay7d: number;
+  avgPerDaySeason: number | null;
+  avgPerDay7d: number | null;
   playersSampled: number;
   capturedAt: string;
 };

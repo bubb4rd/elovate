@@ -58,7 +58,10 @@ export async function TrackerPage({
   const rows = live?.rows ?? board?.rows;
   const metrics =
     live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
+          avgPerDaySeason: history.avgPerDaySeason,
+          avgPerDay7d: history.avgPerDay7d,
+        })
       : seedMetrics;
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
   const viewer = await getViewerProfile();

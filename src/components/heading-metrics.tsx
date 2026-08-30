@@ -29,14 +29,16 @@ export function HeadingMetrics({
       : []),
     {
       label: "Avg / day (7d)",
-      value: formatDelta(Math.round(metrics.avgPerDay7d)),
-      tone: metrics.avgPerDay7d >= 0 ? ("accent" as const) : ("neg" as const),
-      primary: false,
-    },
-    {
-      label: "Avg / day (season)",
-      value: formatDelta(Math.round(metrics.avgPerDaySeason)),
-      tone: metrics.avgPerDaySeason >= 0 ? ("accent" as const) : ("neg" as const),
+      value:
+        metrics.avgPerDay7d == null
+          ? "—"
+          : formatDelta(Math.round(metrics.avgPerDay7d)),
+      tone:
+        metrics.avgPerDay7d == null
+          ? ("plain" as const)
+          : metrics.avgPerDay7d >= 0
+            ? ("accent" as const)
+            : ("neg" as const),
       primary: false,
     },
   ];

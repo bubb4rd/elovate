@@ -4,16 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatSr } from "@/lib/format";
 import type { FriendLeaderboardRow } from "@/lib/friends";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { cn } from "@/lib/utils";
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 export function FriendLeaderboard({
   rows,
@@ -73,18 +65,14 @@ export function FriendLeaderboard({
                   href={`/players/${row.slug}`}
                   className="inline-flex items-center gap-2.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[9px] font-semibold text-muted">
-                    {row.avatarUrl ? (
-                      <Image
-                        src={row.avatarUrl}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      initials(row.displayName)
-                    )}
+                  <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface">
+                    <Image
+                      src={avatarOrDefault(row.avatarUrl)}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="size-full object-cover"
+                    />
                   </span>
                   <span className="min-w-0 truncate font-medium">
                     {row.displayName}

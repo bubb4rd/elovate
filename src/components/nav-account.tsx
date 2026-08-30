@@ -19,18 +19,10 @@ import { createPortal } from "react-dom";
 import { BoardPodiumIcon, ClimbMark, ClimbSessionIcon } from "@/components/icons";
 import type { ViewerProfile } from "@/lib/auth/viewer";
 import { loginHref, registerHref } from "@/lib/auth/paths";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 import { zIndex } from "@/lib/z-index";
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 export function NavAccount({
   viewer,
@@ -260,18 +252,14 @@ export function NavAccount({
             open && "bg-surface",
           )}
         >
-          <span className="relative flex size-7 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-semibold text-muted">
-            {viewer.avatarUrl ? (
-              <Image
-                src={viewer.avatarUrl}
-                alt=""
-                width={28}
-                height={28}
-                className="size-full object-cover"
-              />
-            ) : (
-              initials(label)
-            )}
+          <span className="relative flex size-7 items-center justify-center overflow-hidden rounded-full border border-border bg-surface">
+            <Image
+              src={avatarOrDefault(viewer.avatarUrl)}
+              alt=""
+              width={28}
+              height={28}
+              className="size-full object-cover"
+            />
           </span>
           <span className="hidden max-w-[10rem] truncate text-xs font-medium tracking-wide sm:inline">
             {label}

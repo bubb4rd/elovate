@@ -1,4 +1,5 @@
 import type { Mode } from "@/lib/data/types";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { validateClimbGoals } from "@/lib/profile/goals";
 import { validateDisplayName, validateSlug } from "@/lib/profile/slug";
 import { clampSr, type ClimbTarget } from "@/lib/ranked";
@@ -83,7 +84,7 @@ export async function saveOnboarding(input: {
     const { error } = await supabase.from("profiles").insert({
       id: input.userId,
       ...payload,
-      avatar_url: input.avatarUrl ?? null,
+      avatar_url: avatarOrDefault(input.avatarUrl),
     });
     if (error) {
       if (error.code === "23505") {

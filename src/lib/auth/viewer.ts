@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isProfilePageThemeId, type ProfilePageThemeId } from "@/lib/profile/themes";
 
@@ -33,7 +34,7 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
       id,
       slug: "",
       displayName: "",
-      avatarUrl: null,
+      avatarUrl: avatarOrDefault(null),
       currentSr: 0,
       onboardingComplete: false,
       pageThemeId: "gold",
@@ -48,7 +49,7 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
     id: data.id,
     slug: data.slug,
     displayName: data.display_name,
-    avatarUrl: data.avatar_url,
+    avatarUrl: avatarOrDefault(data.avatar_url),
     currentSr: typeof data.current_sr === "number" ? data.current_sr : 0,
     onboardingComplete: data.onboarding_completed_at != null,
     pageThemeId,

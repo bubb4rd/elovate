@@ -135,11 +135,18 @@ export function overlayLiveMetrics(
   seed: BoardMetrics,
   live: LiveWzBoard,
   change24h: number | null = null,
+  liveAvgs?: {
+    avgPerDaySeason: number | null;
+    avgPerDay7d: number | null;
+  } | null,
 ): BoardMetrics {
   return {
     ...seed,
     cutoffSr: live.cutoffSr,
     change24h,
+    // Prefer stored-cutoff avgs; never keep seed avgs on a live board.
+    avgPerDaySeason: liveAvgs?.avgPerDaySeason ?? null,
+    avgPerDay7d: liveAvgs?.avgPerDay7d ?? null,
     playersSampled: live.rows.length,
     capturedAt: live.fetchedAt,
   };

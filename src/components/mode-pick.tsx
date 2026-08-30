@@ -49,7 +49,9 @@ function ModeCell({
       )}
       <p className="mt-2 text-sm text-muted">
         {!comingSoon && metrics
-          ? `${formatDelta(Math.round(metrics.avgPerDay7d))} avg / day (7d)`
+          ? metrics.avgPerDay7d == null
+            ? "avg / day (7d) pending"
+            : `${formatDelta(Math.round(metrics.avgPerDay7d))} avg / day (7d)`
           : ""}
       </p>
     </Link>

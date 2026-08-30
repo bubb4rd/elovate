@@ -24,7 +24,12 @@ export default async function Home() {
   const { wz: seedWz, mp, season } = getHomeSummary();
   const live = await getLiveWzBoard();
   const history = await liveWzHistoryFor(live, season.id);
-  const wz = seedWz && live ? overlayLiveMetrics(seedWz, live, history.change24h) : seedWz;
+  const wz = seedWz && live
+    ? overlayLiveMetrics(seedWz, live, history.change24h, {
+        avgPerDaySeason: history.avgPerDaySeason,
+        avgPerDay7d: history.avgPerDay7d,
+      })
+    : seedWz;
   const seasons = listSeasons();
   const capturedAt = live?.fetchedAt ?? wz?.capturedAt ?? mp?.capturedAt;
   const dailySeries = history.change24h != null ? history.series : [];

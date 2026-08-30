@@ -9,16 +9,8 @@ import {
   respondFriendRequest,
   type PendingFriendRequest,
 } from "@/lib/friends";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { cn } from "@/lib/utils";
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 export function FriendRequestsPanel({
   requests,
@@ -52,18 +44,14 @@ export function FriendRequestsPanel({
               key={request.id}
               className="flex items-center gap-3 py-3"
             >
-              <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-semibold text-muted">
-                {request.requester.avatarUrl ? (
-                  <Image
-                    src={request.requester.avatarUrl}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  initials(name)
-                )}
+              <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface">
+                <Image
+                  src={avatarOrDefault(request.requester.avatarUrl)}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="size-full object-cover"
+                />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-foreground">

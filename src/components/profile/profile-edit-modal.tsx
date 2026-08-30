@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { validateAvatarFile } from "@/lib/profile/edit-storage";
 import { writeStoredEquippedHeader, type ProfileHeaderId } from "@/lib/profile/headers";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { saveProfileEdits } from "@/lib/profile/save";
 import {
   writeStoredPageTheme,
@@ -198,14 +199,12 @@ export function ProfileEditModal({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[#121214]",
               )}
             >
-              {previewUrl || avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={previewUrl || avatarUrl} alt="" className="size-full object-cover" />
-              ) : (
-                <span className="flex size-full items-center justify-center bg-[#0a0a0b] text-sm font-semibold text-zinc-400">
-                  {displayName.trim().slice(0, 2).toUpperCase() || "?"}
-                </span>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarOrDefault(previewUrl || avatarUrl)}
+                alt=""
+                className="size-full object-cover"
+              />
               <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                 <Camera weight="bold" className="size-5 text-white" />
               </span>

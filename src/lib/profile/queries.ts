@@ -8,6 +8,7 @@ import type { WzHistoryMatch } from "@/lib/history";
 import { rankFromSr } from "@/lib/ranked";
 import type { ClimbMatchRow, ClimbSessionRow, ProfileRow } from "@/lib/supabase/database";
 import { createAnonSupabaseClient } from "@/lib/supabase/server";
+import { avatarOrDefault } from "@/lib/profile/avatar";
 import { parseClimbGoals } from "./goals";
 import {
   headerState,
@@ -193,7 +194,7 @@ function viewFromUser(
     displayName: profile.display_name,
     handle: `@${profile.slug}`,
     bannerUrl: "",
-    avatarUrl: profile.avatar_url ?? "",
+    avatarUrl: avatarOrDefault(profile.avatar_url),
     mode,
     currentSr,
     cutoffSr,

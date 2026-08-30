@@ -15,6 +15,7 @@ import {
   elimSrBreakdown,
 } from "@/lib/ranked";
 import type { ProfileMatch, ProfileTeammate } from "@/lib/profile/types";
+import { avatarOrDefault, DEFAULT_AVATAR_URL } from "@/lib/profile/avatar";
 import { cn } from "@/lib/utils";
 
 export const MATCH_LIMIT = 5;
@@ -52,13 +53,35 @@ function netClass(net: number) {
   return "text-zinc-500";
 }
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
+function TeammateAvatar({
+  teammate,
+  size = 28,
+}: {
+  teammate: ProfileTeammate;
+  size?: number;
+}) {
+  const [src, setSrc] = useState(avatarOrDefault(teammate.avatarUrl));
+
+  useEffect(() => {
+    setSrc(avatarOrDefault(teammate.avatarUrl));
+  }, [teammate.avatarUrl]);
+
+  return (
+    <span
+      className="relative flex items-center justify-center overflow-hidden rounded-full border border-border bg-surface"
+      style={{ width: size, height: size }}
+      title={teammate.displayName}
+    >
+      <Image
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        className="size-full object-cover"
+        onError={() => setSrc(DEFAULT_AVATAR_URL)}
+      />
+    </span>
+  );
 }
 
 function placementLabel(match: ProfileMatch): string {
@@ -162,42 +185,6 @@ function ElimCounts({
         </span>
       </span>
     </div>
-  );
-}
-
-function TeammateAvatar({
-  teammate,
-  size = 28,
-}: {
-  teammate: ProfileTeammate;
-  size?: number;
-}) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const showImage = Boolean(teammate.avatarUrl) && !imageFailed;
-  const textClass = size <= 24 ? "text-[9px]" : "text-[10px]";
-
-  return (
-    <span
-      className={cn(
-        "relative flex items-center justify-center overflow-hidden rounded-full border border-border bg-surface font-semibold tracking-wide text-foreground",
-        textClass,
-      )}
-      style={{ width: size, height: size }}
-      title={teammate.displayName}
-    >
-      {showImage && teammate.avatarUrl ? (
-        <Image
-          src={teammate.avatarUrl}
-          alt=""
-          width={size}
-          height={size}
-          className="size-full object-cover"
-          onError={() => setImageFailed(true)}
-        />
-      ) : (
-        initials(teammate.displayName) || "?"
-      )}
-    </span>
   );
 }
 

@@ -132,7 +132,7 @@ export function ProfilePageContent({
           setPageThemeId(saved.pageThemeId);
         }}
       />
-      <div className="relative z-10 -mt-10 grid grid-cols-1 gap-x-8 gap-y-6 md:-mt-12 lg:grid-cols-2">
+      <div className="relative z-10 -mt-12 grid grid-cols-1 gap-x-8 gap-y-6 overflow-visible px-4 md:px-0 lg:grid-cols-2">
         <ProfileIdentity
           profile={profile}
           pageThemeId={pageThemeId}

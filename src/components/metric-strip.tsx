@@ -7,13 +7,29 @@ export function MetricStrip({ metrics }: { metrics: BoardMetrics }) {
     { label: "Cutoff SR", value: formatSr(metrics.cutoffSr), tone: "accent" as const },
     {
       label: "Avg / day (season)",
-      value: formatDelta(Math.round(metrics.avgPerDaySeason)),
-      tone: metrics.avgPerDaySeason >= 0 ? "accent" : "neg",
+      value:
+        metrics.avgPerDaySeason == null
+          ? "—"
+          : formatDelta(Math.round(metrics.avgPerDaySeason)),
+      tone:
+        metrics.avgPerDaySeason == null
+          ? ("plain" as const)
+          : metrics.avgPerDaySeason >= 0
+            ? ("accent" as const)
+            : ("neg" as const),
     },
     {
       label: "Avg / day (7d)",
-      value: formatDelta(Math.round(metrics.avgPerDay7d)),
-      tone: metrics.avgPerDay7d >= 0 ? "accent" : "neg",
+      value:
+        metrics.avgPerDay7d == null
+          ? "—"
+          : formatDelta(Math.round(metrics.avgPerDay7d)),
+      tone:
+        metrics.avgPerDay7d == null
+          ? ("plain" as const)
+          : metrics.avgPerDay7d >= 0
+            ? ("accent" as const)
+            : ("neg" as const),
     },
     { label: "Players sampled", value: String(metrics.playersSampled), tone: "plain" as const },
     { label: "Snapshot age", value: snapshotAge(metrics.capturedAt), tone: "plain" as const },
@@ -32,7 +48,6 @@ export function MetricStrip({ metrics }: { metrics: BoardMetrics }) {
               "numeric mt-2 text-xl leading-none",
               item.tone === "accent" && "text-accent",
               item.tone === "neg" && "text-negative",
-              item.tone === "muted" && "text-muted",
             )}
           >
             {item.value}

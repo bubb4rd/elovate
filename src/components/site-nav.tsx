@@ -80,9 +80,9 @@ export async function SiteNav({
             />
             <BrandWordmark />
           </Link>
-          <ModeSelect mode={liveMode} tool={tool === "calc" ? "calc" : "board"} />
+         
         </div>
-        <nav className="hidden items-center gap-1 text-sm md:flex">
+        <nav className="hidden items-center gap-1 text-md md:flex">
           <ToolLink href={boardHref} active={tool === "board"}>
             Board
           </ToolLink>

@@ -24,7 +24,10 @@ export async function CalcPage({ mode }: { mode: Mode }) {
   const history = await liveWzHistoryFor(live, season.id);
   const metrics =
     live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h)
+      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
+          avgPerDaySeason: history.avgPerDaySeason,
+          avgPerDay7d: history.avgPerDay7d,
+        })
       : seedMetrics;
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const ladder = live?.ladder ?? getBoardLadder(mode, season.id);

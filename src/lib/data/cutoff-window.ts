@@ -1,3 +1,4 @@
+import { daysBetween } from "@/lib/format";
 import type { CutoffPoint } from "./types";
 
 export type StoredCutoff = {
@@ -8,14 +9,47 @@ export type StoredCutoff = {
 
 const HOUR_MS = 3_600_000;
 
+function nearestAtLeastHoursAgo(
+  snapshots: StoredCutoff[],
+  liveAt: string,
+  hours: number,
+): StoredCutoff | undefined {
+  const target = Date.parse(liveAt) - hours * HOUR_MS;
+  const older = snapshots.filter((snap) => Date.parse(snap.capturedAt) <= target);
+  return older[older.length - 1];
+}
+
+/** Season + 7d average daily cutoff climb from stored snapshots vs live board. */
+export function avgPerDayFromCutoffs(
+  snapshots: StoredCutoff[],
+  live: { fetchedAt: string; cutoffSr: number },
+): { avgPerDaySeason: number | null; avgPerDay7d: number | null } {
+  if (snapshots.length === 0) {
+    return { avgPerDaySeason: null, avgPerDay7d: null };
+  }
+
+  const first = snapshots[0]!;
+  const seasonDays = daysBetween(first.capturedAt, live.fetchedAt);
+  const avgPerDaySeason = (live.cutoffSr - first.cutoffSr) / seasonDays;
+
+  const weekAgo = nearestAtLeastHoursAgo(snapshots, live.fetchedAt, 24 * 7);
+  if (!weekAgo) {
+    return { avgPerDaySeason, avgPerDay7d: avgPerDaySeason };
+  }
+
+  const weekDays = daysBetween(weekAgo.capturedAt, live.fetchedAt);
+  return {
+    avgPerDaySeason,
+    avgPerDay7d: (live.cutoffSr - weekAgo.cutoffSr) / weekDays,
+  };
+}
+
 export function windowCutoffHistory(
   snapshots: StoredCutoff[],
   live: { fetchedAt: string; cutoffSr: number; rank1Sr: number },
   hours = 24,
 ): { change24h: number | null; series: CutoffPoint[] } {
-  const target = Date.parse(live.fetchedAt) - hours * HOUR_MS;
-  const older = snapshots.filter((snap) => Date.parse(snap.capturedAt) <= target);
-  const baseline = older[older.length - 1];
+  const baseline = nearestAtLeastHoursAgo(snapshots, live.fetchedAt, hours);
   if (!baseline) {
     return { change24h: null, series: [] };
   }
