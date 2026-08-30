@@ -16,7 +16,6 @@ import type { FriendStatus } from "@/lib/friends";
 import type { ProfileHeaderId } from "@/lib/profile/headers";
 import type { ProfilePageThemeId } from "@/lib/profile/themes";
 import type { ProfileView } from "@/lib/profile/types";
-import { rankFromSr } from "@/lib/ranked";
 import { cn } from "@/lib/utils";
 
 export function ProfileHero({
@@ -94,8 +93,6 @@ export function ProfileIdentity({
   pageThemeId,
   displayName,
   avatarUrl,
-  currentSr,
-  cutoffSr,
   canEdit,
   isSignedIn,
   friendStatus = "none",
@@ -106,8 +103,6 @@ export function ProfileIdentity({
   pageThemeId: ProfilePageThemeId;
   displayName: string;
   avatarUrl: string;
-  currentSr: number;
-  cutoffSr: number | null;
   canEdit: boolean;
   isSignedIn: boolean;
   friendStatus?: FriendStatus;
@@ -115,8 +110,6 @@ export function ProfileIdentity({
   className?: string;
 }) {
   const isStaff = profile.grantedHeaderIds.includes("elovate-staff");
-  const rank =
-    currentSr > 0 ? rankFromSr(currentSr, cutoffSr).label : null;
 
   return (
     <div
@@ -146,45 +139,39 @@ export function ProfileIdentity({
       </div>
 
       <div className="min-w-0 sm:pt-18">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            {displayName}
-          </h1>
-          {isStaff ? <ElovateStaffBadge /> : null}
-          <ReputationChip
-            profileId={profile.id}
-            profileSlug={profile.slug}
-            votes={profile.votes}
-            viewerVote={profile.viewerVote}
-            canChangeVote={profile.canChangeVote}
-            isSignedIn={isSignedIn}
-            isOwnProfile={canEdit}
-            themeId={pageThemeId}
-          />
-        </div>
-        <p className="mt-1 text-sm text-muted">{profile.handle}</p>
-        {!canEdit && profile.id ? (
-          <div className="mt-2">
-            <FriendRequestButton
-              targetProfileId={profile.id}
-              targetSlug={profile.slug}
-              initialStatus={friendStatus}
-              initialRequestId={friendRequestId}
-              isSignedIn={isSignedIn}
-            />
+        <div className="flex min-w-0 w-full flex-col gap-3 min-[1315px]:flex-row min-[1315px]:items-start min-[1315px]:gap-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                {displayName}
+              </h1>
+              {isStaff ? <ElovateStaffBadge /> : null}
+            </div>
+            <p className="text-sm text-muted">{profile.handle}</p>
           </div>
-        ) : null}
-        {rank || profile.seasonName ? (
-          <p className="mt-1.5 text-sm text-muted">
-            {rank ? (
-              <span className="font-medium text-foreground">{rank}</span>
+
+          <div className="flex w-fit max-w-full shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center min-[1315px]:ml-auto">
+            <ReputationChip
+              profileId={profile.id}
+              profileSlug={profile.slug}
+              votes={profile.votes}
+              viewerVote={profile.viewerVote}
+              canChangeVote={profile.canChangeVote}
+              isSignedIn={isSignedIn}
+              isOwnProfile={canEdit}
+              themeId={pageThemeId}
+            />
+            {!canEdit && profile.id ? (
+              <FriendRequestButton
+                targetProfileId={profile.id}
+                targetSlug={profile.slug}
+                initialStatus={friendStatus}
+                initialRequestId={friendRequestId}
+                isSignedIn={isSignedIn}
+              />
             ) : null}
-            {rank && profile.seasonName ? (
-              <span className="mx-1.5 text-border">·</span>
-            ) : null}
-            {profile.seasonName ? <span>{profile.seasonName}</span> : null}
-          </p>
-        ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

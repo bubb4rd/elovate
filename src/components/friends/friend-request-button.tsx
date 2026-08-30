@@ -36,11 +36,11 @@ export function FriendRequestButton({
       <Link
         href={loginHref(`/players/${targetSlug}`)}
         className={cn(
-          "inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-border px-2.5 text-xs font-medium text-muted",
+          "inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium text-muted",
           "hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         )}
       >
-        <UserPlus weight="bold" className="size-3.5" />
+        <UserPlus weight="bold" className="size-4" />
         Add friend
       </Link>
     );
@@ -70,11 +70,11 @@ export function FriendRequestButton({
             void run(async () => removeFriend(requestId));
           }}
           className={cn(
-            "inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-border px-2.5 text-xs font-medium text-muted",
+            "inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium text-muted",
             "hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50",
           )}
         >
-          <UserMinus weight="bold" className="size-3.5" />
+          <UserMinus weight="bold" className="size-4" />
           Unfriend
         </button>
         {error ? <p className="text-[11px] text-negative">{error}</p> : null}
@@ -151,11 +151,11 @@ export function FriendRequestButton({
           void run(async () => sendFriendRequest(targetProfileId));
         }}
         className={cn(
-          "inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-border px-2.5 text-xs font-medium text-muted",
+          "inline-flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium text-muted",
           "hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50",
         )}
       >
-        <UserPlus weight="bold" className="size-3.5" />
+        <UserPlus weight="bold" className="size-4" />
         Add friend
       </button>
       {error ? <p className="text-[11px] text-negative">{error}</p> : null}

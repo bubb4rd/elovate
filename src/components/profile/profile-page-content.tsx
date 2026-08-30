@@ -138,8 +138,6 @@ export function ProfilePageContent({
           pageThemeId={pageThemeId}
           displayName={displayName}
           avatarUrl={avatarUrl}
-          currentSr={currentSr}
-          cutoffSr={profile.cutoffSr}
           canEdit={canEdit}
           isSignedIn={isSignedIn}
           friendStatus={friendStatus}
