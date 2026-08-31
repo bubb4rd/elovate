@@ -1,4 +1,19 @@
 export {
+  clearHistoryFilterChip,
+  emptyHistoryFilter,
+  filterSummaries,
+  historyFilterActive,
+  historyFilterChips,
+  uniqueHistoryTeammates,
+  HISTORY_DATE_OPTIONS,
+  HISTORY_OUTCOME_OPTIONS,
+  type HistoryDateRange,
+  type HistoryFilterChip,
+  type HistoryFilterChipId,
+  type HistoryFilterState,
+  type HistoryOutcome,
+} from "./filter";
+export {
   allSummaries,
   appendMatch,
   canUndoLast,
