@@ -66,7 +66,9 @@ wz06_docs_present() {
 
 settings_requires_auth() {
   local location
-  location=$(curl -sI "$PROD_ORIGIN/settings" | tr -d '\r' | awk 'tolower($1) == "location:" { print $2; exit }')
+  # /settings now 307s to /settings/account before the auth gate fires, so
+  # follow the whole redirect chain and match the final hop.
+  location=$(curl -sIL "$PROD_ORIGIN/settings" | tr -d '\r' | awk 'tolower($1) == "location:" { print $2 }' | tail -1)
   printf '%s' "$location" | rg -qi '/login'
 }
 
