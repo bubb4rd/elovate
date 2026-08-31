@@ -28,10 +28,10 @@ Also: `npm test` (headers, themes, search).
 
 ## Manual QA (production)
 
-1. Set profile to **Private** in `/settings` → open `/players/[slug]` in incognito → expect 404.
+1. Toggle **Private profile** in `/settings/privacy` (saves immediately, no Save button) → open `/players/[slug]` in incognito → expect 404.
 2. Owner still sees own profile when signed in.
 3. Cast reputation vote on another profile → flip blocked until next UTC day.
-4. Change page theme → refresh → theme persists.
+4. Change page theme in `/settings/appearance` (saves immediately) → refresh → theme persists.
 
 ## Notes
 

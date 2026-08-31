@@ -57,7 +57,7 @@ search_excludes_private_profiles() {
 }
 
 settings_privacy_toggle() {
-  rg -q 'isPrivate' src/components/settings/settings-content.tsx
+  rg -q 'isPrivate' src/components/settings/privacy-settings.tsx
 }
 
 wz06_docs_present() {

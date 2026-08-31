@@ -17,7 +17,7 @@ export function ProfileThemePicker({
   disabled?: boolean;
 }) {
   return (
-    <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+    <ul className="grid grid-cols-2 gap-2 md:gap-3">
       {PROFILE_PAGE_THEMES.map((theme) => {
         const selected = selectedThemeId === theme.id;
         return (
@@ -36,7 +36,7 @@ export function ProfileThemePicker({
             >
               <span
                 className={cn(
-                  "relative block h-8 w-full overflow-hidden rounded-[4px] ring-1 ring-white/10",
+                  "relative block h-10 md:h-16 w-full overflow-hidden rounded-[4px] ring-1 ring-white/10",
                   selected && "ring-2 ring-accent ring-offset-1 ring-offset-[#121214]",
                 )}
                 style={{ background: theme.gradient }}
@@ -49,7 +49,7 @@ export function ProfileThemePicker({
               </span>
               <span
                 className={cn(
-                  "text-[10px] font-medium tracking-wide",
+                  "text-sm font-medium tracking-wide",
                   selected ? "text-accent" : "text-zinc-500 group-hover:text-zinc-300",
                 )}
               >
