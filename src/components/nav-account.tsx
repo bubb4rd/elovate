@@ -197,6 +197,7 @@ export function NavAccount({
           </MenuLink>
           <MenuLink
             href="/settings"
+            active={pathname.startsWith("/settings")}
             icon={<GearSix weight="bold" className="size-3.5" />}
             onSelect={closeMenu}
           >

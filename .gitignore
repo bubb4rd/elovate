@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# productivity system (task/memory tracking, not code)
+/TASKS.md
+/memory/
+/dashboard.html

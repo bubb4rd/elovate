@@ -1,8 +1,14 @@
+import { cache } from "react";
+import { redirect } from "next/navigation";
+import { loginHref, onboardingHref } from "@/lib/auth/paths";
+import { getViewerProfile } from "@/lib/auth/viewer";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isProfilePageThemeId, type ProfilePageThemeId } from "./themes";
 import type { AccountSettings } from "./settings";
 
-export async function getAccountSettings(userId: string): Promise<AccountSettings | null> {
+export const getAccountSettings = cache(async function getAccountSettings(
+  userId: string,
+): Promise<AccountSettings | null> {
   const supabase = await createServerSupabaseClient();
   if (!supabase) return null;
 
@@ -34,4 +40,21 @@ export async function getAccountSettings(userId: string): Promise<AccountSetting
     notifyClimb: profile.notify_climb,
     pageThemeId,
   };
+});
+
+export async function requireAccountSettings(nextPath: string): Promise<AccountSettings> {
+  const viewer = await getViewerProfile();
+  if (!viewer) {
+    redirect(loginHref(nextPath));
+  }
+  if (!viewer.onboardingComplete) {
+    redirect(onboardingHref(nextPath));
+  }
+
+  const settings = await getAccountSettings(viewer.id);
+  if (!settings) {
+    redirect(onboardingHref(nextPath));
+  }
+
+  return settings;
 }

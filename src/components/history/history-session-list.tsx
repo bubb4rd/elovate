@@ -2,7 +2,8 @@
 
 import { Export, Fire, GameController } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { HistoryFilterBar } from "@/components/history/history-filter-bar";
 import { ClimbMark } from "@/components/icons";
 import { MatchHistory } from "@/components/profile/match-history";
 import { SessionShareDialog } from "@/components/session-share-dialog";
@@ -10,6 +11,9 @@ import { loginHref, registerHref } from "@/lib/auth/paths";
 import { formatDelta, formatLocalTime, formatSr } from "@/lib/format";
 import {
   allSummaries,
+  emptyHistoryFilter,
+  filterSummaries,
+  uniqueHistoryTeammates,
   wzMatchToProfileMatch,
   type HistoryMatch,
   type SessionSummary,
@@ -264,10 +268,16 @@ export function HistorySessionList({ signedIn }: { signedIn: boolean }) {
     () => false,
   );
   const { doc } = useHistory("wz");
-  const summaries = allSummaries(doc);
+  const summaries = useMemo(() => allSummaries(doc), [doc]);
+  const [filter, setFilter] = useState(emptyHistoryFilter);
   const [sharing, setSharing] = useState<SessionSummary | null>(null);
-  const games = summaries.reduce((sum, summary) => sum + summary.games, 0);
-  const net = summaries.reduce((sum, summary) => sum + summary.net, 0);
+  const filtered = useMemo(
+    () => filterSummaries(summaries, filter),
+    [summaries, filter],
+  );
+  const teammates = useMemo(() => uniqueHistoryTeammates(doc), [doc]);
+  const games = filtered.reduce((sum, summary) => sum + summary.games, 0);
+  const net = filtered.reduce((sum, summary) => sum + summary.net, 0);
   const avgNet = games > 0 ? net / games : 0;
 
   return (
@@ -287,9 +297,9 @@ export function HistorySessionList({ signedIn }: { signedIn: boolean }) {
           <div className="flex flex-wrap items-center justify-center gap-2">
             <SessionMetaChip
               icon={<ClimbMark className="size-4 shrink-0 text-muted" aria-hidden />}
-              label={`${summaries.length} sessions`}
+              label={`${filtered.length} sessions`}
             >
-              {summaries.length}
+              {filtered.length}
             </SessionMetaChip>
             <SessionMetaChip
               icon={<GameController weight="fill" className="size-4 shrink-0 text-muted" aria-hidden />}
@@ -337,15 +347,35 @@ export function HistorySessionList({ signedIn }: { signedIn: boolean }) {
               .
             </p>
           ) : null}
-          <div className="flex flex-col">
-            {summaries.map((summary) => (
-              <SessionLog
-                key={summary.session.id}
-                summary={summary}
-                onShare={() => setSharing(summary)}
-              />
-            ))}
-          </div>
+          <HistoryFilterBar
+            value={filter}
+            onChange={setFilter}
+            teammates={teammates}
+            matchCount={filtered.length}
+            totalCount={summaries.length}
+          />
+          {filtered.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted">No sessions match these filters.</p>
+              <button
+                type="button"
+                onClick={() => setFilter(emptyHistoryFilter())}
+                className="mt-3 text-sm font-medium text-accent transition-colors hover:text-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {filtered.map((summary) => (
+                <SessionLog
+                  key={summary.session.id}
+                  summary={summary}
+                  onShare={() => setSharing(summary)}
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
 
