@@ -35,6 +35,10 @@ Launch does **not** require a third-party APM. Uncaught UI crashes log `[ops]` t
 | `poll-wz-cutoff` `{"skipped":true,"reason":"fresh"}` | Healthy — 12-minute ingest throttle |
 | `[ops]` in Netlify logs, or 5xx bursts | Page — check the matching deploy and function log |
 | `poll-wz-cutoff` 401 / 502 / insert errors | Page — secret mismatch or CODMunity/DB failure |
+| `[poll-wz-cutoff] discord webhook failed` in Edge logs | Warn — ingest OK; check `DISCORD_CUTOFF_WEBHOOK_URL` / Discord status |
+| `"discordSkipReason":"below_threshold"` in response | Healthy — cutoff moved less than `MIN_CUTOFF_DELTA` |
+| `"discordSkipReason":"not_configured"` in response | Healthy — `DISCORD_CUTOFF_WEBHOOK_URL` intentionally unset |
+| Missing Discord posts but inserts succeed | Check `DISCORD_CUTOFF_WEBHOOK_URL` secret and `MIN_CUTOFF_DELTA` threshold |
 
 ## Launch-day cadence
 

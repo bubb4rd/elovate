@@ -37,6 +37,11 @@ Copy `.env.example` to `.env.local` and set:
 - `SUPABASE_SECRET_KEY` (Dashboard → Project Settings → API; ingest only, never `NEXT_PUBLIC_`)
 - `CRON_SECRET` (shared with the `poll-wz-cutoff` Edge Function)
 
+Optional Edge Function secrets for the community Discord post (see below):
+
+- `DISCORD_CUTOFF_WEBHOOK_URL` — channel webhook. Unset → Discord is skipped, ingest is unchanged. Never commit this.
+- `MIN_CUTOFF_DELTA` — minimum `|cutoff delta|` in SR to post (default `50`). Suppresses 15-minute noise; parsed with `Number()`, falls back to `50` if missing or invalid.
+
 Local:
 
 ```bash
@@ -69,6 +74,25 @@ supabase db query --linked -f supabase/cron/schedule_poll_wz_cutoff.sql
 ```
 
 The job POSTs every 15 minutes. 24h stays empty until a snapshot is at least 24 hours older than the latest live fetch.
+
+### Community Discord post on cutoff move (N-02)
+
+When `poll-wz-cutoff` inserts a new snapshot and the cutoff moved at least `MIN_CUTOFF_DELTA`
+SR versus the previous snapshot, it posts an embed (cutoff SR, change, rank #1, link) to a
+Discord channel webhook. The post is fire-and-forget: a down or misconfigured webhook is
+logged as `[poll-wz-cutoff] discord webhook failed` and never fails ingest or the HTTP
+response. Fresh-skips, CODMunity failures, and insert failures never post.
+
+```bash
+# Discord: Server → Channel → Integrations → Webhooks → New Webhook → Copy URL
+supabase secrets set DISCORD_CUTOFF_WEBHOOK_URL="https://discord.com/api/webhooks/..."
+supabase secrets set MIN_CUTOFF_DELTA=50   # optional, default 50
+supabase functions deploy poll-wz-cutoff --use-api
+```
+
+The webhook URL is a secret — keep it in Supabase secrets, never in the repo.
+
+Embed-builder and threshold-gate unit tests: `cd supabase/functions/poll-wz-cutoff && deno task test`.
 
 ## Error monitoring (ops)
 

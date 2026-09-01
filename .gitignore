@@ -41,6 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# deno (edge function test runs)
+supabase/functions/**/deno.lock
+
 # productivity system (task/memory tracking, not code)
 /TASKS.md
 /memory/
