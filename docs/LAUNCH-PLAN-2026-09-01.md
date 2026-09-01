@@ -5,7 +5,19 @@
 **Go/no-go:** Go, conditional on P0 items OPS-07 / WZ-11 / WZ-12 landing before Sep 5 (all bugfix-shaped → freeze-legal if they slip) and the Sep 5–7 QA re-run (OPS-09).
 
 > Numbering note: `OPS-07` was the next free OPS id (OPS-01…06 exist). WZ-09/WZ-10 are taken,
-> so WZ starts at WZ-11. Confirm against `gh issue list` before `gh issue create`.
+> so WZ starts at WZ-11.
+
+### Tracking issues (created 2026-09-01)
+
+| ID | Issue | ID | Issue |
+|---|---|---|---|
+| OPS-07 | [#34](https://github.com/bubb4rd/elovate/issues/34) | OPS-10 | [#40](https://github.com/bubb4rd/elovate/issues/40) |
+| OPS-08 | [#35](https://github.com/bubb4rd/elovate/issues/35) | WZ-13 | [#41](https://github.com/bubb4rd/elovate/issues/41) |
+| WZ-11 | [#36](https://github.com/bubb4rd/elovate/issues/36) | WZ-14 | [#42](https://github.com/bubb4rd/elovate/issues/42) |
+| WZ-12 | [#37](https://github.com/bubb4rd/elovate/issues/37) | OPS-11 | [#43](https://github.com/bubb4rd/elovate/issues/43) |
+| OPS-13 | [#38](https://github.com/bubb4rd/elovate/issues/38) | OPS-12 | [#44](https://github.com/bubb4rd/elovate/issues/44) |
+| OPS-09 | [#39](https://github.com/bubb4rd/elovate/issues/39) | DESK-08 | [#45](https://github.com/bubb4rd/elovate/issues/45) |
+| | | WZ-15 | [#46](https://github.com/bubb4rd/elovate/issues/46) |
 
 ---
 
