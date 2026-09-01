@@ -4,6 +4,12 @@ import { type DiscordNotifyResult, maybeNotifyDiscordCutoff } from "./discord.ts
 
 const TOP_250_URL = "https://api.codmunity.gg/website/pages/top-250";
 const MIN_INTERVAL_MS = 12 * 60 * 1000;
+const DEFAULT_MIN_PLAYERS = 240;
+
+function resolveMinPlayers(): number {
+  const parsed = Number(Deno.env.get("MIN_PLAYER_COUNT"));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MIN_PLAYERS;
+}
 
 type RankedPlayerPayload = {
   skillRating?: unknown;
@@ -85,6 +91,21 @@ export default {
 
     if (srs.length === 0) {
       return Response.json({ error: "CODMunity payload had no ranked players" }, { status: 502 });
+    }
+
+    // Guard against a truncated CODMunity board: a short list would write a wildly
+    // wrong cutoff and (via the webhook) broadcast it. Skip instead of poisoning history.
+    const minPlayers = resolveMinPlayers();
+    if (srs.length < minPlayers) {
+      console.error("[poll-wz-cutoff] short payload", {
+        playerCount: srs.length,
+        minPlayers,
+      });
+      return Response.json({
+        skipped: true,
+        reason: "short_payload",
+        playerCount: srs.length,
+      });
     }
 
     const capturedAt = new Date().toISOString();
