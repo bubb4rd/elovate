@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { ProPricing } from "@/components/premium/pro-pricing";
-import { getViewerEntitlement } from "@/lib/premium/queries";
+import { getViewerProfile } from "@/lib/auth/viewer";
 
 export default async function ProPage() {
-  const { isPro } = await getViewerEntitlement();
-  if (isPro) redirect("/pro/teammates");
-  return <ProPricing />;
+  const viewer = await getViewerProfile();
+  if (viewer?.isPro) redirect("/pro/teammates");
+  return <ProPricing signedIn={viewer != null} />;
 }
