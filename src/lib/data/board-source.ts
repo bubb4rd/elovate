@@ -28,6 +28,21 @@ type HistoryAvgs = {
   avgPerDay7d: number | null;
 };
 
+/**
+ * WZ-12 rule 1: the board roster to render. The live roster wins; for the
+ * active WZ season a missing live board renders nothing (never the `db()` seed
+ * roster); archived seasons and MP keep their seed rows.
+ */
+export function resolveBoardRows<T>(
+  liveRows: T[] | undefined,
+  seedRows: T[] | undefined,
+  isLiveBoard: boolean,
+): T[] | null {
+  if (liveRows) return liveRows;
+  if (isLiveBoard) return null;
+  return seedRows ?? null;
+}
+
 /** Pure live → stored → none precedence. Injected/known inputs only. */
 export function resolveCutoff(
   live: LiveWzBoard | null,

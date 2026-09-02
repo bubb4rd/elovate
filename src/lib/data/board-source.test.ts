@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   currentCutoffMetrics,
   getBoardCutoff,
+  resolveBoardRows,
   resolveCutoff,
 } from "./board-source";
 import { getBoardMetrics, isLiveWzBoard, listSeasons } from "./queries";
@@ -50,6 +51,24 @@ assert.equal(rNone.cutoffSr, null);
 assert.equal(rNone.capturedAt, null);
 assert.equal(rNone.live, null);
 assert.equal(rNone.stored, null);
+
+// --- resolveBoardRows: WZ-12 rule 1 (never seed rows for the active WZ season) ---
+
+const liveRows = [{ rank: 1 }];
+const seedRows = [{ rank: 2 }];
+
+assert.equal(resolveBoardRows(liveRows, seedRows, true), liveRows, "live roster wins");
+assert.equal(
+  resolveBoardRows(undefined, seedRows, true),
+  null,
+  "active WZ season, no live board -> render nothing, not the seed roster",
+);
+assert.equal(
+  resolveBoardRows(undefined, seedRows, false),
+  seedRows,
+  "archived season / MP -> keep seed rows",
+);
+assert.equal(resolveBoardRows(undefined, undefined, false), null);
 
 // --- currentCutoffMetrics ---
 

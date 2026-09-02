@@ -69,7 +69,9 @@ export default async function PlayerPage({
     seed: seedMetrics,
     history,
   });
-  const cutoffSr = metrics?.cutoffSr ?? profile.cutoffSr ?? IRIDESCENT_SR;
+  // WZ-12: profile.cutoffSr is the seed active-season numeral — never fall back
+  // to it. metrics already resolves live -> stored -> none.
+  const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const profileWithLive = { ...profile, cutoffSr };
 
   const firstSr = profileWithLive.series[0]?.cutoffSr;

@@ -8,7 +8,6 @@ import { SiteNav } from "@/components/site-nav";
 import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import { getHomeSummary, getLiveWzBoard, listSeasons } from "@/lib/data/queries";
-import { snapshotAge } from "@/lib/format";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -49,8 +48,7 @@ export default async function Home() {
               ) : null}
               {resolved.source === "stored" ? (
                 <p className="mt-3 text-sm text-muted">
-                  Live standings unavailable. Showing the last recorded cutoff
-                  from {snapshotAge(wz.capturedAt)} ago.
+                  Live standings unavailable. Showing the last recorded cutoff.
                 </p>
               ) : null}
             </>

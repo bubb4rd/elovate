@@ -11,6 +11,7 @@ import {
   getBoardLadder,
   getBoardMetrics,
   getLiveWzBoard,
+  isLiveWzBoard,
   listSeasons,
 } from "@/lib/data/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
@@ -30,7 +31,11 @@ export async function CalcPage({ mode }: { mode: Mode }) {
     history,
   });
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
-  const ladder = live?.ladder ?? getBoardLadder(mode, season.id);
+  // WZ-12: don't pair the resolved cutoff with a fabricated seed ladder for the
+  // active WZ season — an empty ladder degrades the board-rank panel cleanly.
+  const ladder =
+    live?.ladder ??
+    (isLiveWzBoard(mode, season.id) ? [] : getBoardLadder(mode, season.id));
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
   const viewer = await getViewerProfile();
   const calcHref = `/${mode}/calc`;
