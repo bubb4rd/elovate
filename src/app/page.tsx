@@ -5,13 +5,9 @@ import { HomeHeroCopy } from "@/components/home-hero-copy";
 import { ModePick } from "@/components/mode-pick";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
+import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
-import {
-  getHomeSummary,
-  getLiveWzBoard,
-  listSeasons,
-  overlayLiveMetrics,
-} from "@/lib/data/queries";
+import { getHomeSummary, getLiveWzBoard, listSeasons } from "@/lib/data/queries";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -24,12 +20,13 @@ export default async function Home() {
   const { wz: seedWz, mp, season } = getHomeSummary();
   const live = await getLiveWzBoard();
   const history = await liveWzHistoryFor(live, season.id);
-  const wz = seedWz && live
-    ? overlayLiveMetrics(seedWz, live, history.change24h, {
-        avgPerDaySeason: history.avgPerDaySeason,
-        avgPerDay7d: history.avgPerDay7d,
-      })
-    : seedWz;
+  const { resolved, metrics: wz } = await getBoardCutoff({
+    mode: "wz",
+    seasonId: season.id,
+    live,
+    seed: seedWz,
+    history,
+  });
   const seasons = listSeasons();
   const capturedAt = live?.fetchedAt ?? wz?.capturedAt ?? mp?.capturedAt;
   const dailySeries = history.change24h != null ? history.series : [];
@@ -48,6 +45,11 @@ export default async function Home() {
               />
               {dailySeries.length > 0 ? (
                 <HomeCutoffObject series={dailySeries} change24h={wz.change24h} />
+              ) : null}
+              {resolved.source === "stored" ? (
+                <p className="mt-3 text-sm text-muted">
+                  Live standings unavailable. Showing the last recorded cutoff.
+                </p>
               ) : null}
             </>
           ) : (

@@ -4,14 +4,15 @@ import { getViewerProfile } from "@/lib/auth/viewer";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { SrCalculator } from "@/components/sr-calculator";
+import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getActiveSeason,
   getBoardLadder,
   getBoardMetrics,
   getLiveWzBoard,
+  isLiveWzBoard,
   listSeasons,
-  overlayLiveMetrics,
 } from "@/lib/data/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Mode } from "@/lib/data/types";
@@ -22,15 +23,19 @@ export async function CalcPage({ mode }: { mode: Mode }) {
   const seasons = listSeasons();
   const live = mode === "wz" ? await getLiveWzBoard() : null;
   const history = await liveWzHistoryFor(live, season.id);
-  const metrics =
-    live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
-          avgPerDaySeason: history.avgPerDaySeason,
-          avgPerDay7d: history.avgPerDay7d,
-        })
-      : seedMetrics;
+  const { metrics } = await getBoardCutoff({
+    mode,
+    seasonId: season.id,
+    live,
+    seed: seedMetrics,
+    history,
+  });
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
-  const ladder = live?.ladder ?? getBoardLadder(mode, season.id);
+  // WZ-12: don't pair the resolved cutoff with a fabricated seed ladder for the
+  // active WZ season — an empty ladder degrades the board-rank panel cleanly.
+  const ladder =
+    live?.ladder ??
+    (isLiveWzBoard(mode, season.id) ? [] : getBoardLadder(mode, season.id));
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
   const viewer = await getViewerProfile();
   const calcHref = `/${mode}/calc`;
