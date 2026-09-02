@@ -125,6 +125,8 @@ Everything else in §3: PREM-04, PREM-05, PREM-06, PREM-07, PREM-09, PREM-10, PR
 
 ## 5. Implementation notes (high level)
 
+> **Foundation (PREM-00) build notes live in [`docs/PREMIUM-FOUNDATION.md`](./PREMIUM-FOUNDATION.md)** — the `pro_until` model, `<ProGate>` / `usePro()` / `isPro()` APIs, and what's deferred to the Stripe slice.
+
 - **Billing:** Stripe Checkout + customer portal. Webhook → set `profiles.pro_until timestamptz` (nullable). Entitlement = `pro_until > now()`. Keep it a date, not a bool, so lapses are automatic and season passes work.
 - **Entitlement check:** one server helper (`isPro(userId)`), one client hook (`usePro()`), one `<ProGate>` wrapper that renders the teaser + upsell when locked.
 - **RLS:** analytics run over the user's own `climb_matches` / `climb_sessions` — no new exposure. Squad features (PREM-18/19) need explicit opt-in rows (`squad_share`) with RLS scoped to accepted friends only.

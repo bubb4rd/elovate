@@ -1,5 +1,5 @@
 begin;
-select plan(16);
+select plan(18);
 
 insert into auth.users (
   instance_id,
@@ -87,6 +87,10 @@ select ok(
 select ok(
   not has_table_privilege('authenticated', 'public.profile_grants', 'insert'),
   'authenticated holds no insert grant on profile_grants'
+);
+select ok(
+  not has_column_privilege('authenticated', 'public.profiles', 'pro_until', 'UPDATE'),
+  'authenticated cannot update pro_until (Pro entitlement is service-role only)'
 );
 select is(
   (select count(*)::int from public.profiles where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
@@ -196,6 +200,14 @@ select throws_ok(
   '42501',
   null,
   'authenticated cannot grant staff'
+);
+select throws_ok(
+  $$update public.profiles
+    set pro_until = now() + interval '30 days'
+    where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  '42501',
+  null,
+  'owner cannot self-grant elovate Pro'
 );
 
 reset role;

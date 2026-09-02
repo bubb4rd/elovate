@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isProActive } from "@/lib/premium/entitlement";
 import { avatarOrDefault } from "@/lib/profile/avatar";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isProfilePageThemeId, type ProfilePageThemeId } from "@/lib/profile/themes";
@@ -11,6 +12,10 @@ export type ViewerProfile = {
   currentSr: number;
   onboardingComplete: boolean;
   pageThemeId: ProfilePageThemeId;
+  /** True while `proUntil` is in the future. */
+  isPro: boolean;
+  /** ISO timestamp elovate Pro access lapses, or null if never granted. */
+  proUntil: string | null;
 };
 
 export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> => {
@@ -24,7 +29,7 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
   const { data } = await supabase
     .from("profiles")
     .select(
-      "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id",
+      "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id, pro_until",
     )
     .eq("id", id)
     .maybeSingle();
@@ -38,8 +43,12 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
       currentSr: 0,
       onboardingComplete: false,
       pageThemeId: "gold",
+      isPro: false,
+      proUntil: null,
     };
   }
+
+  const proUntil = data.pro_until ?? null;
 
   const pageThemeId: ProfilePageThemeId = isProfilePageThemeId(data.page_theme_id)
     ? data.page_theme_id
@@ -53,6 +62,8 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
     currentSr: typeof data.current_sr === "number" ? data.current_sr : 0,
     onboardingComplete: data.onboarding_completed_at != null,
     pageThemeId,
+    isPro: isProActive(proUntil),
+    proUntil,
   };
 });
 
