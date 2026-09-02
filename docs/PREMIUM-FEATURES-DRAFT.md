@@ -142,3 +142,42 @@ Everything else in §3: PREM-04, PREM-05, PREM-06, PREM-07, PREM-09, PREM-10, PR
 3. Is any of this in scope before the Sep 7 WZ launch, or strictly post-launch (roadmap §2.F item 4 is "deeper climb analytics")? Recommendation: **post-launch**, first paid feature ~4–6 weeks after.
 4. ~~Do we gate map/mode *logging* (PREM-08) as free?~~ **Decided: yes — free and default for all users, added to the submit flow (map → teammates). Per-map analytics (PREM-09) free-vs-Pro split is still open.**
 5. Squad sharing privacy model — opt-in per friend, or all-or-nothing?
+
+---
+
+## 10. Issue tracking
+
+Milestone **[Premium v1](https://github.com/bubb4rd/elovate/milestone/2)**. Label `premium`.
+
+| ID | Issue | Milestone |
+|---|---|---|
+| PREM-00 | [#85](https://github.com/bubb4rd/elovate/issues/85) Premium foundation — billing, entitlement, ProGate | Premium v1 |
+| PREM-01 | [#59](https://github.com/bubb4rd/elovate/issues/59) Teammate breakdown | Premium v1 |
+| PREM-02 | [#60](https://github.com/bubb4rd/elovate/issues/60) Placement efficiency | Premium v1 |
+| PREM-03 | [#61](https://github.com/bubb4rd/elovate/issues/61) Trend & goal projection | Premium v1 |
+| PREM-11 | [#62](https://github.com/bubb4rd/elovate/issues/62) SR-to-T250 tracker | Premium v1 |
+| PREM-15 | [#63](https://github.com/bubb4rd/elovate/issues/63) Unlimited history | Premium v1 |
+| PREM-21 | [#64](https://github.com/bubb4rd/elovate/issues/64) Pro profile themes | Premium v1 |
+| PREM-25 | [#65](https://github.com/bubb4rd/elovate/issues/65) Pro badge | Premium v1 |
+| PREM-26 | [#66](https://github.com/bubb4rd/elovate/issues/66) Desktop beta priority | Premium v1 |
+| PREM-08 | [#55](https://github.com/bubb4rd/elovate/issues/55) Map/mode submit step (**free**, not paid) | — |
+| PREM-04 | [#67](https://github.com/bubb4rd/elovate/issues/67) Time-of-day heatmap | backlog |
+| PREM-05 | [#68](https://github.com/bubb4rd/elovate/issues/68) Tilt / session-decay | backlog |
+| PREM-06 | [#69](https://github.com/bubb4rd/elovate/issues/69) Session comparison | backlog |
+| PREM-07 | [#70](https://github.com/bubb4rd/elovate/issues/70) Variance & streak stats | backlog |
+| PREM-09 | [#71](https://github.com/bubb4rd/elovate/issues/71) Per-map performance | backlog / review |
+| PREM-10 | [#72](https://github.com/bubb4rd/elovate/issues/72) Map × teammate crosstab | backlog / review |
+| PREM-12 | [#73](https://github.com/bubb4rd/elovate/issues/73) Cutoff alerts (blocked on N-02) | backlog |
+| PREM-13 | [#74](https://github.com/bubb4rd/elovate/issues/74) Full-season cutoff history | backlog |
+| PREM-14 | [#75](https://github.com/bubb4rd/elovate/issues/75) Cutoff forecast | backlog |
+| PREM-16 | [#76](https://github.com/bubb4rd/elovate/issues/76) CSV / JSON export | backlog |
+| PREM-17 | [#77](https://github.com/bubb4rd/elovate/issues/77) Personal season archive | backlog |
+| PREM-18 | [#78](https://github.com/bubb4rd/elovate/issues/78) Squad dashboard | backlog |
+| PREM-19 | [#79](https://github.com/bubb4rd/elovate/issues/79) Compare vs friend | backlog |
+| PREM-20 | [#80](https://github.com/bubb4rd/elovate/issues/80) Squad goal race | backlog |
+| PREM-22 | [#81](https://github.com/bubb4rd/elovate/issues/81) Premium share cards | backlog |
+| PREM-23 | [#82](https://github.com/bubb4rd/elovate/issues/82) Profile view analytics | backlog |
+| PREM-24 | [#83](https://github.com/bubb4rd/elovate/issues/83) Featured stats / pinned session | backlog |
+| PREM-27 | [#84](https://github.com/bubb4rd/elovate/issues/84) MP board early access | backlog |
+
+Spin-offs from #55: [#56](https://github.com/bubb4rd/elovate/issues/56) (merge hardening), [#57](https://github.com/bubb4rd/elovate/issues/57) (`climb_matches` public-read review).
