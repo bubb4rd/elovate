@@ -7,6 +7,6 @@ export const metadata: Metadata = {
 };
 
 export default async function ProTeammatesPage() {
-  await requireProPage("/pro/teammates");
+  await requireProPage();
   return <TeammateBreakdownSection />;
 }

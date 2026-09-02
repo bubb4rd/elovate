@@ -19,8 +19,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ProLayout({ children }: LayoutProps<"/pro">) {
-  // Per-tab pages own the auth/onboarding redirect via requireProPage(); this
-  // cache()d call is free and only gates the live board work.
+  // `/pro` is the public pricing page; `/pro/*` feature pages hard-gate via
+  // requireProPage(). This cache()d call only gates the live board work + the
+  // feature tab bar (which non-subscribers have nowhere to go in).
   const viewer = await getViewerProfile();
   const ready = viewer != null && viewer.onboardingComplete;
 
@@ -61,7 +62,7 @@ export default async function ProLayout({ children }: LayoutProps<"/pro">) {
           />
           <h1 className="text-lg font-semibold tracking-tight">elovate Pro</h1>
         </header>
-        <ProNav />
+        {viewer?.isPro && <ProNav />}
         <div className="mt-8 min-w-0">{children}</div>
       </main>
       <SiteFooter />
