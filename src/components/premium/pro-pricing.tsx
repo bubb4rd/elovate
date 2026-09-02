@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Lock } from "@phosphor-icons/react";
+import { Check, Crown, Lock, Minus } from "@phosphor-icons/react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -24,16 +24,50 @@ const PLANS: {
   },
 ];
 
-const INCLUDED: { label: string; live?: boolean }[] = [
-  { label: "Teammate breakdown — who actually earns you SR", live: true },
-  { label: "Placement efficiency — elims vs. finishes" },
-  { label: "Trend & goal projection — your date to T250" },
-  { label: "SR-to-T250 personal tracker" },
-  { label: "Unlimited match history, every season" },
-  { label: "Pro-only profile themes" },
-  { label: "Pro badge on your profile and board row" },
-  { label: "elovate Desktop beta — skip the line" },
+/** A cell value: `true` = included, `false` = not included, string = qualified. */
+type Cell = boolean | string;
+
+const ROWS: { label: string; free: Cell; pro: Cell; live?: boolean }[] = [
+  { label: "Live Top 250 board & cutoff tracker", free: true, pro: true },
+  { label: "SR calculator", free: true, pro: true },
+  { label: "Public profile, reputation, friends", free: true, pro: true },
+  { label: "Climb session tracking", free: "This session", pro: "All sessions" },
+  { label: "Match history", free: "500 · monthly", pro: "Unlimited" },
+  { label: "Teammate breakdown", free: false, pro: true, live: true },
+  { label: "Placement efficiency", free: false, pro: true },
+  { label: "Trend & goal projection", free: false, pro: true },
+  { label: "SR-to-T250 personal tracker", free: false, pro: true },
+  { label: "Profile themes", free: "10", pro: "+ Pro-only" },
+  { label: "Pro badge", free: false, pro: true },
+  { label: "elovate Desktop beta", free: "Waitlist", pro: "Priority" },
 ];
+
+function CellValue({ value, pro }: { value: Cell; pro?: boolean }) {
+  if (value === true) {
+    return (
+      <Check
+        weight="bold"
+        className={cn("mx-auto size-4", pro ? "text-accent" : "text-foreground")}
+        aria-label="Included"
+      />
+    );
+  }
+  if (value === false) {
+    return (
+      <Minus className="mx-auto size-4 text-muted/50" aria-label="Not included" />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "text-xs leading-tight",
+        pro ? "text-foreground" : "text-muted",
+      )}
+    >
+      {value}
+    </span>
+  );
+}
 
 export function ProPricing() {
   const [plan, setPlan] = useState<PlanId>("annual");
@@ -80,31 +114,50 @@ export function ProPricing() {
         </div>
       </div>
 
-      <div className="rounded-[10px] border border-border bg-surface/50 p-5">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-          Everything in Pro
-        </p>
-        <ul className="space-y-2.5">
-          {INCLUDED.map((f) => (
-            <li key={f.label} className="flex items-start gap-2.5 text-sm">
-              <Check
-                weight="bold"
-                className={cn(
-                  "mt-0.5 size-4 shrink-0",
-                  f.live ? "text-accent" : "text-muted",
-                )}
-              />
-              <span className={f.live ? "text-foreground" : "text-muted"}>
-                {f.label}
-                {f.live && (
-                  <span className="ml-2 rounded-[4px] border border-accent/30 px-1 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-accent">
-                    Live
-                  </span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[32rem] border-collapse">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="py-2 pr-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                Compare plans
+              </th>
+              <th className="w-28 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                Free
+              </th>
+              <th className="w-32 rounded-t-[8px] bg-accent/10 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
+                <span className="inline-flex items-center gap-1">
+                  <Crown weight="fill" className="size-3.5" />
+                  Pro
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {ROWS.map((row, i) => (
+              <tr key={row.label} className="border-b border-border/60 last:border-0">
+                <td className="py-2.5 pr-3 text-sm text-foreground">
+                  {row.label}
+                  {row.live && (
+                    <span className="ml-2 rounded-[4px] border border-accent/30 px-1 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-accent">
+                      Live
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2.5 text-center align-middle">
+                  <CellValue value={row.free} />
+                </td>
+                <td
+                  className={cn(
+                    "bg-accent/10 px-3 py-2.5 text-center align-middle",
+                    i === ROWS.length - 1 && "rounded-b-[8px]",
+                  )}
+                >
+                  <CellValue value={row.pro} pro />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="space-y-2">
