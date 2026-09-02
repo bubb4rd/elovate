@@ -1,7 +1,7 @@
 import { DiscordLogo, XLogo } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
-import icon from "@/app/icon.png";
+import icon from "@/app/filled_icon.png";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { cn } from "@/lib/utils";
 
