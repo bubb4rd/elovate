@@ -6,29 +6,20 @@ import { cn } from "@/lib/utils";
 export function SettingsSection({
   title,
   description,
-  icon,
   children,
   className,
 }: {
   title?: string;
   description?: string;
-  icon?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("space-y-3", className)}>
       {title || description ? (
-        <div className="flex items-start gap-3">
-          {icon ? (
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-[6px] border border-border bg-surface text-muted">
-              {icon}
-            </span>
-          ) : null}
-          <div className="min-w-0 pt-0.5">
-            {title ? <h2 className="text-lg font-semibold tracking-tight">{title}</h2> : null}
-            {description ? <p className="mt-0.5 text-muted">{description}</p> : null}
-          </div>
+        <div className="min-w-0">
+          {title ? <h2 className="text-lg font-semibold tracking-tight">{title}</h2> : null}
+          {description ? <p className="mt-0.5 text-muted">{description}</p> : null}
         </div>
       ) : null}
       <section className="rounded-[6px] border border-border bg-surface">
@@ -39,30 +30,32 @@ export function SettingsSection({
 }
 
 export function SettingsRow({
-  icon,
   label,
   hint,
+  layout = "inline",
   children,
 }: {
-  icon?: React.ReactNode;
   label: string;
   hint?: string;
+  layout?: "inline" | "stack";
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center md:px-5">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        {icon ? (
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-[6px] border border-border bg-background text-muted">
-            {icon}
-          </span>
-        ) : null}
-        <div className="min-w-0 pt-0.5">
-          <p className="text-sm font-medium">{label}</p>
-          {hint ? <p className="mt-0.5 text-sm text-muted">{hint}</p> : null}
-        </div>
+    <div
+      className={cn(
+        "px-4 py-3 md:px-5",
+        layout === "inline"
+          ? "flex min-h-[52px] items-center justify-between gap-4"
+          : "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">{label}</p>
+        {hint ? <p className="mt-0.5 text-sm text-muted">{hint}</p> : null}
       </div>
-      <div className="shrink-0 sm:self-center">{children}</div>
+      <div className={layout === "inline" ? "shrink-0" : "w-full sm:w-auto sm:shrink-0"}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -87,7 +80,7 @@ export function SettingsToggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-10 shrink-0 items-center rounded-full border transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50",
+        "relative inline-flex h-6 w-10 shrink-0 items-center rounded-full border transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50",
         checked ? "border-accent bg-accent" : "border-border bg-background",
       )}
     >

@@ -43,6 +43,7 @@ export function AccountSettingsPanel({ settings }: { settings: AccountSettings }
         <SettingsRow
           label="Display name"
           hint="Shown on your profile and in the nav."
+          layout="stack"
         >
           <div className="w-full sm:w-44">
             <Input
@@ -60,14 +61,20 @@ export function AccountSettingsPanel({ settings }: { settings: AccountSettings }
         <SettingsRow
           label="Username"
           hint="Your profile URL. Contact support to change."
+          layout="stack"
         >
-          <span className="text-sm font-medium text-muted">@{settings.slug}</span>
+          <span className="break-all text-right text-sm font-medium text-muted">
+            @{settings.slug}
+          </span>
         </SettingsRow>
         <SettingsRow
           label="Email"
           hint="Used for sign-in and notifications."
+          layout="stack"
         >
-          <span className="text-sm text-muted">{settings.email ?? "Not set"}</span>
+          <span className="break-all text-right text-sm text-muted">
+            {settings.email ?? "Not set"}
+          </span>
         </SettingsRow>
         <SettingsRow
           label="Member since"
