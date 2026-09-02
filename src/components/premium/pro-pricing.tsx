@@ -63,11 +63,9 @@ export function ProPricing({ signedIn }: { signedIn: boolean }) {
   const active = PLANS.find((p) => p.id === plan)!;
 
   return (
-    <div className="space-y-7">
-      <p className="max-w-prose text-sm text-muted">
-        Know exactly who to queue with, whether you&rsquo;re actually climbing,
-        and when you&rsquo;ll hit Top 250 — built on the climb data elovate
-        already tracks for you.
+    <div className="space-y-8">
+      <p className="max-w-prose text-md text-muted">
+        Select the features that match your playstyle and reach your peak.
       </p>
 
       <div className="flex flex-wrap items-center gap-1.5 rounded-[8px] border border-border bg-surface p-1">

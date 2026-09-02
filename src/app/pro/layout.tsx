@@ -1,4 +1,5 @@
-import { Crown } from "@phosphor-icons/react/dist/ssr";
+import Image from "next/image";
+import icon from "@/app/icon.png";
 import type { Metadata } from "next";
 import { ProNav } from "@/components/premium/pro-nav";
 import { SiteFooter } from "@/components/site-footer";
@@ -13,6 +14,8 @@ import {
   listSeasons,
 } from "@/lib/data/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
+import { BrandWordmark } from "@/components/brand-wordmark";
+import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 
 export const metadata: Metadata = {
   title: "Pro",
@@ -54,16 +57,26 @@ export default async function ProLayout({ children }: LayoutProps<"/pro">) {
         nextUpdateAt={live?.nextUpdateAt}
       />
       <main className="mx-auto w-full max-w-[880px] flex-1 px-4 py-10">
-        <header className="mb-6 flex items-center gap-2.5">
-          <Crown
-            weight="fill"
-            className={viewer?.isPro ? "size-5 text-accent" : "size-5 text-muted"}
-            aria-hidden
-          />
-          <h1 className="text-lg font-semibold tracking-tight">elovate Pro</h1>
-        </header>
-        {viewer?.isPro && <ProNav />}
-        <div className="mt-8 min-w-0">{children}</div>
+        <ViewerThemeShell themeId={viewer?.pageThemeId}>
+          <header className="mb-6 text-2xl flex items-center gap-2.5">
+            <Image
+              src={icon}
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 shrink-0 rounded-[3px]"
+              priority
+            />
+            <div className="flex gap-1 ">
+              <BrandWordmark />
+              <h1 className="text-2xl font-bold tracking-tight accent-glow text-accent">
+                Pro
+              </h1>
+            </div>
+          </header>
+          {viewer?.isPro && <ProNav />}
+          <div className="mt-8 min-w-0">{children}</div>
+        </ViewerThemeShell>
       </main>
       <SiteFooter />
     </div>
