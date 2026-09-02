@@ -31,7 +31,6 @@ export async function CalcPage({ mode }: { mode: Mode }) {
       : seedMetrics;
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const ladder = live?.ladder ?? getBoardLadder(mode, season.id);
-  const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
   const viewer = await getViewerProfile();
   const calcHref = `/${mode}/calc`;
 
@@ -66,10 +65,7 @@ export async function CalcPage({ mode }: { mode: Mode }) {
           />
         </ViewerThemeShell>
       </main>
-      <SiteFooter
-        calcHref={calcHref}
-        capturedAt={capturedAt}
-      />
+      <SiteFooter />
     </div>
   );
 }
