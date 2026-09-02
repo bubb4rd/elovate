@@ -23,12 +23,13 @@ function nearestAtLeastHoursAgo(
 export function avgPerDayFromCutoffs(
   snapshots: StoredCutoff[],
   live: { fetchedAt: string; cutoffSr: number },
+  anchor: StoredCutoff | null = null,
 ): { avgPerDaySeason: number | null; avgPerDay7d: number | null } {
-  if (snapshots.length === 0) {
+  const first = anchor ?? snapshots[0];
+  if (!first) {
     return { avgPerDaySeason: null, avgPerDay7d: null };
   }
 
-  const first = snapshots[0]!;
   const seasonDays = daysBetween(first.capturedAt, live.fetchedAt);
   const avgPerDaySeason = (live.cutoffSr - first.cutoffSr) / seasonDays;
 
