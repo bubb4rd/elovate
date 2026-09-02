@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Crown, Lock } from "@phosphor-icons/react";
+import { Check, Crown, Lock } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import { registerHref } from "@/lib/auth/paths";
@@ -29,31 +29,30 @@ const FREE_FEATURES = [
   "Session share cards",
 ];
 
-const PRO_FEATURES: { label: string; live?: boolean }[] = [
-  { label: "Teammate breakdown", live: true },
-  { label: "Placement efficiency" },
-  { label: "Trend & goal projection" },
-  { label: "SR-to-T250 personal tracker" },
-  { label: "Unlimited history, every season" },
-  { label: "Pro-only profile themes + Pro badge" },
-  { label: "elovate Desktop beta — priority access" },
+const PRO_FEATURES = [
+  "Teammate breakdown",
+  "Placement efficiency",
+  "Trend & goal projection",
+  "SR-to-T250 personal tracker",
+  "Unlimited history, every season",
+  "Pro-only profile themes + Pro badge",
+  "elovate Desktop beta — priority access",
 ];
 
-function Feature({ children, live }: { children: React.ReactNode; live?: boolean }) {
+function Feature({
+  children,
+  pro,
+}: {
+  children: React.ReactNode;
+  pro?: boolean;
+}) {
   return (
     <li className="flex items-start gap-2.5 text-sm">
-      <CheckCircle
-        weight="fill"
-        className={cn("mt-0.5 size-4 shrink-0", live ? "text-accent" : "text-muted")}
+      <Check
+        weight="bold"
+        className={cn("mt-0.5 size-4 shrink-0", pro ? "text-accent" : "text-muted")}
       />
-      <span className="text-foreground">
-        {children}
-        {live && (
-          <span className="ml-2 rounded-[4px] border border-accent/30 px-1 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-accent">
-            Live
-          </span>
-        )}
-      </span>
+      <span className={pro ? "text-accent" : "text-foreground"}>{children}</span>
     </li>
   );
 }
@@ -144,8 +143,8 @@ export function ProPricing({ signedIn }: { signedIn: boolean }) {
           </p>
           <ul className="mt-5 flex-1 space-y-2.5">
             {PRO_FEATURES.map((f) => (
-              <Feature key={f.label} live={f.live}>
-                {f.label}
+              <Feature key={f} pro>
+                {f}
               </Feature>
             ))}
           </ul>
