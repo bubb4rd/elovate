@@ -1,6 +1,5 @@
 "use client";
 
-import { Bell, ChartLineUp } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -43,7 +42,6 @@ export function NotificationSettings({ settings }: { settings: AccountSettings }
     <div className="space-y-6">
       <SettingsSection description="Email alerts for your account. More channels coming soon.">
         <SettingsRow
-          icon={<ChartLineUp weight="bold" className="size-4" aria-hidden />}
           label="Cutoff updates"
           hint="When the live T250 cutoff moves significantly."
         >
@@ -57,7 +55,6 @@ export function NotificationSettings({ settings }: { settings: AccountSettings }
           />
         </SettingsRow>
         <SettingsRow
-          icon={<Bell weight="bold" className="size-4" aria-hidden />}
           label="Climb reminders"
           hint="Periodic nudges based on your climb goals."
         >
