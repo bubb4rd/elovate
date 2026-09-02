@@ -1,5 +1,7 @@
 import { cache } from "react";
-import { getViewerProfile } from "@/lib/auth/viewer";
+import { redirect } from "next/navigation";
+import { loginHref, onboardingHref } from "@/lib/auth/paths";
+import { getViewerProfile, type ViewerProfile } from "@/lib/auth/viewer";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isProActive, NOT_PRO, type Entitlement } from "./entitlement";
 
@@ -34,3 +36,15 @@ export const getViewerEntitlement = cache(async (): Promise<Entitlement> => {
   if (!viewer) return NOT_PRO;
   return { isPro: viewer.isPro, proUntil: viewer.proUntil };
 });
+
+/**
+ * Guard for `/pro/*` pages. Requires a signed-in, onboarded viewer — but NOT a
+ * Pro subscription: non-Pro users reach the suite and see the blurred teasers
+ * (this is the upsell surface). Returns the viewer for the page to use.
+ */
+export async function requireProPage(nextPath: string): Promise<ViewerProfile> {
+  const viewer = await getViewerProfile();
+  if (!viewer) redirect(loginHref(nextPath));
+  if (!viewer.onboardingComplete) redirect(onboardingHref(nextPath));
+  return viewer;
+}
