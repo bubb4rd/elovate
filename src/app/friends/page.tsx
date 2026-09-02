@@ -3,13 +3,13 @@ import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { getViewerProfile } from "@/lib/auth/viewer";
+import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getActiveSeason,
   getBoardMetrics,
   getLiveWzBoard,
   listSeasons,
-  overlayLiveMetrics,
 } from "@/lib/data/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
@@ -25,13 +25,13 @@ export default async function FriendsPage() {
   const seedMetrics = getBoardMetrics("wz", season.id);
   const live = await getLiveWzBoard();
   const history = await liveWzHistoryFor(live, season.id);
-  const metrics =
-    live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
-          avgPerDaySeason: history.avgPerDaySeason,
-          avgPerDay7d: history.avgPerDay7d,
-        })
-      : seedMetrics;
+  const { metrics } = await getBoardCutoff({
+    mode: "wz",
+    seasonId: season.id,
+    live,
+    seed: seedMetrics,
+    history,
+  });
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
 
   return (

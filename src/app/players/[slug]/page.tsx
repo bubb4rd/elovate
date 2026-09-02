@@ -2,13 +2,13 @@ import { ProfilePageContent } from "@/components/profile/profile-page-content";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { getViewerProfile } from "@/lib/auth/viewer";
+import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getActiveSeason,
   getBoardMetrics,
   getLiveWzBoard,
   listSeasons,
-  overlayLiveMetrics,
 } from "@/lib/data/queries";
 import { getFriendStatusServer } from "@/lib/friends/server";
 import { getProfile } from "@/lib/profile/queries";
@@ -62,13 +62,13 @@ export default async function PlayerPage({
   const seedMetrics = getBoardMetrics(profile.mode, season.id);
   const live = profile.mode === "wz" ? await getLiveWzBoard() : null;
   const history = await liveWzHistoryFor(live, season.id);
-  const metrics =
-    live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
-          avgPerDaySeason: history.avgPerDaySeason,
-          avgPerDay7d: history.avgPerDay7d,
-        })
-      : seedMetrics;
+  const { metrics } = await getBoardCutoff({
+    mode: profile.mode,
+    seasonId: season.id,
+    live,
+    seed: seedMetrics,
+    history,
+  });
   const cutoffSr = metrics?.cutoffSr ?? profile.cutoffSr ?? IRIDESCENT_SR;
   const profileWithLive = { ...profile, cutoffSr };
 

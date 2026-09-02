@@ -88,6 +88,37 @@ export async function getSeasonAnchorCutoff(
   };
 }
 
+/**
+ * The single newest snapshot for the season — used as the "last recorded
+ * cutoff" when the live board is unavailable, so we never fall back to
+ * `generate.ts` seed numbers. Descending + `limit(1)`, so it is unaffected by
+ * table growth (WZ-12).
+ */
+export async function getLatestStoredCutoff(
+  mode: Mode,
+  seasonId: string,
+): Promise<StoredCutoff | null> {
+  const supabase = createAnonSupabaseClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("snapshots")
+    .select("captured_at, cutoff_sr, rank1_sr")
+    .eq("mode", mode)
+    .eq("season_id", seasonId)
+    .order("captured_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    capturedAt: data.captured_at as string,
+    cutoffSr: data.cutoff_sr as number,
+    rank1Sr: data.rank1_sr as number,
+  };
+}
+
 export async function liveWzHistoryFor(
   live: LiveWzBoard | null,
   seasonId: string,

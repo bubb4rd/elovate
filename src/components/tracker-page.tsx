@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { getViewerProfile } from "@/lib/auth/viewer";
+import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getBoard,
@@ -16,8 +17,8 @@ import {
   getSeason,
   isLiveWzBoard,
   listSeasons,
-  overlayLiveMetrics,
 } from "@/lib/data/queries";
+import { snapshotAge } from "@/lib/format";
 import type { Mode } from "@/lib/data/types";
 
 export async function TrackerPage({
@@ -35,38 +36,49 @@ export async function TrackerPage({
   const seedSeries = getCutoffSeries(mode, seasonId);
   const seasons = listSeasons();
   const modeLabel = mode === "wz" ? "Warzone" : "Multiplayer";
-  const live =
-    season && isLiveWzBoard(mode, seasonId) ? await getLiveWzBoard() : null;
+  const isLiveBoard = season != null && isLiveWzBoard(mode, seasonId);
+  const live = isLiveBoard ? await getLiveWzBoard() : null;
   const history = await liveWzHistoryFor(live, seasonId);
-  const liveOnlySeries =
-    live != null
+  const { resolved, metrics } = await getBoardCutoff({
+    mode,
+    seasonId,
+    live,
+    seed: seedMetrics,
+    history,
+  });
+  const pointSeries =
+    resolved.source === "live" && resolved.live
       ? [
           {
-            capturedAt: live.fetchedAt,
-            cutoffSr: live.cutoffSr,
-            rank1Sr: live.rank1Sr,
+            capturedAt: resolved.live.fetchedAt,
+            cutoffSr: resolved.live.cutoffSr,
+            rank1Sr: resolved.live.rank1Sr,
             deltaCutoff: null,
           },
         ]
-      : [];
+      : resolved.source === "stored" && resolved.stored
+        ? [
+            {
+              capturedAt: resolved.stored.capturedAt,
+              cutoffSr: resolved.stored.cutoffSr,
+              rank1Sr: resolved.stored.rank1Sr,
+              deltaCutoff: null,
+            },
+          ]
+        : [];
   const series =
     history.series.length > 0
       ? history.series
-      : live
-        ? liveOnlySeries
+      : isLiveBoard
+        ? pointSeries
         : seedSeries;
-  const rows = live?.rows ?? board?.rows;
-  const metrics =
-    live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
-          avgPerDaySeason: history.avgPerDaySeason,
-          avgPerDay7d: history.avgPerDay7d,
-        })
-      : seedMetrics;
+  // WZ-12: never fall back to db() seed rows for the active WZ season — only
+  // the live roster, or nothing. Archived seasons keep their seed rows.
+  const rows = live?.rows ?? (isLiveBoard ? null : board?.rows);
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
   const viewer = await getViewerProfile();
 
-  if (!season || !board || !metrics || !rows) {
+  if (!season || !board || !metrics) {
     return (
       <div className="flex min-h-[100dvh] flex-col">
         <SiteNav mode={mode} seasons={seasons} seasonId={seasonId} tool="board" />
@@ -98,9 +110,21 @@ export async function TrackerPage({
             </h1>
             <HeadingMetrics metrics={metrics} showCutoff={false} />
           </div>
+          {resolved.source === "stored" ? (
+            <p className="mt-2 shrink-0 text-sm text-muted">
+              Live standings unavailable. Showing the last recorded cutoff from{" "}
+              {snapshotAge(metrics.capturedAt)} ago.
+            </p>
+          ) : null}
           <div className="mt-4 grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:grid-rows-1 lg:gap-10 lg:overflow-hidden">
             <div className="order-2 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
-              <BoardTable rows={rows} linkPlayers={false} />
+              {rows ? (
+                <BoardTable rows={rows} linkPlayers={false} />
+              ) : (
+                <p className="text-sm text-muted">
+                  The player standings return when the live feed is back.
+                </p>
+              )}
             </div>
 
             <aside className="order-1 h-52 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">

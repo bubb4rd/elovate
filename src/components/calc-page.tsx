@@ -4,6 +4,7 @@ import { getViewerProfile } from "@/lib/auth/viewer";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { SrCalculator } from "@/components/sr-calculator";
+import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
   getActiveSeason,
@@ -11,7 +12,6 @@ import {
   getBoardMetrics,
   getLiveWzBoard,
   listSeasons,
-  overlayLiveMetrics,
 } from "@/lib/data/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Mode } from "@/lib/data/types";
@@ -22,13 +22,13 @@ export async function CalcPage({ mode }: { mode: Mode }) {
   const seasons = listSeasons();
   const live = mode === "wz" ? await getLiveWzBoard() : null;
   const history = await liveWzHistoryFor(live, season.id);
-  const metrics =
-    live && seedMetrics
-      ? overlayLiveMetrics(seedMetrics, live, history.change24h, {
-          avgPerDaySeason: history.avgPerDaySeason,
-          avgPerDay7d: history.avgPerDay7d,
-        })
-      : seedMetrics;
+  const { metrics } = await getBoardCutoff({
+    mode,
+    seasonId: season.id,
+    live,
+    seed: seedMetrics,
+    history,
+  });
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const ladder = live?.ladder ?? getBoardLadder(mode, season.id);
   const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
