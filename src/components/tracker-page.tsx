@@ -72,7 +72,6 @@ export async function TrackerPage({
         ? pointSeries
         : seedSeries;
   const rows = resolveBoardRows(live?.rows, board?.rows, isLiveBoard);
-  const capturedAt = live?.fetchedAt ?? metrics?.capturedAt;
   const viewer = await getViewerProfile();
 
   if (!season || !board || !metrics) {
@@ -82,7 +81,7 @@ export async function TrackerPage({
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-7 py-10">
           <p>No snapshot for this season yet.</p>
         </main>
-        <SiteFooter calcHref={`/${mode}/calc`} className="px-7" />
+        <SiteFooter className="px-7" />
       </div>
     );
   }
@@ -134,11 +133,7 @@ export async function TrackerPage({
           </div>
         </ViewerThemeShell>
       </main>
-      <SiteFooter
-        calcHref={`/${mode}/calc`}
-        capturedAt={capturedAt ?? metrics.capturedAt}
-        className="px-7 py-8 lg:py-3"
-      />
+      <SiteFooter className="px-7 py-8 lg:py-3" />
     </div>
   );
 }
