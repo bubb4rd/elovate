@@ -26,13 +26,24 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
   const id = claimsData?.claims?.sub;
   if (typeof id !== "string") return null;
 
-  const { data } = await supabase
+  const BASE_COLUMNS =
+    "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id";
+
+  let { data, error } = await supabase
     .from("profiles")
-    .select(
-      "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id, pro_until",
-    )
+    .select(`${BASE_COLUMNS}, pro_until`)
     .eq("id", id)
     .maybeSingle();
+
+  // The PREM-00 `pro_until` migration may not be deployed yet. A missing column
+  // (Postgres 42703) must not break identity/auth — refetch without it.
+  if (error?.code === "42703") {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .select(BASE_COLUMNS)
+      .eq("id", id)
+      .maybeSingle());
+  }
 
   if (!data) {
     return {
@@ -48,7 +59,7 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
     };
   }
 
-  const proUntil = data.pro_until ?? null;
+  const proUntil = "pro_until" in data ? (data.pro_until ?? null) : null;
 
   const pageThemeId: ProfilePageThemeId = isProfilePageThemeId(data.page_theme_id)
     ? data.page_theme_id
