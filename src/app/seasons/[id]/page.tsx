@@ -53,7 +53,7 @@ export default async function SeasonArchive({
         <h2 className="text-lg font-semibold">Multiplayer</h2>
         <p className="py-4 text-muted">elovate Multiplayer coming soon.</p>
       </main>
-      <SiteFooter capturedAt={wz?.capturedAt} />
+      <SiteFooter />
     </div>
   );
 }

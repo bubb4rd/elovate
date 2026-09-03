@@ -28,7 +28,6 @@ export default async function Home() {
     history,
   });
   const seasons = listSeasons();
-  const capturedAt = live?.fetchedAt ?? wz?.capturedAt ?? mp?.capturedAt;
   const dailySeries = history.change24h != null ? history.series : [];
 
   return (
@@ -60,7 +59,7 @@ export default async function Home() {
       </section>
       <ModePick mp={mp} wz={wz} />
       <DesktopHomeTeaser />
-      <SiteFooter capturedAt={capturedAt} />
+      <SiteFooter />
     </div>
   );
 }
