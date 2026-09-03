@@ -15,7 +15,7 @@ export function HomeSignalsMarquee() {
     >
       <div className="mx-auto max-w-[1400px] px-4 text-center">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">
-          The climb
+          Every signal
         </p>
         <p className="mx-auto mt-2 max-w-prose text-base text-muted">
           Free tracks where you stand. Pro tells you what to do about it.
