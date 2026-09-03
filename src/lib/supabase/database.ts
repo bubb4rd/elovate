@@ -19,6 +19,8 @@ export type ProfileRow = {
   onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
+  /** elovate Pro expiry (PREM-00). Service-role writes only — absent from Insert/Update. */
+  pro_until: string | null;
 };
 
 export type ProfileGrantRow = {

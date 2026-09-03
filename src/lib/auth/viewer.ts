@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isProActive } from "@/lib/premium/entitlement";
 import { avatarOrDefault } from "@/lib/profile/avatar";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isProfilePageThemeId, type ProfilePageThemeId } from "@/lib/profile/themes";
@@ -11,6 +12,10 @@ export type ViewerProfile = {
   currentSr: number;
   onboardingComplete: boolean;
   pageThemeId: ProfilePageThemeId;
+  /** True while `proUntil` is in the future. */
+  isPro: boolean;
+  /** ISO timestamp elovate Pro access lapses, or null if never granted. */
+  proUntil: string | null;
 };
 
 export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> => {
@@ -21,13 +26,24 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
   const id = claimsData?.claims?.sub;
   if (typeof id !== "string") return null;
 
-  const { data } = await supabase
+  const BASE_COLUMNS =
+    "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id";
+
+  let { data, error } = await supabase
     .from("profiles")
-    .select(
-      "id, slug, display_name, avatar_url, current_sr, onboarding_completed_at, page_theme_id",
-    )
+    .select(`${BASE_COLUMNS}, pro_until`)
     .eq("id", id)
     .maybeSingle();
+
+  // The PREM-00 `pro_until` migration may not be deployed yet. A missing column
+  // (Postgres 42703) must not break identity/auth — refetch without it.
+  if (error?.code === "42703") {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .select(BASE_COLUMNS)
+      .eq("id", id)
+      .maybeSingle());
+  }
 
   if (!data) {
     return {
@@ -38,8 +54,12 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
       currentSr: 0,
       onboardingComplete: false,
       pageThemeId: "gold",
+      isPro: false,
+      proUntil: null,
     };
   }
+
+  const proUntil = "pro_until" in data ? (data.pro_until ?? null) : null;
 
   const pageThemeId: ProfilePageThemeId = isProfilePageThemeId(data.page_theme_id)
     ? data.page_theme_id
@@ -53,6 +73,8 @@ export const getViewerProfile = cache(async (): Promise<ViewerProfile | null> =>
     currentSr: typeof data.current_sr === "number" ? data.current_sr : 0,
     onboardingComplete: data.onboarding_completed_at != null,
     pageThemeId,
+    isPro: isProActive(proUntil),
+    proUntil,
   };
 });
 
