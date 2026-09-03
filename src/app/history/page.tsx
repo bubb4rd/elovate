@@ -1,5 +1,4 @@
 import { HistoryPageContent } from "@/components/history/history-page-content";
-import { TeammateBreakdownSection } from "@/components/premium/teammate-breakdown-section";
 import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -47,11 +46,6 @@ export default async function HistoryPage() {
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-7">
         <ViewerThemeShell themeId={viewer?.pageThemeId}>
-          {viewer && (
-            <div className="mb-8">
-              <TeammateBreakdownSection />
-            </div>
-          )}
           <HistoryPageContent signedIn={Boolean(viewer)} />
         </ViewerThemeShell>
       </main>

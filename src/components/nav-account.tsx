@@ -3,6 +3,7 @@
 import {
   CaretDown,
   ClockCounterClockwise,
+  Crown,
   GearSix,
   List,
   SignIn,
@@ -186,6 +187,22 @@ export function NavAccount({
             onSelect={closeMenu}
           >
             Profile
+          </MenuLink>
+          <MenuLink
+            href="/pro"
+            active={pathname.startsWith("/pro")}
+            icon={
+              <Crown
+                weight="fill"
+                className={cn(
+                  "size-3.5",
+                  viewer.isPro ? "text-accent" : undefined,
+                )}
+              />
+            }
+            onSelect={closeMenu}
+          >
+            Pro
           </MenuLink>
           <MenuLink
             href="/history"
