@@ -113,34 +113,38 @@ export function TrendProjectionDemoCard({ index }: { index?: number }) {
   return (
     <ProFeatureCard
       index={index}
+      layout="split"
       title="Trend & goal projection"
       blurb="Your SR pace, projected to a date for every goal."
     >
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="numeric text-2xl font-semibold leading-none text-accent">
-            {pace > 0 ? "+" : ""}
-            {pace}
-            <span className="text-sm font-medium text-muted"> SR/day</span>
-          </p>
-          <p className="mt-1 text-xs text-muted">last 30 days</p>
-        </div>
-        {nextGoal && (
-          <div className="text-right">
-            <p className="numeric text-2xl font-semibold leading-none text-foreground">
-              {fmtDate(nextGoal.etaMs!)}
+      <div className="space-y-2">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="numeric text-xl font-semibold leading-none text-accent">
+              {pace > 0 ? "+" : ""}
+              {pace}
+              <span className="text-xs font-medium text-muted"> SR/day</span>
             </p>
-            <p className="mt-1 text-xs text-muted">{nextGoal.label} at this pace</p>
+            <p className="mt-1 text-xs text-muted">last 30 days</p>
           </div>
-        )}
+          {nextGoal && (
+            <div className="text-right">
+              <p className="numeric text-xl font-semibold leading-none text-foreground">
+                {fmtDate(nextGoal.etaMs!)}
+              </p>
+              <p className="mt-1 text-xs text-muted">{nextGoal.label}</p>
+            </div>
+          )}
+        </div>
+        <TrendChart
+          days={trendWindow.days}
+          projection={trendWindow.projection}
+          goals={goals}
+          callout={callout}
+          compact
+          height={112}
+        />
       </div>
-      <TrendChart
-        days={trendWindow.days}
-        projection={trendWindow.projection}
-        goals={goals}
-        callout={callout}
-        compact
-      />
     </ProFeatureCard>
   );
 }

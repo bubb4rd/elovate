@@ -106,9 +106,9 @@ function ArcGauge({
   const clamped = Math.max(0, Math.min(1, pct));
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 120 60" className="w-full max-w-[190px]">
+      <svg viewBox="0 0 120 58" className="w-full max-w-[168px]">
         <path
-          d="M8 56 A 52 52 0 0 1 112 56"
+          d="M8 54 A 52 52 0 0 1 112 54"
           fill="none"
           stroke="var(--border)"
           strokeWidth="9"
@@ -116,7 +116,7 @@ function ArcGauge({
           pathLength={1}
         />
         <path
-          d="M8 56 A 52 52 0 0 1 112 56"
+          d="M8 54 A 52 52 0 0 1 112 54"
           fill="none"
           stroke="var(--accent)"
           strokeWidth="9"
@@ -126,7 +126,7 @@ function ArcGauge({
         />
         <text
           x="60"
-          y="50"
+          y="48"
           textAnchor="middle"
           className="numeric fill-foreground"
           style={{ fontSize: "17px", fontWeight: 700 }}
@@ -134,8 +134,8 @@ function ArcGauge({
           {value}
         </text>
       </svg>
-      <p className="numeric -mt-1 text-xs font-medium text-muted">{unit}</p>
-      <p className="mt-1 text-[11px] text-muted">{caption}</p>
+      <p className="numeric -mt-0.5 text-xs font-medium text-muted">{unit}</p>
+      <p className="mt-0.5 text-[11px] text-muted">{caption}</p>
     </div>
   );
 }
@@ -155,34 +155,54 @@ export function SrToT250Preview({ index }: PreviewProps) {
 
 // --- Unlimited history ---------------------------------------------------
 
-const SEASON_BARS = [38, 52, 45, 68, 60, 82];
+/** Games logged per season. The two most recent sit inside the free window. */
+const HISTORY_SEASONS: { label: string; games: number }[] = [
+  { label: "S1", games: 210 },
+  { label: "S2", games: 340 },
+  { label: "S3", games: 290 },
+  { label: "S4", games: 415 },
+  { label: "S5", games: 360 },
+  { label: "S6", games: 480 },
+];
+const HISTORY_MAX = Math.max(...HISTORY_SEASONS.map((s) => s.games));
 
 export function UnlimitedHistoryPreview({ index }: PreviewProps) {
   return (
     <ProFeatureCard
       index={index}
-      layout="split"
       title="Unlimited history"
       blurb="Every match from every season, not just your last 500."
     >
-      <div className="w-full max-w-[220px]">
-        <div className="relative flex h-24 items-end gap-2">
-          {SEASON_BARS.map((height, i) => (
-            <span
-              key={i}
-              className="flex-1 rounded-t-[3px] bg-accent/80"
-              style={{ height: `${height}%` }}
-            />
-          ))}
-          <span
-            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted"
-            style={{ bottom: "26%" }}
-          />
-        </div>
-        <div className="mt-1.5 flex justify-between text-[10px] text-muted">
-          <span>Free: last 500</span>
-          <span>Pro: all seasons</span>
-        </div>
+      <p className="text-[11px] text-muted">Games logged per season</p>
+      <div className="flex h-28 items-end gap-2">
+        {HISTORY_SEASONS.map((season, i) => {
+          const inFreeWindow = i >= HISTORY_SEASONS.length - 2;
+          return (
+            <div
+              key={season.label}
+              className="flex flex-1 flex-col items-center gap-1"
+            >
+              <span
+                className={cn(
+                  "w-full rounded-t-[3px]",
+                  inFreeWindow ? "bg-accent" : "bg-accent/30",
+                )}
+                style={{ height: `${Math.round((season.games / HISTORY_MAX) * 100)}%` }}
+              />
+              <span className="numeric text-[10px] text-muted">{season.label}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[10px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block size-2 rounded-[2px] bg-accent/30" />
+          Pro: every season
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block size-2 rounded-[2px] bg-accent" />
+          Free: recent only
+        </span>
       </div>
     </ProFeatureCard>
   );

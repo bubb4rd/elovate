@@ -32,12 +32,12 @@ export function ProFeatureShowcase() {
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-3">
           <TeammateBreakdownPreview index={0} />
-          <TrendProjectionDemoCard index={1} />
+          <UnlimitedHistoryPreview index={1} />
           <PlacementEfficiencyPreview index={2} />
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <SrToT250Preview index={3} />
-          <UnlimitedHistoryPreview index={4} />
+          <TrendProjectionDemoCard index={4} />
         </div>
       </div>
     </section>

@@ -47,11 +47,7 @@ export function ProFeatureCard({
         <p className="text-sm text-muted">{blurb}</p>
       </div>
       <div
-        className={cn(
-          layout === "split"
-            ? "flex justify-center sm:flex-1"
-            : "space-y-3",
-        )}
+        className={cn(layout === "split" ? "min-w-0 sm:flex-1" : "space-y-3")}
       >
         {children}
       </div>

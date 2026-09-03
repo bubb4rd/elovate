@@ -114,7 +114,7 @@ export function TrendChart({
           data={data}
           margin={
             compact
-              ? { top: 14, right: 10, bottom: 6, left: 6 }
+              ? { top: 10, right: 10, bottom: 4, left: 6 }
               : { top: 8, right: 12, bottom: 4, left: 4 }
           }
         >
