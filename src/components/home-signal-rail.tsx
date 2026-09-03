@@ -54,11 +54,11 @@ function SignalChip({ signal }: { signal: HomeSignal }) {
   return (
     <li className="panel-elevated flex h-[104px] w-[244px] shrink-0 snap-start flex-col justify-between px-4 py-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="truncate text-xs font-medium text-muted">
+        <span className="truncate text-md font-medium text-muted">
           {signal.label}
         </span>
         {pro ? (
-          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-accent">
+          <span className="shrink-0 text-sm font-semibold uppercase tracking-wide text-accent">
             Pro
           </span>
         ) : null}
@@ -67,7 +67,7 @@ function SignalChip({ signal }: { signal: HomeSignal }) {
         <span className={cn("numeric text-2xl leading-none", valueClass)}>
           {signal.value}
         </span>
-        <span className="truncate text-[11px] text-muted">{signal.support}</span>
+        <span className="truncate text-sm text-muted">{signal.support}</span>
         {signal.spark ? (
           <span className="ml-auto">
             <Spark points={signal.spark} accent={signal.valueTone === "accent"} />
@@ -77,6 +77,14 @@ function SignalChip({ signal }: { signal: HomeSignal }) {
     </li>
   );
 }
+
+// Chip footprint: 244px wide + the 16px flex gap.
+const CHIP_STRIDE = 260;
+// One repeating unit must out-run the widest realistic viewport, or the track
+// runs dry before it loops on large screens.
+const MIN_UNIT_PX = 3000;
+// Constant scroll speed regardless of how many chips the unit ended up holding.
+const PX_PER_SECOND = 42;
 
 export function SignalRail({
   id,
@@ -89,7 +97,13 @@ export function SignalRail({
   direction: "left" | "right";
   railLabel: string;
 }) {
-  const loop = [...signals, ...signals];
+  const reps = Math.max(
+    2,
+    Math.ceil(MIN_UNIT_PX / (signals.length * CHIP_STRIDE)),
+  );
+  const unit = Array.from({ length: reps }, () => signals).flat();
+  const loop = [...unit, ...unit];
+  const durationSec = Math.round((unit.length * CHIP_STRIDE) / PX_PER_SECOND);
 
   return (
     <div
@@ -113,12 +127,14 @@ export function SignalRail({
       </ul>
       <ul
         aria-hidden
+        style={{ animationDuration: `${durationSec}s` }}
         className={cn(
-          "flex w-max gap-4",
+          // pr-4 adds the trailing gap so a -50% shift lands seamlessly.
+          "flex w-max gap-4 pr-4",
           "group-hover:[animation-play-state:paused] group-focus:[animation-play-state:paused]",
           direction === "left"
-            ? "motion-safe:[animation:marquee-left_52s_linear_infinite]"
-            : "motion-safe:[animation:marquee-right_52s_linear_infinite]",
+            ? "motion-safe:[animation:marquee-left_1s_linear_infinite]"
+            : "motion-safe:[animation:marquee-right_1s_linear_infinite]",
         )}
       >
         {loop.map((signal, i) => (

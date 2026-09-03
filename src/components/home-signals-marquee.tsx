@@ -14,7 +14,7 @@ export function HomeSignalsMarquee() {
       className="overflow-hidden border-t border-border py-14 md:py-20"
     >
       <div className="mx-auto max-w-[1400px] px-4 text-center">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">
+        <p className="text-accent text-xs font-medium uppercase tracking-[0.16em]">
           Every signal
         </p>
         <p className="mx-auto mt-2 max-w-prose text-base text-muted">

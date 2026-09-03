@@ -72,7 +72,7 @@ export const PRO_SIGNALS: HomeSignal[] = [
   {
     id: "teammate",
     kind: "pro",
-    label: "Teammate",
+    label: "Teammates",
     value: "+214",
     valueTone: "accent",
     support: "with Bode",
@@ -98,10 +98,10 @@ export const PRO_SIGNALS: HomeSignal[] = [
   {
     id: "t250",
     kind: "pro",
-    label: "SR to T250",
-    value: "310",
-    valueTone: "plain",
-    support: "to cutoff",
+    label: "T250 projections",
+    value: "27,114",
+    valueTone: "accent",
+    support: "projected cutoff",
   },
   {
     id: "unlimited",
