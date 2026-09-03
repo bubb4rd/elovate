@@ -1,8 +1,9 @@
 import { CutoffNumeral } from "@/components/cutoff-numeral";
 import { DesktopHomeTeaser } from "@/components/desktop-home-teaser";
 import { HomeCutoffObject } from "@/components/home-cutoff-object";
-import { HomeElovateSection } from "@/components/home-elovate-section";
 import { HomeHeroCopy } from "@/components/home-hero-copy";
+import { HomeProCta } from "@/components/home-pro-cta";
+import { HomeSignalsMarquee } from "@/components/home-signals-marquee";
 import { ModePick } from "@/components/mode-pick";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -58,7 +59,8 @@ export default async function Home() {
         </div>
         <HomeHeroCopy />
       </section>
-      <HomeElovateSection />
+      <HomeSignalsMarquee />
+      <HomeProCta />
       <ModePick mp={mp} wz={wz} />
       <DesktopHomeTeaser />
       <SiteFooter />

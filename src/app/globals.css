@@ -169,6 +169,28 @@ body {
   }
 }
 
+/* Home signal marquee: two rails translating opposite ways. The track holds two
+   copies of the sequence, so -50% lands exactly on the loop point. Paused on
+   hover/focus by the rail; the reduced-motion fallback renders a static scroller
+   in JS instead of relying on these. */
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 .panel-elevated {
   border-radius: var(--radius);
   border: 1px solid var(--border);
