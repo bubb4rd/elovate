@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ProFeatureCard } from "./pro-feature-showcase";
+import { ProFeatureCard } from "./pro-feature-card";
 
 /**
  * Decorative `/pro` showcase cards for the launch Pro features that don't have a
@@ -11,6 +11,9 @@ import { ProFeatureCard } from "./pro-feature-showcase";
  * workstream ships its real demo it replaces the matching card here.
  */
 
+/** `index` positions the card in the showcase's staggered scroll-in. */
+type PreviewProps = { index?: number };
+
 // --- Teammate breakdown -----------------------------------------------------
 
 const SQUAD_ROWS: { name: string; net: number; share: number; neg?: boolean }[] = [
@@ -20,9 +23,10 @@ const SQUAD_ROWS: { name: string; net: number; share: number; neg?: boolean }[] 
   { name: "solo queue", net: -58, share: 0.36, neg: true },
 ];
 
-export function TeammateBreakdownPreview() {
+export function TeammateBreakdownPreview({ index }: PreviewProps) {
   return (
     <ProFeatureCard
+      index={index}
       title="Teammate breakdown"
       blurb="Win rate, SR/hour and net SR for every squad you run — and who to drop."
     >
@@ -59,9 +63,10 @@ export function TeammateBreakdownPreview() {
 
 // --- Placement efficiency --------------------------------------------------
 
-export function PlacementEfficiencyPreview() {
+export function PlacementEfficiencyPreview({ index }: PreviewProps) {
   return (
     <ProFeatureCard
+      index={index}
       title="Placement efficiency"
       blurb="Where your SR actually comes from — placement vs elims — plus cap loss."
     >
@@ -135,9 +140,10 @@ function ArcGauge({
   );
 }
 
-export function SrToT250Preview() {
+export function SrToT250Preview({ index }: PreviewProps) {
   return (
     <ProFeatureCard
+      index={index}
       layout="split"
       title="SR-to-T250 tracker"
       blurb="Your live gap to the cutoff, your pace against its pace, and a projected crossing date."
@@ -151,18 +157,19 @@ export function SrToT250Preview() {
 
 const SEASON_BARS = [38, 52, 45, 68, 60, 82];
 
-export function UnlimitedHistoryPreview() {
+export function UnlimitedHistoryPreview({ index }: PreviewProps) {
   return (
     <ProFeatureCard
+      index={index}
       layout="split"
       title="Unlimited history"
       blurb="Every match, every season — not just your last 500."
     >
       <div className="w-full max-w-[220px]">
         <div className="relative flex h-24 items-end gap-2">
-          {SEASON_BARS.map((height, index) => (
+          {SEASON_BARS.map((height, i) => (
             <span
-              key={index}
+              key={i}
               className="flex-1 rounded-t-[3px] bg-accent/80"
               style={{ height: `${height}%` }}
             />

@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 import {
   PlacementEfficiencyPreview,
   SrToT250Preview,
@@ -36,58 +34,15 @@ export function ProFeatureShowcase() {
 
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-3">
-          <TeammateBreakdownPreview />
-          <TrendProjectionDemoCard />
-          <PlacementEfficiencyPreview />
+          <TeammateBreakdownPreview index={0} />
+          <TrendProjectionDemoCard index={1} />
+          <PlacementEfficiencyPreview index={2} />
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <SrToT250Preview />
-          <UnlimitedHistoryPreview />
+          <SrToT250Preview index={3} />
+          <UnlimitedHistoryPreview index={4} />
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * One showcase card: an eyebrow row (title + "Sample" tag), a one-line blurb,
- * and a visual slot. `layout="split"` puts the visual beside the copy for the
- * wide bottom-row cards; the default stacks it underneath.
- */
-export function ProFeatureCard({
-  title,
-  blurb,
-  children,
-  layout = "stack",
-}: {
-  title: string;
-  blurb: string;
-  children: ReactNode;
-  layout?: "stack" | "split";
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 rounded-[14px] border border-border bg-surface/40 p-5",
-        layout === "split" && "sm:flex-row sm:items-center sm:gap-6",
-      )}
-    >
-      <div className={cn("space-y-1", layout === "split" && "sm:flex-1")}>
-        <div className="flex items-center gap-2">
-          <h3 className="text-base font-semibold text-foreground">{title}</h3>
-          <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
-            Sample
-          </span>
-        </div>
-        <p className="text-sm text-muted">{blurb}</p>
-      </div>
-      <div
-        className={cn(
-          layout === "split" && "flex justify-center sm:flex-1",
-        )}
-      >
-        {children}
-      </div>
-    </div>
   );
 }

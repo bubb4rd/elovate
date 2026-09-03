@@ -5,7 +5,7 @@ import {
 } from "@/lib/history";
 import { nowMs } from "@/lib/premium/clock";
 import { computeTrendProjection } from "@/lib/premium/trend-projection";
-import { ProFeatureCard } from "./pro-feature-showcase";
+import { ProFeatureCard } from "./pro-feature-card";
 import { TrendChart } from "./trend-chart";
 
 /**
@@ -81,7 +81,7 @@ function buildDemoDoc(now: number): { doc: HistoryDocument; currentSr: number } 
   };
 }
 
-export function TrendProjectionDemoCard() {
+export function TrendProjectionDemoCard({ index }: { index?: number }) {
   const now = nowMs();
   const { doc, currentSr } = buildDemoDoc(now);
 
@@ -101,6 +101,7 @@ export function TrendProjectionDemoCard() {
 
   return (
     <ProFeatureCard
+      index={index}
       title="Trend & goal projection"
       blurb="Your SR pace, projected forward to a hit date for every goal."
     >
