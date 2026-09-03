@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   },
   description:
     "Top 250 cutoff tracker for Ranked Multiplayer and Warzone. Cutoff SR, daily drift, full board.",
+  icons: {
+    // 180x180 mark for iOS "Add to Home Screen" / Web App — served as a static
+    // file so the href is a plain, well-known path.
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
