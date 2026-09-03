@@ -7,26 +7,22 @@ import { cn } from "@/lib/utils";
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 /**
- * One `/pro` showcase card: a title + one-line blurb and a visual slot.
- * `layout="split"` sets the visual beside the copy for the wide bottom-row
- * cards; the default stacks it underneath.
+ * Shared chrome for a `/pro` feature teaser: a quiet 6px cell (`--border`, no
+ * accent stroke) that fades/rises in the first time it scrolls into view,
+ * staggered by grid `index`. Skipped under `prefers-reduced-motion`.
  *
- * Fades/rises in the first time it scrolls into view (staggered by `index`) and
- * lifts its border + surface on hover. All of it is skipped under
- * `prefers-reduced-motion`.
+ * `bleed` drops the inner padding so a chart object can run to the edges; the
+ * default keeps a padded column for list / bar tiles. Each tile owns its own
+ * layout family inside.
  */
-export function ProFeatureCard({
-  title,
-  blurb,
+export function ProTeaserCard({
   children,
-  layout = "stack",
   index = 0,
+  bleed = false,
 }: {
-  title: string;
-  blurb: string;
   children: ReactNode;
-  layout?: "stack" | "split";
   index?: number;
+  bleed?: boolean;
 }) {
   const reduce = useReducedMotion();
 
@@ -37,48 +33,26 @@ export function ProFeatureCard({
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5, ease: EASE, delay: index * 0.06 }}
       className={cn(
-        "flex flex-col gap-4 rounded-[14px] border border-border bg-surface/40 p-5",
-        "transition-colors duration-300 hover:border-accent/40 hover:bg-surface/70",
-        layout === "split" && "sm:flex-row sm:items-center sm:gap-6",
+        "flex flex-col overflow-hidden rounded-[6px] border border-border bg-surface-elevated",
+        !bleed && "gap-3 p-4 sm:p-5",
       )}
     >
-      <div className={cn("space-y-1", layout === "split" && "sm:flex-1")}>
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-        <p className="text-sm text-muted">{blurb}</p>
-      </div>
-      <div
-        className={cn(layout === "split" ? "min-w-0 sm:flex-1" : "space-y-3")}
-      >
-        {children}
-      </div>
+      {children}
     </motion.div>
   );
 }
 
 /**
- * Unframed variant for a card that is mostly a chart object (the Trend teaser):
- * a quiet 6px cell that lets its content bleed to the edges. Same scroll-in as
- * `ProFeatureCard`, no hover accent, no inner padding — the child owns its
- * layout.
+ * The tile's feature name, rendered as a quiet caption with a `preview` marker
+ * (the tiles carry labeled sample data, not the viewer's own).
  */
-export function ProObjectCard({
-  children,
-  index = 0,
-}: {
-  children: ReactNode;
-  index?: number;
-}) {
-  const reduce = useReducedMotion();
-
+export function TeaserCaption({ children }: { children: ReactNode }) {
   return (
-    <motion.div
-      initial={reduce ? false : { opacity: 0, y: 16 }}
-      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.5, ease: EASE, delay: index * 0.06 }}
-      className="overflow-hidden rounded-[6px] border border-border bg-surface-elevated"
-    >
+    <p className="text-sm font-medium text-muted">
       {children}
-    </motion.div>
+      <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted/70">
+        preview
+      </span>
+    </p>
   );
 }

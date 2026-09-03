@@ -1,8 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import {
   Area,
   AreaChart,
@@ -10,9 +9,9 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  useCartesianScale,
 } from "recharts";
 import type { TrendDay } from "@/lib/premium/trend-projection";
+import { ChartHitAnnotation } from "./chart-hit-annotation";
 
 /**
  * The Trend teaser chart: solid observed SR with the home cutoff chart's
@@ -24,7 +23,6 @@ import type { TrendDay } from "@/lib/premium/trend-projection";
  * (`trend-chart.tsx`) is the dense version; this stays a single-idea object.
  */
 
-const EASE = [0.16, 1, 0.3, 1] as const;
 const DAY_MS = 86_400_000;
 
 export type TrendTeaserGoal = {
@@ -65,79 +63,6 @@ function buildRows(
   }
 
   return [...observed, ...projected];
-}
-
-function TrendHitAnnotation({
-  goal,
-  portalNode,
-  delay,
-}: {
-  goal: TrendTeaserGoal;
-  portalNode: HTMLElement | null;
-  /** Seconds to wait so the callout lands after the lines finish drawing. */
-  delay: number;
-}) {
-  const reduce = useReducedMotion();
-  const coords = useCartesianScale({ x: goal.hitMs, y: goal.sr });
-  const fade = reduce
-    ? { duration: 0 }
-    : { duration: 0.5, ease: EASE, delay };
-
-  if (
-    coords == null ||
-    !Number.isFinite(coords.x) ||
-    !Number.isFinite(coords.y)
-  ) {
-    return null;
-  }
-
-  const labelTop = Math.max(4, coords.y - 58);
-  const labelLeft = coords.x;
-  const lineEndY = labelTop + 38;
-
-  return (
-    <>
-      <motion.g
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={fade}
-      >
-        <line
-          x1={coords.x}
-          y1={coords.y}
-          x2={labelLeft - 22}
-          y2={lineEndY}
-          stroke="var(--accent)"
-          strokeWidth={1.25}
-          strokeOpacity={0.7}
-        />
-        <circle
-          cx={coords.x}
-          cy={coords.y}
-          r={4.5}
-          fill="var(--accent)"
-          stroke="var(--background)"
-          strokeWidth={2}
-        />
-      </motion.g>
-      {portalNode
-        ? createPortal(
-            <motion.div
-              className="pointer-events-none absolute pr-2 text-right"
-              style={{ top: labelTop, right: `calc(100% - ${labelLeft}px)` }}
-              initial={reduce ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={fade}
-            >
-              <p className="numeric accent-glow text-2xl font-semibold leading-none tracking-tight text-accent">
-                {goal.dateLabel}
-              </p>
-            </motion.div>,
-            portalNode,
-          )
-        : null}
-    </>
-  );
 }
 
 export function TrendTeaserChart({
@@ -244,8 +169,10 @@ export function TrendTeaserChart({
             animationDuration={reduce ? 0 : Math.round(drawMs * 0.7)}
             animationEasing="ease-out"
           />
-          <TrendHitAnnotation
-            goal={goal}
+          <ChartHitAnnotation
+            x={goal.hitMs}
+            y={goal.sr}
+            label={goal.dateLabel}
             portalNode={portal}
             delay={reduce ? 0 : (drawMs * 1.1) / 1000}
           />

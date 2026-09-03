@@ -6,7 +6,7 @@ import {
 import { formatDay } from "@/lib/format";
 import { nowMs } from "@/lib/premium/clock";
 import { computeTrendProjection } from "@/lib/premium/trend-projection";
-import { ProObjectCard } from "./pro-feature-card";
+import { ProTeaserCard, TeaserCaption } from "./pro-feature-card";
 import { TrendTeaserChart } from "./trend-teaser-chart";
 
 /**
@@ -113,14 +113,9 @@ export function TrendProjectionDemoCard({ index }: { index?: number }) {
   const insight = `At ${rate > 0 ? "+" : ""}${rate} SR/day, ${goal.label} on ${dateLabel}.`;
 
   return (
-    <ProObjectCard index={index}>
+    <ProTeaserCard index={index} bleed>
       <div className="px-4 pt-4">
-        <p className="text-sm font-medium text-muted">
-          Trend &amp; goal projection
-          <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted/70">
-            preview
-          </span>
-        </p>
+        <TeaserCaption>Trend &amp; goal projection</TeaserCaption>
         <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground">
           {headline}
         </p>
@@ -154,6 +149,6 @@ export function TrendProjectionDemoCard({ index }: { index?: number }) {
         <span className="sr-only">Preview data. </span>
         {insight}
       </p>
-    </ProObjectCard>
+    </ProTeaserCard>
   );
 }

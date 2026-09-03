@@ -1,20 +1,16 @@
-import {
-  PlacementEfficiencyPreview,
-  SrToT250Preview,
-  TeammateBreakdownPreview,
-  UnlimitedHistoryPreview,
-} from "./pro-feature-previews";
+import { PlacementEfficiencyPreview } from "./placement-efficiency-preview";
+import { SrToT250Preview } from "./sr-to-t250-preview";
+import { TeammateBreakdownPreview } from "./teammate-breakdown-preview";
 import { TrendProjectionDemoCard } from "./trend-demo-card";
+import { UnlimitedHistoryPreview } from "./unlimited-history-preview";
 
 /**
- * Public `/pro` "Pro features" section — a centered eyebrow + headline over an
- * asymmetric card grid (three across, then two wide), each card carrying a real
- * feature blurb and a sample-data visual.
+ * Public `/pro` "Pro features" section — a headline over a grid of teaser tiles.
  *
- * PREM-03 owns the shell and its own Trend card; the other launch features are
- * decorative previews from `pro-feature-previews.tsx` until each ships its own
- * demo. Cards use only elovate tokens, so the section follows the viewer's
- * profile theme like the rest of `/pro`.
+ * Each tile is a real mini of a Pro feature with labeled sample data, one
+ * insight line, and a different layout family (ranked list / composition bar /
+ * season strip / object charts). No accent card chrome; the section follows the
+ * viewer's profile theme like the rest of `/pro`.
  */
 export function ProFeatureShowcase() {
   return (
