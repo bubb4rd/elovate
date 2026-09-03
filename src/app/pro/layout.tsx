@@ -1,5 +1,4 @@
-import Image from "next/image";
-import icon from "@/app/icon.png";
+import { CrownSimpleIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 import { ProNav } from "@/components/premium/pro-nav";
 import { SiteFooter } from "@/components/site-footer";
@@ -14,7 +13,6 @@ import {
   listSeasons,
 } from "@/lib/data/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
-import { BrandWordmark } from "@/components/brand-wordmark";
 import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 
 export const metadata: Metadata = {
@@ -59,16 +57,8 @@ export default async function ProLayout({ children }: LayoutProps<"/pro">) {
       <main className="mx-auto w-full max-w-[880px] flex-1 px-4 py-10">
         <ViewerThemeShell themeId={viewer?.pageThemeId}>
           <header className="mb-6 text-2xl flex items-center gap-2.5">
-            <Image
-              src={icon}
-              alt=""
-              width={16}
-              height={16}
-              className="size-4 shrink-0 rounded-[3px]"
-              priority
-            />
+            <CrownSimpleIcon className="text-accent size-8 shrink-0" weight="fill" />
             <div className="flex gap-1 ">
-              <BrandWordmark />
               <h1 className="text-2xl font-bold tracking-tight accent-glow text-accent">
                 Pro
               </h1>
