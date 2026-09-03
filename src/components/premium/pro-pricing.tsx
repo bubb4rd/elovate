@@ -155,7 +155,7 @@ export function ProPricing({ signedIn }: { signedIn: boolean }) {
           variants={cardVariants}
           className="relative flex flex-col rounded-[12px] border border-accent/40 bg-accent/[0.04] p-5"
         >
-          <span className="absolute -top-2.5 right-4 rounded-[4px] bg-accent px-2 py-0.5 text-md font-semibold uppercase tracking-[0.1em] text-accent-fg">
+          <span className="absolute -top-2.5 right-4 rounded-[4px] bg-accent px-2 py-0.5 text-md font-semibold tracking-[0.1em] text-accent-fg">
             Recommended
           </span>
           <p className="flex items-center gap-1.5 text-lg font-semibold tracking-wide text-accent">

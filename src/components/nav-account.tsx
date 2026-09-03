@@ -3,7 +3,7 @@
 import {
   CaretDown,
   ClockCounterClockwise,
-  Crown,
+  CrownSimpleIcon,
   GearSix,
   List,
   SignIn,
@@ -192,7 +192,7 @@ export function NavAccount({
             href="/pro"
             active={pathname.startsWith("/pro")}
             icon={
-              <Crown
+              <CrownSimpleIcon
                 weight="fill"
                 className={cn(
                   "size-3.5",
