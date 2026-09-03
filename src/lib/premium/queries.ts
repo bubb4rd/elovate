@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isProActive, NOT_PRO, type Entitlement } from "./entitlement";
@@ -34,3 +35,13 @@ export const getViewerEntitlement = cache(async (): Promise<Entitlement> => {
   if (!viewer) return NOT_PRO;
   return { isPro: viewer.isPro, proUntil: viewer.proUntil };
 });
+
+/**
+ * Guard for `/pro/*` feature pages. Anyone without an active Pro subscription —
+ * signed-out, onboarding-incomplete, or lapsed — is sent to the public `/pro`
+ * pricing page. Hard gate, no teaser.
+ */
+export async function requireProPage(): Promise<void> {
+  const { isPro } = await getViewerEntitlement();
+  if (!isPro) redirect("/pro");
+}
