@@ -1,6 +1,6 @@
 "use client";
 
-import { UsersThree, type Icon } from "@phosphor-icons/react";
+import { TrendUp, UsersThree, type Icon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,6 +27,11 @@ const ITEMS: {
     href: "/pro/teammates",
     label: "Teammates",
     icon: UsersThree,
+  },
+  {
+    href: "/pro/trend",
+    label: "Trend",
+    icon: TrendUp,
   },
 ];
 
