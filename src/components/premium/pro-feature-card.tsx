@@ -54,3 +54,31 @@ export function ProFeatureCard({
     </motion.div>
   );
 }
+
+/**
+ * Unframed variant for a card that is mostly a chart object (the Trend teaser):
+ * a quiet 6px cell that lets its content bleed to the edges. Same scroll-in as
+ * `ProFeatureCard`, no hover accent, no inner padding — the child owns its
+ * layout.
+ */
+export function ProObjectCard({
+  children,
+  index = 0,
+}: {
+  children: ReactNode;
+  index?: number;
+}) {
+  const reduce = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 16 }}
+      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, ease: EASE, delay: index * 0.06 }}
+      className="overflow-hidden rounded-[6px] border border-border bg-surface-elevated"
+    >
+      {children}
+    </motion.div>
+  );
+}

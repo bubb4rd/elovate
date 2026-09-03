@@ -9,8 +9,6 @@ import {
   Line,
   ReferenceLine,
   ResponsiveContainer,
-  useXAxisScale,
-  useYAxisScale,
   XAxis,
   YAxis,
 } from "recharts";
@@ -35,61 +33,6 @@ type ChartRow = {
   band?: [number, number];
 };
 
-/** A single point annotation on the projection ray (e.g. the next-tier date). */
-export type TrendCallout = { t: number; sr: number; label: string };
-
-/**
- * A leader line from the point on the projection ray to a floating label, drawn
- * inside the plot so the callout reads as attached to the trend rather than
- * sitting off to the side. Uses recharts' scale hooks so it lines up with the
- * series exactly.
- */
-function TrendCalloutLayer({ callout }: { callout: TrendCallout }) {
-  const xScale = useXAxisScale();
-  const yScale = useYAxisScale();
-  if (!xScale || !yScale) return null;
-
-  const x = xScale(callout.t);
-  const y = yScale(callout.sr);
-  if (typeof x !== "number" || typeof y !== "number") return null;
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-
-  const elbowX = x - 12;
-  const elbowY = y + 16;
-  const textX = elbowX - 4;
-
-  return (
-    <g style={{ pointerEvents: "none" }}>
-      <path
-        d={`M${x},${y} L${elbowX},${elbowY} L${textX},${elbowY}`}
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth={1}
-      />
-      <circle
-        cx={x}
-        cy={y}
-        r={3}
-        fill="var(--accent)"
-        stroke="var(--background)"
-        strokeWidth={1.5}
-      />
-      <text
-        x={textX}
-        y={elbowY + 3.5}
-        textAnchor="end"
-        fill="var(--foreground)"
-        stroke="var(--background)"
-        strokeWidth={3}
-        paintOrder="stroke"
-        style={{ fontSize: 10, fontWeight: 600 }}
-      >
-        {callout.label}
-      </text>
-    </g>
-  );
-}
-
 function formatDayTick(value: number): string {
   return formatDay(new Date(value).toISOString());
 }
@@ -98,14 +41,12 @@ export function TrendChart({
   days,
   projection,
   goals,
-  callout = null,
   compact = false,
   height,
 }: {
   days: TrendDay[];
   projection: TrendRay | null;
   goals: { label: string; targetSr: number }[];
-  callout?: TrendCallout | null;
   compact?: boolean;
   height?: number;
 }) {
@@ -241,7 +182,6 @@ export function TrendChart({
             isAnimationActive={!reduce}
             connectNulls
           />
-          {callout && <TrendCalloutLayer callout={callout} />}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

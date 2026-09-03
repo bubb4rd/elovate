@@ -3,25 +3,28 @@ import {
   type HistoryDocument,
   type WzHistoryMatch,
 } from "@/lib/history";
+import { formatDay } from "@/lib/format";
 import { nowMs } from "@/lib/premium/clock";
 import { computeTrendProjection } from "@/lib/premium/trend-projection";
-import { ProFeatureCard } from "./pro-feature-card";
-import { TrendChart } from "./trend-chart";
+import { ProObjectCard } from "./pro-feature-card";
+import { TrendTeaserChart } from "./trend-teaser-chart";
 
 /**
- * `/pro` showcase demo card for PREM-03 — trend & goal projection.
+ * `/pro` showcase teaser for PREM-03 — trend & goal projection.
  *
- * Deterministic, committed sample data — NOT the viewer's matches, no live or
- * Supabase read. Renders identically for signed-out visitors and never fails on
- * a dead API. Only `Date.now()` (safe: `/pro` is already dynamic) is used, to
- * anchor the sample so the projected date reads as near-future.
+ * One sentence: "At {rate} SR/day, {goal} on {date}." The chart proves it —
+ * observed pace, extended, crossing one goal, with the date on the crossing.
+ *
+ * Deterministic committed sample data — NOT the viewer's matches, no live or
+ * Supabase read. `Date.now()` (safe: `/pro` is already dynamic) only anchors the
+ * sample so the projected date reads as a nearby calendar date.
  */
 
 const SAMPLE_START_SR = 8100;
 const SAMPLE_CUTOFF_SR = 10_800;
 const SAMPLE_CUTOFF_PACE = 42;
 
-/** [days ago, hour UTC, net SR] — ~20 games across ~14 days, net-positive drift. */
+/** [days ago, hour UTC, net SR] — ~22 games over ~14 days, an organic climb. */
 const DEMO_GAMES: [number, number, number][] = [
   [13, 20, 55],
   [13, 21, -30],
@@ -93,66 +96,64 @@ export function TrendProjectionDemoCard({ index }: { index?: number }) {
     savedGoals: ["iridescent"],
   });
 
-  const trendWindow = projection.windows["30d"];
-  const goals = trendWindow.goals.map((g) => ({
-    label: g.label,
-    targetSr: g.targetSr,
-  }));
+  const window = projection.windows["30d"];
+  const slope = window.srPerDay;
+  const rate = Math.round(slope);
 
-  const pace = Math.round(trendWindow.srPerDay);
-  const nextGoal = trendWindow.goals.find(
-    (g) => g.status === "projected" && g.etaMs != null,
-  );
-  const nextTier = trendWindow.goals.find(
-    (g) => g.target === "nextTier" && g.status === "projected" && g.etaMs != null,
-  );
-  const callout = nextTier
-    ? { t: nextTier.etaMs!, sr: nextTier.targetSr, label: `Next tier ${fmtDate(nextTier.etaMs!)}` }
-    : null;
+  // One goal: the nearest one the pace actually reaches.
+  const goal =
+    window.goals.find(
+      (g) => g.target === "nextTier" && g.status === "projected" && g.etaMs != null,
+    ) ?? window.goals.find((g) => g.status === "projected" && g.etaMs != null);
+
+  if (!goal || goal.etaMs == null) return null;
+
+  const dateLabel = formatDay(new Date(goal.etaMs).toISOString());
+  const headline = `${goal.label} on ${dateLabel}`;
+  const insight = `At ${rate > 0 ? "+" : ""}${rate} SR/day, ${goal.label} on ${dateLabel}.`;
 
   return (
-    <ProFeatureCard
-      index={index}
-      layout="split"
-      title="Trend & goal projection"
-      blurb="Your SR pace, projected to a date for every goal."
-    >
-      <div className="space-y-2">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="numeric text-xl font-semibold leading-none text-accent">
-              {pace > 0 ? "+" : ""}
-              {pace}
-              <span className="text-xs font-medium text-muted"> SR/day</span>
-            </p>
-            <p className="mt-1 text-xs text-muted">last 30 days</p>
-          </div>
-          {nextGoal && (
-            <div className="text-right">
-              <p className="numeric text-xl font-semibold leading-none text-foreground">
-                {fmtDate(nextGoal.etaMs!)}
-              </p>
-              <p className="mt-1 text-xs text-muted">{nextGoal.label}</p>
-            </div>
-          )}
-        </div>
-        <TrendChart
-          days={trendWindow.days}
-          projection={trendWindow.projection}
-          goals={goals}
-          callout={callout}
-          compact
-          height={112}
-        />
+    <ProObjectCard index={index}>
+      <div className="px-4 pt-4">
+        <p className="text-sm font-medium text-muted">
+          Trend &amp; goal projection
+          <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted/70">
+            preview
+          </span>
+        </p>
+        <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground">
+          {headline}
+        </p>
+        <p className="mt-1.5 text-xs text-muted">
+          Your last-30-day pace, drawn to the goal.
+        </p>
+        <p className="numeric mt-3 text-sm font-semibold text-accent">
+          {rate > 0 ? "+" : ""}
+          {rate} SR/day
+          <span className="ml-2 font-sans text-xs font-medium text-muted">
+            last 30 days
+          </span>
+        </p>
       </div>
-    </ProFeatureCard>
-  );
-}
 
-function fmtDate(ms: number): string {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "UTC",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(ms));
+      <TrendTeaserChart
+        history={window.days}
+        now={now}
+        currentSr={currentSr}
+        slopePerDay={slope}
+        goal={{
+          label: goal.label,
+          sr: goal.targetSr,
+          hitMs: goal.etaMs,
+          dateLabel,
+        }}
+        height={200}
+      />
+
+      <p className="px-4 pb-4 pt-2 text-xs text-muted">
+        <span className="sr-only">Preview data. </span>
+        {insight}
+      </p>
+    </ProObjectCard>
+  );
 }

@@ -106,7 +106,7 @@ function ArcGauge({
   const clamped = Math.max(0, Math.min(1, pct));
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 120 58" className="w-full max-w-[168px]">
+      <svg viewBox="0 0 120 60" className="w-full max-w-[168px]">
         <path
           d="M8 54 A 52 52 0 0 1 112 54"
           fill="none"
