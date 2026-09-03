@@ -27,8 +27,8 @@ export function ProFeatureShowcase() {
           Understand your climb, project your goal
         </h2>
         <p className="text-balance text-sm text-muted">
-          Real features, sample data &mdash; this is what an active subscription
-          unlocks.
+          The real Pro features shown with sample data. An active subscription
+          unlocks them on your own climb.
         </p>
       </div>
 
