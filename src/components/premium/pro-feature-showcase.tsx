@@ -20,9 +20,6 @@ export function ProFeatureShowcase() {
   return (
     <section className="space-y-8">
       <div className="mx-auto max-w-2xl space-y-4 text-center">
-        <span className="inline-block rounded-full border border-border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
-          Pro features
-        </span>
         <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           Understand your climb, project your goal
         </h2>

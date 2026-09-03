@@ -7,6 +7,7 @@ import {
   ComposedChart,
   CartesianGrid,
   Line,
+  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   XAxis,
@@ -33,6 +34,9 @@ type ChartRow = {
   band?: [number, number];
 };
 
+/** A single point annotation on the projection ray (e.g. the next-tier date). */
+export type TrendCallout = { t: number; sr: number; label: string };
+
 function formatDayTick(value: number): string {
   return formatDay(new Date(value).toISOString());
 }
@@ -41,12 +45,14 @@ export function TrendChart({
   days,
   projection,
   goals,
+  callout = null,
   compact = false,
   height,
 }: {
   days: TrendDay[];
   projection: TrendRay | null;
   goals: { label: string; targetSr: number }[];
+  callout?: TrendCallout | null;
   compact?: boolean;
   height?: number;
 }) {
@@ -108,7 +114,7 @@ export function TrendChart({
           data={data}
           margin={
             compact
-              ? { top: 6, right: 6, bottom: 6, left: 6 }
+              ? { top: 14, right: 10, bottom: 6, left: 6 }
               : { top: 8, right: 12, bottom: 4, left: 4 }
           }
         >
@@ -182,6 +188,25 @@ export function TrendChart({
             isAnimationActive={!reduce}
             connectNulls
           />
+          {callout && (
+            <ReferenceDot
+              x={callout.t}
+              y={callout.sr}
+              r={3.5}
+              fill="var(--accent)"
+              stroke="var(--background)"
+              strokeWidth={2}
+              ifOverflow="visible"
+              label={{
+                value: callout.label,
+                position: "left",
+                offset: 8,
+                fill: "var(--foreground)",
+                fontSize: 10,
+                fontWeight: 600,
+              }}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

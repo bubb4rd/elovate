@@ -99,39 +99,56 @@ export function TrendProjectionDemoCard({ index }: { index?: number }) {
     targetSr: g.targetSr,
   }));
 
+  const pace = Math.round(trendWindow.srPerDay);
+  const nextGoal = trendWindow.goals.find(
+    (g) => g.status === "projected" && g.etaMs != null,
+  );
+  const nextTier = trendWindow.goals.find(
+    (g) => g.target === "nextTier" && g.status === "projected" && g.etaMs != null,
+  );
+  const callout = nextTier
+    ? { t: nextTier.etaMs!, sr: nextTier.targetSr, label: `Next tier ${fmtDate(nextTier.etaMs!)}` }
+    : null;
+
   return (
     <ProFeatureCard
       index={index}
       title="Trend & goal projection"
-      blurb="Your SR pace, projected forward to a hit date for every goal."
+      blurb="Your SR pace, projected to a date for every goal."
     >
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="numeric text-2xl font-semibold leading-none text-accent">
+            {pace > 0 ? "+" : ""}
+            {pace}
+            <span className="text-sm font-medium text-muted"> SR/day</span>
+          </p>
+          <p className="mt-1 text-xs text-muted">last 30 days</p>
+        </div>
+        {nextGoal && (
+          <div className="text-right">
+            <p className="numeric text-2xl font-semibold leading-none text-foreground">
+              {fmtDate(nextGoal.etaMs!)}
+            </p>
+            <p className="mt-1 text-xs text-muted">{nextGoal.label} at this pace</p>
+          </div>
+        )}
+      </div>
       <TrendChart
         days={trendWindow.days}
         projection={trendWindow.projection}
         goals={goals}
+        callout={callout}
         compact
       />
-      {projection.insight && (
-        <p className="text-xs text-foreground">{projection.insight}</p>
-      )}
-      <div className="flex flex-wrap gap-1.5">
-        {trendWindow.goals
-          .filter((g) => g.status === "projected" && g.etaMs != null)
-          .slice(0, 1)
-          .map((g) => (
-            <span
-              key={g.target}
-              className="numeric rounded-[4px] bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent"
-            >
-              {g.label}{" "}
-              {new Intl.DateTimeFormat("en-US", {
-                timeZone: "UTC",
-                month: "short",
-                day: "numeric",
-              }).format(new Date(g.etaMs!))}
-            </span>
-          ))}
-      </div>
     </ProFeatureCard>
   );
+}
+
+function fmtDate(ms: number): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(ms));
 }

@@ -28,8 +28,9 @@ export function TeammateBreakdownPreview({ index }: PreviewProps) {
     <ProFeatureCard
       index={index}
       title="Teammate breakdown"
-      blurb="Win rate, SR/hour and net SR for every squad you run — and who to drop."
+      blurb="Net SR, win rate and SR/hour for every squad you run."
     >
+      <p className="text-[11px] text-muted">Net SR &middot; last 14 days</p>
       <div className="space-y-2">
         {SQUAD_ROWS.map((row) => (
           <div key={row.name} className="flex items-center gap-2.5">
@@ -68,26 +69,22 @@ export function PlacementEfficiencyPreview({ index }: PreviewProps) {
     <ProFeatureCard
       index={index}
       title="Placement efficiency"
-      blurb="Where your SR actually comes from — placement vs elims — plus cap loss."
+      blurb="How much of your SR comes from placement vs elims."
     >
       <div className="space-y-2.5">
+        <div className="flex items-baseline justify-between">
+          <p className="numeric text-lg font-semibold text-foreground">
+            62<span className="text-xs font-medium text-muted">% placement</span>
+          </p>
+          <p className="numeric text-lg font-semibold text-foreground">
+            38<span className="text-xs font-medium text-muted">% elims</span>
+          </p>
+        </div>
         <div className="flex h-3 overflow-hidden rounded-full border border-border">
           <span className="bg-accent" style={{ width: "62%" }} />
           <span className="bg-accent/35" style={{ width: "38%" }} />
         </div>
-        <div className="flex items-center justify-between text-[11px] text-muted">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block size-2 rounded-[2px] bg-accent" />
-            Placement 62%
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block size-2 rounded-[2px] bg-accent/35" />
-            Elims 38%
-          </span>
-        </div>
-        <p className="numeric text-xs text-muted">
-          &minus;420 SR left on the table from capped games
-        </p>
+        <p className="numeric text-xs text-muted">&minus;420 SR lost to caps</p>
       </div>
     </ProFeatureCard>
   );
@@ -98,18 +95,20 @@ export function PlacementEfficiencyPreview({ index }: PreviewProps) {
 function ArcGauge({
   pct,
   value,
+  unit,
   caption,
 }: {
   pct: number;
   value: string;
+  unit: string;
   caption: string;
 }) {
   const clamped = Math.max(0, Math.min(1, pct));
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 120 66" className="w-full max-w-[200px]">
+      <svg viewBox="0 0 120 60" className="w-full max-w-[190px]">
         <path
-          d="M8 60 A 52 52 0 0 1 112 60"
+          d="M8 56 A 52 52 0 0 1 112 56"
           fill="none"
           stroke="var(--border)"
           strokeWidth="9"
@@ -117,7 +116,7 @@ function ArcGauge({
           pathLength={1}
         />
         <path
-          d="M8 60 A 52 52 0 0 1 112 60"
+          d="M8 56 A 52 52 0 0 1 112 56"
           fill="none"
           stroke="var(--accent)"
           strokeWidth="9"
@@ -127,15 +126,16 @@ function ArcGauge({
         />
         <text
           x="60"
-          y="54"
+          y="50"
           textAnchor="middle"
           className="numeric fill-foreground"
-          style={{ fontSize: "16px", fontWeight: 700 }}
+          style={{ fontSize: "17px", fontWeight: 700 }}
         >
           {value}
         </text>
       </svg>
-      <p className="text-[11px] text-muted">{caption}</p>
+      <p className="numeric -mt-1 text-xs font-medium text-muted">{unit}</p>
+      <p className="mt-1 text-[11px] text-muted">{caption}</p>
     </div>
   );
 }
@@ -146,9 +146,9 @@ export function SrToT250Preview({ index }: PreviewProps) {
       index={index}
       layout="split"
       title="SR-to-T250 tracker"
-      blurb="Your live gap to the cutoff, your pace against its pace, and a projected crossing date."
+      blurb="Your gap to the live cutoff, and when your pace catches it."
     >
-      <ArcGauge pct={0.78} value="+310" caption="SR to the live cutoff · T250 in ~18 days" />
+      <ArcGauge pct={0.78} value="+310" unit="SR to cutoff" caption="T250 in ~18 days" />
     </ProFeatureCard>
   );
 }
@@ -163,7 +163,7 @@ export function UnlimitedHistoryPreview({ index }: PreviewProps) {
       index={index}
       layout="split"
       title="Unlimited history"
-      blurb="Every match, every season — not just your last 500."
+      blurb="Every match from every season, not just your last 500."
     >
       <div className="w-full max-w-[220px]">
         <div className="relative flex h-24 items-end gap-2">
@@ -180,8 +180,8 @@ export function UnlimitedHistoryPreview({ index }: PreviewProps) {
           />
         </div>
         <div className="mt-1.5 flex justify-between text-[10px] text-muted">
-          <span>free: last 500</span>
-          <span>S1 &ndash; now</span>
+          <span>Free: last 500</span>
+          <span>Pro: all seasons</span>
         </div>
       </div>
     </ProFeatureCard>
