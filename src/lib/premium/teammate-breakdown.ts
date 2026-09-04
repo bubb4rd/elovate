@@ -42,6 +42,8 @@ export type TeammateStat = {
   teammate: HistoryTeammate;
   key: string;
   games: number;
+  /** Games finished 1st. */
+  wins: number;
   /** Share of games with net > 0, 0..1. */
   positiveNetRate: number;
   avgNet: number;
@@ -90,6 +92,7 @@ type Accum = {
   teammate: HistoryTeammate;
   key: string;
   net: number[];
+  wins: number;
   placementRanks: number[];
   yourElims: number;
   squadElims: number;
@@ -128,6 +131,7 @@ export function computeTeammateBreakdown(
           teammate,
           key,
           net: [],
+          wins: 0,
           placementRanks: [],
           yourElims: 0,
           squadElims: 0,
@@ -136,6 +140,7 @@ export function computeTeammateBreakdown(
         accums.set(key, accum);
       }
       accum.net.push(match.net);
+      if (match.placement === "first") accum.wins += 1;
       accum.placementRanks.push(PLACEMENT_RANK[match.placement]);
       if (match.squadElims > 0) {
         accum.yourElims += match.yourElims;
@@ -159,6 +164,7 @@ export function computeTeammateBreakdown(
         teammate: accum.teammate,
         key: accum.key,
         games,
+        wins: accum.wins,
         positiveNetRate: games === 0 ? 0 : positives / games,
         avgNet: games === 0 ? 0 : totalNet / games,
         totalNet,
