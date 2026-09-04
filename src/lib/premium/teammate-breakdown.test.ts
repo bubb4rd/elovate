@@ -209,8 +209,8 @@ function round(value: number): number {
 // --- avgPlacementLabel -------------------------------------------
 
 assert.equal(avgPlacementLabel(1), "1st");
-assert.equal(avgPlacementLabel(6.8), "Top 6");
-assert.equal(avgPlacementLabel(11), "Top 10");
-assert.equal(avgPlacementLabel(99), "Top 15");
+assert.equal(avgPlacementLabel(6.8), "T6");
+assert.equal(avgPlacementLabel(11), "T10");
+assert.equal(avgPlacementLabel(99), "T15");
 
 console.log("teammate-breakdown.test.ts ok");

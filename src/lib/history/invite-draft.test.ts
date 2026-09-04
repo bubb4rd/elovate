@@ -71,7 +71,7 @@ if (draft.mode === "wz") {
   assert.equal(draft.capped, false);
 }
 
-assert.equal(inviteMatchSummary(source), "Top 6 · 8 squad elims");
+assert.equal(inviteMatchSummary(source), "T6 · 8 squad elims");
 
 const mpDraft = draftFromSourceMatch(
   {

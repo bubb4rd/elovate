@@ -18,12 +18,12 @@ export type WzPlacement = {
 
 export const WZ_PLACEMENTS: readonly WzPlacement[] = [
   { id: "first", label: "1st", placementSr: 125, elimSr: 5, highlight: true },
-  { id: "top4", label: "Top 4", placementSr: 100, elimSr: 4, highlight: true },
-  { id: "top6", label: "Top 6", placementSr: 50, elimSr: 4, highlight: false },
-  { id: "top8", label: "Top 8", placementSr: 30, elimSr: 3, highlight: false },
-  { id: "top10", label: "Top 10", placementSr: 20, elimSr: 3, highlight: false },
-  { id: "top13", label: "Top 13", placementSr: 10, elimSr: 2, highlight: false },
-  { id: "top15", label: "Top 15", placementSr: 0, elimSr: 2, highlight: false },
+  { id: "top4", label: "T4", placementSr: 100, elimSr: 4, highlight: true },
+  { id: "top6", label: "T6", placementSr: 50, elimSr: 4, highlight: false },
+  { id: "top8", label: "T8", placementSr: 30, elimSr: 3, highlight: false },
+  { id: "top10", label: "T10", placementSr: 20, elimSr: 3, highlight: false },
+  { id: "top13", label: "T13", placementSr: 10, elimSr: 2, highlight: false },
+  { id: "top15", label: "T15", placementSr: 0, elimSr: 2, highlight: false },
 ] as const;
 
 export type ResultPreset = {

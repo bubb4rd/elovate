@@ -50,7 +50,7 @@ export type TeammateStat = {
   totalNet: number;
   /** Net SR per hour of logged play, or null when there's no time signal. */
   srPerHour: number | null;
-  /** Mean finishing rank (lower is better), e.g. 6.8 ≈ "Top 7". */
+  /** Mean finishing rank (lower is better), e.g. 6.8 ≈ "T6". */
   avgPlacement: number;
   /** Your share of squad elims across games where squad elims were logged, or null. */
   yourElimShare: number | null;
@@ -221,7 +221,7 @@ function buildInsight(
   return null;
 }
 
-/** Human label for an average placement, e.g. `avgPlacementLabel(6.8) === "Top 6"`. */
+/** Human label for an average placement, e.g. `avgPlacementLabel(6.8) === "T6"`. */
 export function avgPlacementLabel(avgRank: number): string {
   return placementLabel(avgRank);
 }
