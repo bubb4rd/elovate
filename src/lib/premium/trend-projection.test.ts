@@ -6,12 +6,17 @@ import {
 } from "@/lib/history";
 import type { ClimbTarget } from "@/lib/ranked";
 import {
+  bucketDailyPoints,
   computeTrendProjection,
+  dedupeGoals,
+  formatCalloutDay,
+  isTrendWindowId,
   MAX_PROJECTION_DAYS,
   MIN_TREND_DAYS,
   projectBandDays,
   projectCrossingDays,
   projectDaysToTarget,
+  type GoalProjection,
   type TrendInput,
 } from "./trend-projection";
 
@@ -85,8 +90,12 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
     for (const g of w.goals) {
       assert.equal(g.status, "insufficient-history", `${id}/${g.target}`);
     }
+    assert.equal(w.hero, null, `${id}: no history → no hero`);
+    assert.deepEqual(w.cutoffHistory, [], `${id}: no cutoff series`);
+    assert.deepEqual(w.cutoffProjection, [], `${id}: no ray → no cutoff ray`);
+    assert.deepEqual(w.callouts, [], `${id}: no callouts`);
   }
-  assert.equal(t.insight, null, "no history → no insight");
+  assert.equal(t.seasonEndMs, null, "no season end supplied");
 }
 
 // --- 2. same-day matches collapse ------------------------------------
@@ -407,40 +416,44 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
   assert.equal(goals.find((g) => g.target === "top250")!.isSavedGoal, false);
 }
 
-// --- 23. insight branches ------------------------------------------
+// --- 23. hero insight branches -------------------------------------
 
 {
   const strong = [0, 1, 2, 3, 4, 5, 6].map((off) => wz({ dayOffset: off, net: 100 }));
-  const b1 = computeTrendProjection(
+  const h1 = computeTrendProjection(
     input({
       doc: doc(strong),
       currentSr: 6000,
       cutoff: { sr: 10_500, pacePerDay: 10 },
     }),
-  ).insight;
-  assert.match(b1 ?? "", /lands around/);
-  assert.match(b1 ?? "", /at this pace/);
+  ).windows["7d"].hero!;
+  assert.equal(h1.tone, "accent");
+  assert.equal(h1.headline, "Next tier in 1 day", "catching → goal + days");
+  assert.match(h1.support ?? "", /SR\/day · last 7 days/);
 
-  const b2 = computeTrendProjection(
+  const h2 = computeTrendProjection(
     input({
       doc: doc([0, 1, 2, 3, 4, 5, 6].map((off) => wz({ dayOffset: off, net: 50 }))),
       currentSr: 9000,
       cutoff: { sr: 10_000, pacePerDay: 200 },
     }),
-  ).insight;
-  assert.match(b2 ?? "", /of ground/);
-  assert.match(b2 ?? "", /losing 150 SR\/day/);
+  ).windows["7d"].hero!;
+  assert.equal(h2.tone, "negative");
+  assert.equal(h2.headline, "Losing 150 SR/day to the cutoff");
+  assert.equal(h2.support, "You +50/day · cutoff +200/day · last 7 days");
 
-  const b3 = computeTrendProjection(
+  const h3 = computeTrendProjection(
     input({
       doc: doc([0, 1, 2, 3, 4, 5, 6].map((off) => wz({ dayOffset: off, net: -30 }))),
       currentSr: 6000,
       cutoff: { sr: 10_500, pacePerDay: null },
     }),
-  ).insight;
-  assert.match(b3 ?? "", /shows exactly where that trend lands/);
+  ).windows["7d"].hero!;
+  assert.equal(h3.tone, "negative");
+  assert.equal(h3.headline, "-30 SR/day");
+  assert.match(h3.support ?? "", /no open goal lands at this pace/);
 
-  const b4 = computeTrendProjection(
+  const h4 = computeTrendProjection(
     input({
       doc: doc([
         wz({ dayOffset: 2, net: 20 }),
@@ -448,11 +461,330 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
         wz({ dayOffset: 0, net: 20 }),
       ]),
     }),
-  ).insight;
-  assert.match(b4 ?? "", /Pro projects your goal dates from day 5/);
+  ).windows["7d"].hero!;
+  assert.equal(h4.tone, "muted");
+  assert.equal(h4.headline, "3 days logged");
+  assert.match(h4.support ?? "", /from day 5\.$/);
 
-  const b5 = computeTrendProjection(input({ doc: doc([]) })).insight;
-  assert.equal(b5, null);
+  assert.equal(
+    computeTrendProjection(input({ doc: doc([]) })).windows["7d"].hero,
+    null,
+  );
+
+  // No em-dash anywhere in generated copy.
+  const copy = [h1, h2, h3, h4]
+    .flatMap((h) => [h.headline, h.support ?? ""])
+    .join(" ");
+  assert.ok(!copy.includes("—"), "no em-dash in hero copy");
+}
+
+// --- 25. goal dedupe --------------------------------------------------
+
+{
+  const goal = (
+    over: Partial<GoalProjection> & Pick<GoalProjection, "target" | "targetSr">,
+  ): GoalProjection => ({
+    label: over.target,
+    remaining: 0,
+    isSavedGoal: false,
+    moving: false,
+    status: "projected",
+    daysToGoal: null,
+    etaMs: null,
+    etaEarliestMs: null,
+    etaLatestMs: null,
+    groundLostPerDay: null,
+    bufferDays: null,
+    ...over,
+  });
+
+  // Same SR from two targets → one row, and the saved goal's identity wins.
+  const folded = dedupeGoals([
+    goal({ target: "nextTier", targetSr: 24_760, label: "Top 250" }),
+    goal({ target: "iridescent", targetSr: 10_000, status: "reached" }),
+    goal({ target: "top250", targetSr: 24_760, label: "Live T250", isSavedGoal: true }),
+  ]);
+  assert.equal(folded.length, 2, "24,760 collapses to one row");
+  assert.equal(folded[0]!.target, "top250", "open row first");
+  assert.equal(folded[0]!.label, "Live T250", "user's goal label survives");
+  assert.equal(folded[0]!.isSavedGoal, true);
+  assert.equal(folded[1]!.target, "iridescent", "reached row sorts last");
+
+  // No saved goal → the more meaningful target name wins.
+  const byPriority = dedupeGoals([
+    goal({ target: "nextTier", targetSr: 24_760, label: "Top 250" }),
+    goal({ target: "top250", targetSr: 24_760, label: "Live T250" }),
+  ]);
+  assert.equal(byPriority.length, 1);
+  assert.equal(byPriority[0]!.target, "top250");
+
+  // Distinct SRs stay distinct, ascending.
+  const distinct = dedupeGoals([
+    goal({ target: "top250", targetSr: 12_000 }),
+    goal({ target: "nextTier", targetSr: 6100 }),
+  ]);
+  assert.deepEqual(
+    distinct.map((g) => g.targetSr),
+    [6100, 12_000],
+  );
+
+  // `cutoff-unavailable` placeholders are never folded into a real line.
+  const placeholder = dedupeGoals([
+    goal({ target: "nextTier", targetSr: 9000, status: "reached" }),
+    goal({ target: "top250", targetSr: 9000, status: "cutoff-unavailable" }),
+  ]);
+  assert.equal(placeholder.length, 2);
+
+  // The saved goal can be "Next tier" while it collides with T250's SR at
+  // Iridescent — the label/identity follows the saved goal, but the moving
+  // cutoff-crossing math must survive the merge, not get silently replaced by
+  // Next tier's static projection.
+  const savedNextTierCollidesWithCutoff = dedupeGoals([
+    goal({
+      target: "nextTier",
+      targetSr: 24_760,
+      label: "Top 250",
+      isSavedGoal: true,
+      moving: false,
+      status: "projected",
+      daysToGoal: 999,
+      etaMs: 999,
+    }),
+    goal({
+      target: "top250",
+      targetSr: 24_760,
+      label: "Live T250",
+      moving: true,
+      status: "unreachable",
+      groundLostPerDay: 374,
+    }),
+  ]);
+  assert.equal(savedNextTierCollidesWithCutoff.length, 1);
+  const merged = savedNextTierCollidesWithCutoff[0]!;
+  assert.equal(merged.label, "Top 250", "saved goal's label survives");
+  assert.equal(merged.isSavedGoal, true);
+  assert.equal(
+    merged.status,
+    "unreachable",
+    "the moving cutoff-crossing status is not lost to the saved static goal",
+  );
+  assert.equal(merged.moving, true);
+  assert.equal(merged.groundLostPerDay, 374);
+}
+
+// --- 26. the Iridescent collision, end to end -----------------------
+
+{
+  // At 11,192 with a 24,760 cutoff, resolveTarget("nextTier") IS the cutoff.
+  const climb = [0, 1, 2, 3, 4, 5, 6].map((off) => wz({ dayOffset: off, net: 100 }));
+  const t = computeTrendProjection(
+    input({
+      doc: doc(climb),
+      currentSr: 11_192,
+      cutoff: { sr: 24_760, pacePerDay: 476 },
+      savedGoals: ["top250"],
+    }),
+  );
+  const w = t.windows["7d"];
+  assert.equal(w.goals.length, 3, "raw goals untouched for existing callers");
+  assert.equal(
+    w.goals.find((g) => g.target === "nextTier")!.targetSr,
+    w.goals.find((g) => g.target === "top250")!.targetSr,
+    "the collision is real",
+  );
+  assert.equal(w.goalRows.length, 2, "deduped to T250 + Iridescent");
+  assert.equal(w.goalRows[0]!.target, "top250");
+  assert.equal(w.goalRows[0]!.label, "Live T250");
+  assert.equal(w.goalRows[0]!.status, "unreachable");
+  assert.equal(w.goalRows[1]!.target, "iridescent");
+  assert.equal(w.goalRows[1]!.status, "reached");
+
+  // The chart has to be able to agree with the hero.
+  assert.equal(w.hero!.tone, "negative");
+  assert.match(w.hero!.headline, /^Losing 376 SR\/day to the cutoff$/);
+  assert.ok(w.cutoffProjection.length > 1, "cutoff is a drawn series");
+  const firstCut = w.cutoffProjection[0]!;
+  const lastCut = w.cutoffProjection[w.cutoffProjection.length - 1]!;
+  const lastYou = w.projection!.points[w.projection!.points.length - 1]!;
+  assert.equal(firstCut.sr, 24_760, "cutoff ray starts at the live cutoff");
+  assert.ok(
+    lastCut.sr > lastYou.projected,
+    "the dash never crosses a faster cutoff",
+  );
+
+  // No goal-name label planted on an optimistic dash: each series is named at
+  // today's value and numbered where it finishes, and nothing else.
+  assert.deepEqual(
+    w.callouts.map((c) => c.id),
+    ["now", "cutoff", "finish-you", "finish-cutoff"],
+  );
+
+  const nowMark = w.callouts.find((c) => c.id === "now")!;
+  assert.equal(nowMark.sr, 11_192);
+  assert.equal(nowMark.label, "11,192");
+  assert.equal(nowMark.sublabel, "Now");
+
+  // The second series is named, not an anonymous grey line.
+  const cutoffMark = w.callouts.find((c) => c.id === "cutoff")!;
+  assert.equal(cutoffMark.t, NOW);
+  assert.equal(cutoffMark.sr, 24_760);
+  assert.equal(cutoffMark.label, "24,760");
+  assert.equal(cutoffMark.sublabel, "Cutoff");
+  assert.equal(cutoffMark.tone, "muted");
+
+  // Both projections carry their finishing number at the chart's right edge.
+  const days = w.projection!.horizonDays;
+  assert.equal(days, 45, "no season end → the unreachable-goal floor");
+  assert.equal(w.srPerDay, 100);
+
+  const youFinish = w.callouts.find((c) => c.id === "finish-you")!;
+  assert.equal(youFinish.kind, "finish");
+  assert.equal(youFinish.t, NOW + days * DAY);
+  assert.equal(youFinish.sr, 11_192 + 100 * 45);
+  assert.equal(youFinish.label, "15,692");
+  assert.equal(youFinish.sublabel, formatCalloutDay(NOW + days * DAY, NOW));
+  assert.equal(youFinish.tone, "accent");
+
+  const cutoffFinish = w.callouts.find((c) => c.id === "finish-cutoff")!;
+  assert.equal(cutoffFinish.kind, "finish");
+  assert.equal(cutoffFinish.t, youFinish.t, "both finish at the same x");
+  assert.equal(cutoffFinish.sr, 24_760 + 476 * 45);
+  assert.equal(cutoffFinish.label, "46,180");
+  assert.equal(
+    cutoffFinish.sublabel,
+    "won't catch",
+    "the losing verdict rides the cutoff's finish label",
+  );
+  assert.equal(cutoffFinish.tone, "muted");
+  assert.ok(
+    cutoffFinish.sr > youFinish.sr,
+    "the cutoff finishes above the player",
+  );
+}
+
+// --- 27. a hit callout lands on the crossing ------------------------
+
+{
+  const climb = [0, 1, 2, 3, 4, 5, 6].map((off) =>
+    wz({ dayOffset: off, net: 100, srBefore: 8000, srAfter: 8100 }),
+  );
+  const w = computeTrendProjection(
+    input({
+      doc: doc(climb),
+      currentSr: 9000,
+      cutoff: { sr: 10_500, pacePerDay: 10 },
+    }),
+  ).windows["7d"];
+
+  const iri = w.goalRows.find((g) => g.target === "iridescent")!;
+  const hit = w.callouts.find((c) => c.id === "hit-iridescent")!;
+  assert.equal(hit.kind, "hit");
+  assert.equal(hit.t, iri.etaMs);
+  assert.ok(Math.abs(hit.sr - iri.targetSr) < 1e-6, "callout sits on the goal SR");
+  assert.equal(hit.label, "Jun 25", "same-year date has no year");
+  assert.equal(hit.sublabel, "Iridescent");
+  assert.equal(
+    w.callouts.find((c) => c.id === "finish-cutoff")!.sublabel,
+    "Cutoff",
+    "no losing verdict when the pace catches",
+  );
+}
+
+// --- 28. cutoff series + season end ---------------------------------
+
+{
+  const climb = [0, 1, 2, 3, 4, 5, 6].map((off) => wz({ dayOffset: off, net: 40 }));
+  const seasonEnd = NOW + 20 * DAY;
+  const cutoffSeries = [
+    // Three snapshots on one day: only the last survives bucketing.
+    { t: NOW_DAY_MS - 2 * DAY + 3_600_000, sr: 10_400 },
+    { t: NOW_DAY_MS - 2 * DAY + 7_200_000, sr: 10_410 },
+    { t: NOW_DAY_MS - 2 * DAY + 10_800_000, sr: 10_420 },
+    { t: NOW_DAY_MS - 1 * DAY, sr: 10_460 },
+    // Older than the 7d window but inside the season window.
+    { t: NOW_DAY_MS - 40 * DAY, sr: 9000 },
+  ];
+  const t = computeTrendProjection(
+    input({
+      doc: doc(climb),
+      currentSr: 9000,
+      cutoff: { sr: 10_500, pacePerDay: 30 },
+      cutoffSeries,
+      seasonEndMs: seasonEnd,
+    }),
+  );
+  assert.equal(t.seasonEndMs, seasonEnd);
+
+  const w7 = t.windows["7d"];
+  assert.deepEqual(
+    w7.cutoffHistory.map((p) => p.sr),
+    [10_420, 10_460],
+    "one point per UTC day, last sample wins, clipped to the window",
+  );
+  assert.ok(
+    w7.projection!.horizonDays <= 20,
+    "horizon clips to season end when the record has one",
+  );
+  assert.equal(
+    w7.cutoffProjection[w7.cutoffProjection.length - 1]!.t,
+    NOW + w7.projection!.horizonDays * DAY,
+    "cutoff ray shares the player's horizon",
+  );
+
+  // The season window's first day is the first logged match day, so a cutoff
+  // snapshot 40 days back is still outside it here.
+  assert.deepEqual(
+    t.windows.season.cutoffHistory.map((p) => p.sr),
+    [10_420, 10_460],
+  );
+
+  // A season ending inside the goal-driven floor still ends the chart: a
+  // season with 5 days left does not draw a 45-day race.
+  const soon = computeTrendProjection(
+    input({
+      doc: doc(climb),
+      currentSr: 11_192,
+      cutoff: { sr: 24_760, pacePerDay: 476 },
+      seasonEndMs: NOW + 5 * DAY,
+    }),
+  ).windows.season;
+  assert.ok(
+    soon.goalRows.some((g) => g.status === "unreachable"),
+    "the 45-day unreachable floor would otherwise apply",
+  );
+  assert.equal(soon.projection!.horizonDays, 5, "horizon clips to season end");
+  const soonFinish = soon.callouts.find((c) => c.id === "finish-cutoff")!;
+  assert.equal(soonFinish.t, NOW + 5 * DAY, "the finish lands on season end");
+  assert.equal(soonFinish.sublabel, "won't catch");
+  assert.equal(
+    soon.callouts.find((c) => c.id === "finish-you")!.t,
+    NOW + 5 * DAY,
+  );
+}
+
+// --- 29. small pure helpers -----------------------------------------
+
+{
+  assert.deepEqual(bucketDailyPoints([]), []);
+  assert.deepEqual(
+    bucketDailyPoints([
+      { t: Date.parse("2026-06-14T23:00:00.000Z"), sr: 5 },
+      { t: Date.parse("2026-06-14T01:00:00.000Z"), sr: 1 },
+      { t: Number.NaN, sr: 9 },
+    ]),
+    [{ t: Date.parse("2026-06-14T00:00:00.000Z"), sr: 5 }],
+  );
+
+  assert.equal(formatCalloutDay(Date.parse("2026-01-14T00:00:00Z"), NOW), "Jan 14");
+  assert.equal(
+    formatCalloutDay(Date.parse("2027-01-14T00:00:00Z"), NOW),
+    "Jan 14, 2027",
+  );
+
+  assert.equal(isTrendWindowId("7d"), true);
+  assert.equal(isTrendWindowId("season"), true);
+  assert.equal(isTrendWindowId("14d"), false);
+  assert.equal(isTrendWindowId(undefined), false);
 }
 
 // --- 24. no NaN / Infinity sweep ---------------------------------
@@ -509,7 +841,15 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
           checkNum(p.band[1], `f${i}/${id}/ray.band.high`);
         }
       }
-      for (const g of w.goals) {
+      for (const p of [...w.cutoffHistory, ...w.cutoffProjection]) {
+        checkNum(p.t, `f${i}/${id}/cutoff.t`);
+        checkNum(p.sr, `f${i}/${id}/cutoff.sr`);
+      }
+      for (const c of w.callouts) {
+        checkNum(c.t, `f${i}/${id}/callout.t`);
+        checkNum(c.sr, `f${i}/${id}/callout.sr`);
+      }
+      for (const g of [...w.goals, ...w.goalRows]) {
         checkNum(g.targetSr, `f${i}/${id}/${g.target}/targetSr`);
         checkNum(g.remaining, `f${i}/${id}/${g.target}/remaining`);
         for (const key of [

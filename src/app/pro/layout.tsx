@@ -48,14 +48,42 @@ export default async function ProLayout({ children }: LayoutProps<"/pro">) {
     cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   }
 
+  const nav = (
+    <SiteNav
+      seasons={seasons}
+      loginNext="/pro"
+      cutoffSr={cutoffSr}
+      nextUpdateAt={live?.nextUpdateAt}
+    />
+  );
+
+  // Two shells behind one route group. A Pro subscriber never sees the pricing
+  // page (`/pro` redirects them to `/pro/teammates`), and a non-subscriber never
+  // sees the tab bar — so the marketing header and the feature shell never
+  // overlap for a real user. Feature pages are product UI: tracker-width, no
+  // shared gold "Pro" h1, each page owns its own heading.
+  if (viewer?.isPro) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        {nav}
+        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-7">
+          <ViewerThemeShell themeId={viewer.pageThemeId}>
+            {/* ProNav bleeds -mx-4; the extra -mx-3 at md lines its rule up
+                with the wider md:px-7 gutter. */}
+            <div className="md:-mx-3">
+              <ProNav />
+            </div>
+            <div className="min-w-0">{children}</div>
+          </ViewerThemeShell>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <SiteNav
-        seasons={seasons}
-        loginNext="/pro"
-        cutoffSr={cutoffSr}
-        nextUpdateAt={live?.nextUpdateAt}
-      />
+      {nav}
       <main className="mx-auto w-full max-w-[880px] flex-1 px-4 py-10">
         <ViewerThemeShell themeId={viewer?.pageThemeId}>
           <header className="mb-6 text-2xl flex items-center gap-2.5">
@@ -74,7 +102,6 @@ export default async function ProLayout({ children }: LayoutProps<"/pro">) {
               </h1>
             </div>
           </header>
-          {viewer?.isPro && <ProNav />}
           <div className="mt-8 min-w-0">{children}</div>
         </ViewerThemeShell>
       </main>

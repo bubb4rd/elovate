@@ -137,7 +137,8 @@ export function generateDatabase(): Database {
       id: "s5",
       name: "Season 5",
       startsAt: isoAtUtc(2026, 6, 24),
-      endsAt: null,
+      // Midnight PT on Sep 10 (PDT, UTC-7) = Sep 10 07:00 UTC.
+      endsAt: isoAtUtc(2026, 8, 10, 7),
       isActive: true,
     },
   ];
