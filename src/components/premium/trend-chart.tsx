@@ -296,7 +296,13 @@ export function TrendChart({
     return [Math.max(0, min - pad), max + pad];
   }, [data, goalLines]);
 
-  if (history.length === 0) {
+  // The live cutoff doesn't need the player's own history to draw - only bail
+  // out to the empty state when there is truly nothing to plot.
+  if (
+    history.length === 0 &&
+    cutoffHistory.length === 0 &&
+    cutoffProjection.length === 0
+  ) {
     return (
       <div
         className={cn(

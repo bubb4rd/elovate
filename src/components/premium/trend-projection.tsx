@@ -257,7 +257,13 @@ export function TrendProjectionView({
   }));
 
   const hero = win.hero;
-  const empty = win.elapsedDays === 0;
+  // A zero-game window still has something to draw when the live cutoff has
+  // its own history/pace - only fall back to the "log a match" prompt when
+  // there is truly nothing plottable.
+  const empty =
+    win.elapsedDays === 0 &&
+    win.cutoffHistory.length === 0 &&
+    win.cutoffProjection.length === 0;
 
   return (
     <div className="space-y-6">

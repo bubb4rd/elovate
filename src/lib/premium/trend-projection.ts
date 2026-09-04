@@ -657,12 +657,28 @@ function buildCallouts(params: {
   srPerDay: number;
   lastDayMs: number | null;
   goalRows: GoalProjection[];
+  /** The player's own ray — null below {@link MIN_TREND_DAYS}. */
   projection: TrendRay | null;
+  /**
+   * Same horizon `projection` would use if it existed. The live cutoff's
+   * pace comes from the board, not the player's match history, so its
+   * callouts must not wait on the player clearing the history floor.
+   */
+  horizonDays: number;
   cutoff: { sr: number | null; pacePerDay: number | null };
 }): TrendCallout[] {
-  const { now, currentSr, srPerDay, lastDayMs, goalRows, projection, cutoff } =
-    params;
+  const {
+    now,
+    currentSr,
+    srPerDay,
+    lastDayMs,
+    goalRows,
+    projection,
+    horizonDays,
+    cutoff,
+  } = params;
   const out: TrendCallout[] = [];
+  const hasCutoffPace = cutoff.sr != null && cutoff.pacePerDay != null;
 
   if (lastDayMs != null) {
     out.push({
@@ -676,61 +692,66 @@ function buildCallouts(params: {
     });
   }
 
-  if (!projection) return out;
-
-  // Name the second series where it is today, mirroring the player's now mark.
-  // Without this the cutoff is an unlabelled grey line.
-  if (cutoff.sr != null && cutoff.pacePerDay != null) {
+  // Name the second series where it is today, mirroring the player's now
+  // mark. Without this the cutoff is an unlabelled grey line. This runs
+  // whether or not the player has enough history for their own ray — the
+  // live cutoff progresses regardless of how little the player has logged.
+  if (hasCutoffPace) {
     out.push({
       id: "cutoff",
       kind: "cutoff",
       t: now,
-      sr: cutoff.sr,
-      label: formatSr(Math.round(cutoff.sr)),
+      sr: cutoff.sr!,
+      label: formatSr(Math.round(cutoff.sr!)),
       sublabel: "Cutoff",
       tone: "muted",
     });
   }
 
-  for (const goal of goalRows) {
-    if (goal.status !== "projected") continue;
-    if (goal.etaMs == null || goal.daysToGoal == null) continue;
-    if (goal.daysToGoal > projection.horizonDays) continue;
-    out.push({
-      id: `hit-${goal.target}`,
-      kind: "hit",
-      t: goal.etaMs,
-      // The crossing sits on the player's ray for both static and moving
-      // targets — at the crossing the two lines are the same number.
-      sr: currentSr + srPerDay * goal.daysToGoal,
-      label: formatCalloutDay(goal.etaMs, now),
-      sublabel: goal.label,
-      tone: "accent",
-    });
+  if (projection) {
+    for (const goal of goalRows) {
+      if (goal.status !== "projected") continue;
+      if (goal.etaMs == null || goal.daysToGoal == null) continue;
+      if (goal.daysToGoal > horizonDays) continue;
+      out.push({
+        id: `hit-${goal.target}`,
+        kind: "hit",
+        t: goal.etaMs,
+        // The crossing sits on the player's ray for both static and moving
+        // targets — at the crossing the two lines are the same number.
+        sr: currentSr + srPerDay * goal.daysToGoal,
+        label: formatCalloutDay(goal.etaMs, now),
+        sublabel: goal.label,
+        tone: "accent",
+      });
+    }
   }
 
   // Where each series ends up. Both dashes get a number at the right edge, so
   // "you finish here, the cutoff finishes there" is readable off the chart
   // without hovering.
-  const days = projection.horizonDays;
-  const endMs = now + days * DAY_MS;
+  const endMs = now + horizonDays * DAY_MS;
 
-  const youFinish = currentSr + srPerDay * days;
-  out.push({
-    id: "finish-you",
-    kind: "finish",
-    t: endMs,
-    sr: youFinish,
-    label: formatSr(Math.round(youFinish)),
-    sublabel: formatCalloutDay(endMs, now),
-    tone: "accent",
-  });
+  if (projection) {
+    const youFinish = currentSr + srPerDay * horizonDays;
+    out.push({
+      id: "finish-you",
+      kind: "finish",
+      t: endMs,
+      sr: youFinish,
+      label: formatSr(Math.round(youFinish)),
+      sublabel: formatCalloutDay(endMs, now),
+      tone: "accent",
+    });
+  }
 
-  if (cutoff.sr != null && cutoff.pacePerDay != null) {
-    const cutoffFinish = cutoff.sr + cutoff.pacePerDay * days;
-    const losing = goalRows.some(
-      (goal) => goal.moving && goal.status === "unreachable",
-    );
+  if (hasCutoffPace) {
+    const cutoffFinish = cutoff.sr! + cutoff.pacePerDay! * horizonDays;
+    // Without the player's own pace there is nothing to compare against, so
+    // the verdict stays neutral rather than guessing at "won't catch".
+    const losing =
+      projection != null &&
+      goalRows.some((goal) => goal.moving && goal.status === "unreachable");
     out.push({
       id: "finish-cutoff",
       kind: "finish",
@@ -806,13 +827,16 @@ function computeWindow(params: {
     : null;
 
   const lastDayMs = days.length > 0 ? days[days.length - 1]!.t : null;
-  const cutoffHistory = bucketDailyPoints(
-    cutoffSeries,
-    days[0]?.t ?? null,
-    lastDayMs,
-  );
+  // The live cutoff's own history/pace don't depend on the player's match
+  // log, so its clip window is the pace window's *nominal* length (7d/30d/
+  // everything for season) — never the player's own materialised days. A
+  // brand-new profile with one logged day still gets the cutoff's real
+  // progression, not a single point.
+  const todayMs = dayMs(dayStr(now));
+  const cutoffFromMs = spec.days == null ? null : todayMs - (spec.days - 1) * DAY_MS;
+  const cutoffHistory = bucketDailyPoints(cutoffSeries, cutoffFromMs, todayMs);
   const cutoffProjection =
-    projection && cutoff.sr != null && cutoff.pacePerDay != null
+    cutoff.sr != null && cutoff.pacePerDay != null
       ? buildCutoffRay(now, cutoff.sr, cutoff.pacePerDay, horizonDays)
       : [];
 
@@ -823,6 +847,7 @@ function computeWindow(params: {
     lastDayMs,
     goalRows,
     projection,
+    horizonDays,
     cutoff,
   });
 

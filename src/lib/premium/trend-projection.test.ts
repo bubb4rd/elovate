@@ -91,9 +91,18 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
       assert.equal(g.status, "insufficient-history", `${id}/${g.target}`);
     }
     assert.equal(w.hero, null, `${id}: no history → no hero`);
-    assert.deepEqual(w.cutoffHistory, [], `${id}: no cutoff series`);
-    assert.deepEqual(w.cutoffProjection, [], `${id}: no ray → no cutoff ray`);
-    assert.deepEqual(w.callouts, [], `${id}: no callouts`);
+    assert.deepEqual(w.cutoffHistory, [], `${id}: no cutoff series supplied`);
+    // The live cutoff's pace comes from the board, not the player's match
+    // log — it still projects with zero games logged.
+    assert.ok(
+      w.cutoffProjection.length > 0,
+      `${id}: cutoff still projects with no player history`,
+    );
+    assert.deepEqual(
+      w.callouts.map((c) => c.kind),
+      ["cutoff", "finish"],
+      `${id}: cutoff names itself and its finish even with no player history`,
+    );
   }
   assert.equal(t.seasonEndMs, null, "no season end supplied");
 }
@@ -232,6 +241,35 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
   for (const g of w.goals) {
     assert.equal(g.status, "insufficient-history");
   }
+
+  // A brand-new profile (one logged day, well below MIN_TREND_DAYS) must
+  // still see the live cutoff's own progression — its pace comes from the
+  // board, not from how many games the player has logged.
+  const brandNew = computeTrendProjection(
+    input({
+      doc: doc([wz({ dayOffset: 0, net: 40 })]),
+      cutoff: { sr: 24_780, pacePerDay: 195 },
+      cutoffSeries: [
+        { t: NOW_DAY_MS - 3 * DAY, sr: 24_400 },
+        { t: NOW_DAY_MS - 1 * DAY, sr: 24_600 },
+      ],
+    }),
+  ).windows["7d"];
+  assert.equal(brandNew.elapsedDays, 1, "one day logged");
+  assert.equal(brandNew.projection, null, "still no player ray");
+  assert.ok(
+    brandNew.cutoffHistory.length > 0,
+    "cutoff history isn't clipped to the player's one materialised day",
+  );
+  assert.ok(
+    brandNew.cutoffProjection.length > 1,
+    "cutoff still projects forward with no player pace",
+  );
+  assert.deepEqual(
+    brandNew.callouts.map((c) => c.kind),
+    ["now", "cutoff", "finish"],
+    "cutoff names itself and its finish even though the player has no ray",
+  );
 }
 
 // --- 9-12. static projection ----------------------------------
@@ -731,11 +769,13 @@ function input(over: Partial<TrendInput> & Pick<TrendInput, "doc">): TrendInput 
     "cutoff ray shares the player's horizon",
   );
 
-  // The season window's first day is the first logged match day, so a cutoff
-  // snapshot 40 days back is still outside it here.
+  // The cutoff's own clip window is never bounded by the player's logged
+  // days — the season window has no nominal length, so it draws everything
+  // the cutoff series has, including a snapshot from before the player's
+  // first logged match.
   assert.deepEqual(
     t.windows.season.cutoffHistory.map((p) => p.sr),
-    [10_420, 10_460],
+    [9000, 10_420, 10_460],
   );
 
   // A season ending inside the goal-driven floor still ends the chart: a
