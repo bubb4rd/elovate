@@ -102,6 +102,13 @@ Priority: **P0** = launch blocker · **P1** = should ship · **P2** = nice if ca
 3. Desktop alpha builds + invite from waitlist  
 4. Deeper climb analytics / season archives  
 5. Community features beyond reputation  
+6. Account timezone setting (TZ-01)  
+
+### G. Account / settings (Post)
+
+| ID | Item | Pri | Notes |
+|---|---|---|---|
+| TZ-01 | User timezone setting in account settings; apply to update timestamps, trend labels, etc. | Post | Not a launch blocker — no P0/P1 UI is currently wrong, everything renders UTC consistently. `src/lib/time-preference.ts` already has the cookie plumbing (`isValidTimeZone`, `detectLocalTimeZone`, read/write helpers) from a prior pass but nothing calls `writeTimeZoneCookie` yet — finish that, don't rebuild it. Needs a `profiles.timezone` migration (nullable, re-issue column grants per §6 convention) and a display-only change to `src/lib/premium/trend-projection.ts` formatting — do **not** change its UTC-bucketed projection math (`dayStr`/`dayMs`), that would break `trend-projection.test.ts`. Build on a branch cut from `master`, after `premium/prem-03-trend-projection` merges (it's mid-flight-rewriting `trend-chart.tsx`/`trend-projection.tsx`). Open question before building: does "updates" mean snapshot timestamps (yes, covered) or the "Next update in MM:SS" countdown in `live-status.tsx` (no — that's a duration, unaffected by timezone). |
 
 ---
 
@@ -280,6 +287,7 @@ RLS sketch: anon/authenticated **insert**; no public **select**; `service_role` 
 | 2026-08-27 | Sep 7 = WZ-first public launch; MP stays coming soon |
 | 2026-08-27 | Add elovate Desktop coming-soon + updates/beta opt-in |
 | 2026-08-27 | Timelines/AI = planning artifact (this doc); track work in GitHub Projects Roadmap |
+| 2026-09-04 | Deferred user timezone setting (TZ-01) to post-launch — new feature, not on roadmap, would land inside/after the Sep 5–6 freeze |
 
 ---
 
