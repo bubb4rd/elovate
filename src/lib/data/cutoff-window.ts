@@ -71,11 +71,24 @@ export function windowCutoffHistory(
     rank1Sr: live.rank1Sr,
     deltaCutoff: live.cutoffSr - baseline.cutoffSr,
   };
-  const last = series[series.length - 1];
-  if (!last || Date.parse(last.capturedAt) < Date.parse(live.fetchedAt)) {
-    series.push(livePoint);
+  // Merge by timestamp, not by array position: the live board is cached and can
+  // fall back to a stale `lastGood` snapshot, so `live.fetchedAt` is not guaranteed
+  // to be newer than the last stored snapshot. Blindly overwriting `series[-1]`
+  // (the old behavior) could replace a NEWER snapshot with an OLDER-stamped live
+  // point, producing an out-of-order series that Recharts draws as a jagged line.
+  const liveTime = Date.parse(live.fetchedAt);
+  const existingIndex = series.findIndex(
+    (point) => Date.parse(point.capturedAt) === liveTime,
+  );
+  if (existingIndex !== -1) {
+    // Same timestamp as a stored snapshot: replace it in place (preserves the
+    // pre-existing "replaceLast" semantics for the equal-timestamp case).
+    series[existingIndex] = livePoint;
   } else {
-    series[series.length - 1] = livePoint;
+    // Otherwise insert in sorted position so the series stays strictly
+    // ascending by capturedAt regardless of how stale `live` is.
+    series.push(livePoint);
+    series.sort((a, b) => Date.parse(a.capturedAt) - Date.parse(b.capturedAt));
   }
 
   return {
