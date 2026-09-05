@@ -4,6 +4,10 @@ import type { BoardRow, BoardRung, LiveWzBoard, Player } from "./types";
 export const LIVE_POLL_MS = 15 * 60 * 1000;
 export const LIVE_POLL_SECONDS = LIVE_POLL_MS / 1000;
 
+// Mirrors DEFAULT_MIN_PLAYERS in supabase/functions/poll-wz-cutoff/index.ts: a
+// truncated CODMunity payload would otherwise produce a wildly wrong cutoff.
+export const MIN_PLAYER_COUNT = 240;
+
 const TOP_250_URL = "https://api.codmunity.gg/website/pages/top-250";
 
 type RankedPlayerPayload = {
@@ -65,6 +69,17 @@ export function mapRankedPlayers(
 
   if (sorted.length === 0) {
     throw new Error("CODMunity Top 250 payload had no ranked players");
+  }
+
+  // Guard against a truncated CODMunity board: a short list would produce a
+  // wildly wrong cutoff (and hero numeral). Throwing here lets the caller
+  // (getLiveWzBoard) fall back to the last good board instead of surfacing a
+  // bad one. See supabase/functions/poll-wz-cutoff/index.ts for the matching
+  // ingest-side guard.
+  if (sorted.length < MIN_PLAYER_COUNT) {
+    throw new Error(
+      `CODMunity Top 250 payload too short (${sorted.length} players, need ${MIN_PLAYER_COUNT})`,
+    );
   }
 
   const lastIndex = sorted.length - 1;

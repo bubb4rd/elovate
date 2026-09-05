@@ -163,4 +163,65 @@ const bothEmpty = avgPerDayFromCutoffs([], liveNow, null);
 assert.equal(bothEmpty.avgPerDaySeason, null);
 assert.equal(bothEmpty.avgPerDay7d, null);
 
+// --- WZ-17: stale live point must not overwrite (or precede) a newer snapshot ---
+
+const staleLiveSnapshots: StoredCutoff[] = [
+  { capturedAt: "2026-08-23T10:00:00.000Z", cutoffSr: 9900, rank1Sr: 19900 },
+  { capturedAt: "2026-08-24T10:00:00.000Z", cutoffSr: 10000, rank1Sr: 20000 },
+  { capturedAt: "2026-08-24T22:00:00.000Z", cutoffSr: 10100, rank1Sr: 20100 },
+  { capturedAt: "2026-08-25T09:00:00.000Z", cutoffSr: 10200, rank1Sr: 20200 },
+  { capturedAt: "2026-08-25T12:00:00.000Z", cutoffSr: 10250, rank1Sr: 20250 },
+];
+
+// The live board's cache (or a lastGood fallback) can be OLDER than the
+// newest stored snapshot. Here `fetchedAt` is 1h behind the 12:00 snapshot.
+const staleLive = windowCutoffHistory(staleLiveSnapshots, {
+  fetchedAt: "2026-08-25T11:00:00.000Z",
+  cutoffSr: 10230,
+  rank1Sr: 20230,
+});
+
+const staleLiveTimes = staleLive.series.map((point) => Date.parse(point.capturedAt));
+for (let i = 1; i < staleLiveTimes.length; i++) {
+  assert.ok(
+    staleLiveTimes[i]! > staleLiveTimes[i - 1]!,
+    "series must be strictly ascending by capturedAt",
+  );
+}
+// The newest stored snapshot (12:00, cutoffSr 10250) must survive the merge.
+assert.ok(
+  staleLive.series.some(
+    (point) => point.capturedAt === "2026-08-25T12:00:00.000Z" && point.cutoffSr === 10250,
+  ),
+  "newest snapshot must not be overwritten by a stale live point",
+);
+// The stale live point itself is still present, just ordered correctly.
+assert.ok(
+  staleLive.series.some(
+    (point) => point.capturedAt === "2026-08-25T11:00:00.000Z" && point.cutoffSr === 10230,
+  ),
+);
+
+// --- WZ-17: very-stale live (lastGood fallback, ~13h behind the newest snapshot) ---
+
+const veryStaleLive = windowCutoffHistory(staleLiveSnapshots, {
+  fetchedAt: "2026-08-24T23:00:00.000Z",
+  cutoffSr: 10120,
+  rank1Sr: 20120,
+});
+
+const veryStaleTimes = veryStaleLive.series.map((point) => Date.parse(point.capturedAt));
+for (let i = 1; i < veryStaleTimes.length; i++) {
+  assert.ok(
+    veryStaleTimes[i]! > veryStaleTimes[i - 1]!,
+    "series must be strictly ascending by capturedAt even for a very stale live point",
+  );
+}
+assert.ok(
+  veryStaleLive.series.some(
+    (point) => point.capturedAt === "2026-08-25T12:00:00.000Z" && point.cutoffSr === 10250,
+  ),
+  "newest snapshot must survive a very-stale live merge",
+);
+
 console.log("live-history tests passed");

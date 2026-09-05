@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { LiveStatus, type BoardFreshnessStatus } from "@/components/live-status";
 import { formatChartTime, formatDay, formatSlashDateTime, formatSr } from "@/lib/format";
+import { parseTimestamp, toSortedRows } from "@/lib/chart/time-series";
 import { readTimeZoneCookie, UTC_TIME_ZONE } from "@/lib/time-preference";
 import { cn } from "@/lib/utils";
 import type { CutoffPoint } from "@/lib/data/types";
@@ -79,10 +80,11 @@ function ChartTooltip({
 }
 
 function toChartRows(series: CutoffPoint[]): ChartRow[] {
-  return series.map((point) => ({
+  const rows = series.map((point) => ({
     ...point,
-    t: Date.parse(point.capturedAt),
+    t: parseTimestamp(point.capturedAt),
   }));
+  return toSortedRows(rows, (row) => row.t);
 }
 
 function seriesDelta(series: CutoffPoint[]): number | null {
@@ -261,6 +263,7 @@ export function CutoffChart({
   const shortSeries = data.length <= 3;
   const xTicks = shortSeries ? data.map((point) => point.t) : undefined;
   const formatXTick = (value: number) => {
+    if (!Number.isFinite(value)) return "";
     const iso = new Date(value).toISOString();
     return shortSeries ? formatChartTime(iso) : formatDay(iso);
   };
