@@ -1,5 +1,9 @@
 # elovate Premium — feature draft
 
+> **Superseded by [`PREMIUM-FEATURES.md`](./PREMIUM-FEATURES.md)** for the final tier
+> scope, per-feature specs, and the live backlog. This doc is kept for the rationale,
+> principles, data grounding, and pricing research behind those decisions.
+
 **Status:** Draft / brainstorm. Not scheduled. No billing infra exists yet.
 **Goal:** a paid tier that feels *"worth it"* to a Warzone player who is actively grinding SR — mostly **advanced analytics** on top of the climb data elovate already collects, plus a few flex/utility perks.
 
