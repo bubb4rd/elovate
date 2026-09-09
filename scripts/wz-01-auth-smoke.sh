@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SUPABASE_URL="${SUPABASE_URL:-https://ioagctykwkspbwzyrfcb.supabase.co}"
-PROD_ORIGIN="${PROD_ORIGIN:-https://elovatesr.netlify.app}"
+PROD_ORIGIN="${PROD_ORIGIN:-https://elovatesr.com}"
 ANON_KEY="${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvYWdjdHlrd2tzcGJ3enlyZmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2OTY2MjYsImV4cCI6MjEwMzI3MjYyNn0.8c5j4aP9q99OUIJqRmrPgPqVsKGpdNCJ-JERNZeRJUE}"
 
 pass=0
@@ -56,7 +56,7 @@ discord_oauth_ok() {
   redirect=$(curl -s -o /dev/null -w "%{redirect_url}" \
     "${SUPABASE_URL}/auth/v1/authorize?provider=discord&redirect_to=${encoded}")
   printf '%s' "$redirect" | rg -q "redirect_uri=https%3A%2F%2Fioagctykwkspbwzyrfcb.supabase.co%2Fauth%2Fv1%2Fcallback"
-  printf '%s' "$redirect" | rg -q "redirect_to=https%3A%2F%2Felovatesr.netlify.app%2Fauth%2Fcallback"
+  printf '%s' "$redirect" | rg -q "redirect_to=https%3A%2F%2Felovatesr.com%2Fauth%2Fcallback"
 }
 
 magic_link_otp_ok() {

@@ -55,7 +55,7 @@ Deno.test("buildDiscordEmbed: falls back to seasonId and default site url", () =
     ...base,
     seasonName: undefined,
   }) as { embeds: Array<{ url: string; footer: { text: string } }> };
-  assertEquals(embed.embeds[0].url, "https://elovatesr.netlify.app");
+  assertEquals(embed.embeds[0].url, "https://elovatesr.com");
   assertEquals(embed.embeds[0].footer.text, "s5");
 });
 

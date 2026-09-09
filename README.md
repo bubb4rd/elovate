@@ -2,7 +2,7 @@
 
 Warzone SR tracker — live Top 250 board, climb sessions, player profiles, and friends.
 
-**Live:** https://elovatesr.netlify.app  
+**Live:** https://elovatesr.com  
 **Launch plan:** `docs/LAUNCH_ROADMAP.md`
 
 ## Getting started
@@ -108,10 +108,10 @@ Push profile migrations to hosted with `supabase db push` (includes onboarding c
 
 In the [elovate Auth URL Configuration](https://supabase.com/dashboard/project/ioagctykwkspbwzyrfcb/auth/url-configuration):
 
-- **Site URL:** `https://elovatesr.netlify.app`
+- **Site URL:** `https://elovatesr.com`
 - **Redirect URLs** (add all that apply; match `supabase/config.toml`):
-  - `https://elovatesr.netlify.app`
-  - `https://elovatesr.netlify.app/auth/callback`
+  - `https://elovatesr.com`
+  - `https://elovatesr.com/auth/callback`
   - `http://127.0.0.1:3000`
   - `http://127.0.0.1:3000/auth/callback`
   - `http://localhost:3000`

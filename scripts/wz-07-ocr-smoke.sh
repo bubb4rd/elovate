@@ -2,7 +2,7 @@
 # WZ-07 OCR optional smoke — automated checks (run from repo root)
 set -euo pipefail
 
-PROD_ORIGIN="${PROD_ORIGIN:-https://elovatesr.netlify.app}"
+PROD_ORIGIN="${PROD_ORIGIN:-https://elovatesr.com}"
 LOCAL_ORIGIN="${LOCAL_ORIGIN:-http://127.0.0.1:3000}"
 
 pass=0

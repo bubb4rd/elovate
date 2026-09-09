@@ -1,5 +1,5 @@
 const DEFAULT_MIN_DELTA = 50;
-const DEFAULT_SITE_URL = "https://elovatesr.netlify.app";
+const DEFAULT_SITE_URL = "https://elovatesr.com";
 
 // Discord embed colors (mirrors src/lib/format.ts intent: green up, red down).
 const COLOR_UP = 0x22c55e;

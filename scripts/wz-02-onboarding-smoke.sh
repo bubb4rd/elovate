@@ -2,7 +2,7 @@
 # WZ-02 onboarding edge-case smoke — automated checks (run from repo root)
 set -euo pipefail
 
-PROD_ORIGIN="${PROD_ORIGIN:-https://elovatesr.netlify.app}"
+PROD_ORIGIN="${PROD_ORIGIN:-https://elovatesr.com}"
 
 pass=0
 fail=0
