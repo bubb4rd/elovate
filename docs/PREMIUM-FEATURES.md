@@ -396,14 +396,12 @@ later polish · **review** = free-vs-Pro split undecided.
 | PREM-04 | Time-of-day / day-of-week heatmap | P1 | Net SR and win rate by hour and weekday. "You're +14/game before 9pm, −6 after." |
 | PREM-05 | Tilt / session-decay detection | P1 | Performance vs games-into-session and vs consecutive losses; flags where avg net turns negative → suggested stop-loss. Optional live nudge in the session panel. |
 | PREM-06 | Session comparison | P1 | Diff any 2+ past sessions — pace, placement mix, teammates, elim share. |
-| PREM-07 | Variance & streak stats | P2 | Longest streaks, standard deviation of net, "swing" games, luck-adjusted SR/game. |
 
 ### 4.2 Map & mode breakdowns
 
 | ID | Feature | Pri | Notes |
 |---|---|---|---|
 | PREM-09 | Per-map performance | review | Avg placement, SR/game, elim share, win rate per map. Free-vs-Pro split TBD once PREM-08 data exists. |
-| PREM-10 | Map × teammate crosstab | review | Best map for each duo. |
 
 *(PREM-08, the logging step itself, is free — see §1.3.)*
 
@@ -428,7 +426,6 @@ later polish · **review** = free-vs-Pro split undecided.
 |---|---|---|---|
 | PREM-18 | Squad dashboard | P1 | Combined view for opted-in friends — each member's pace, shared session log, squad SR/day leaderboard. Needs `squad_share` opt-in rows with RLS scoped to accepted friends. |
 | PREM-19 | Compare vs friend | P1 | Head-to-head stat sheet — pace, placement mix, elim share, consistency. |
-| PREM-20 | Squad goal race | P2 | Shared target ("all of us to Crimson"), progress bars, ETA per member. |
 
 ### 4.6 Profile flex & content
 
@@ -443,6 +440,16 @@ later polish · **review** = free-vs-Pro split undecided.
 | ID | Feature | Pri | Notes |
 |---|---|---|---|
 | PREM-27 | Multiplayer board early access | P2 | When MP-02 ships, Pro sees it first. |
+
+### 4.8 Cut
+
+Dropped from the plan (2026-09-09). Recorded here so they aren't re-proposed.
+
+| ID | Feature | Issue |
+|---|---|---|
+| PREM-07 | Variance & streak stats | [#70](https://github.com/bubb4rd/elovate/issues/70) |
+| PREM-10 | Map × teammate crosstab | [#72](https://github.com/bubb4rd/elovate/issues/72) |
+| PREM-20 | Squad goal race | [#80](https://github.com/bubb4rd/elovate/issues/80) |
 
 ---
 
@@ -480,9 +487,7 @@ Milestone **[Premium v1](https://github.com/bubb4rd/elovate/milestone/2)**. Labe
 | PREM-04 | [#67](https://github.com/bubb4rd/elovate/issues/67) Time-of-day heatmap | backlog |
 | PREM-05 | [#68](https://github.com/bubb4rd/elovate/issues/68) Tilt / session-decay | backlog |
 | PREM-06 | [#69](https://github.com/bubb4rd/elovate/issues/69) Session comparison | backlog |
-| PREM-07 | [#70](https://github.com/bubb4rd/elovate/issues/70) Variance & streak stats | backlog |
 | PREM-09 | [#71](https://github.com/bubb4rd/elovate/issues/71) Per-map performance | backlog / review |
-| PREM-10 | [#72](https://github.com/bubb4rd/elovate/issues/72) Map × teammate crosstab | backlog / review |
 | PREM-12 | [#73](https://github.com/bubb4rd/elovate/issues/73) Cutoff alerts (blocked on N-02) | backlog |
 | PREM-13 | [#74](https://github.com/bubb4rd/elovate/issues/74) Full-season cutoff history | backlog |
 | PREM-14 | [#75](https://github.com/bubb4rd/elovate/issues/75) Cutoff forecast | backlog |
@@ -490,7 +495,6 @@ Milestone **[Premium v1](https://github.com/bubb4rd/elovate/milestone/2)**. Labe
 | PREM-17 | [#77](https://github.com/bubb4rd/elovate/issues/77) Personal season archive | backlog |
 | PREM-18 | [#78](https://github.com/bubb4rd/elovate/issues/78) Squad dashboard | backlog |
 | PREM-19 | [#79](https://github.com/bubb4rd/elovate/issues/79) Compare vs friend | backlog |
-| PREM-20 | [#80](https://github.com/bubb4rd/elovate/issues/80) Squad goal race | backlog |
 | PREM-22 | [#81](https://github.com/bubb4rd/elovate/issues/81) Premium share cards | backlog |
 | PREM-23 | [#82](https://github.com/bubb4rd/elovate/issues/82) Profile view analytics | backlog |
 | PREM-24 | [#83](https://github.com/bubb4rd/elovate/issues/83) Featured stats / pinned session | backlog |
