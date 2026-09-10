@@ -1,13 +1,14 @@
 import { createAnonSupabaseClient } from "@/lib/supabase/server";
 import {
   avgPerDayFromCutoffs,
+  finalPushCutoffHistory,
   windowCutoffHistory,
   type StoredCutoff,
 } from "./cutoff-window";
 import type { CutoffPoint, LiveWzBoard, Mode } from "./types";
 
 export type { StoredCutoff };
-export { avgPerDayFromCutoffs, windowCutoffHistory };
+export { avgPerDayFromCutoffs, finalPushCutoffHistory, windowCutoffHistory };
 
 export type LiveWzHistory = {
   change24h: number | null;
@@ -117,6 +118,57 @@ export async function getLatestStoredCutoff(
     cutoffSr: data.cutoff_sr as number,
     rank1Sr: data.rank1_sr as number,
   };
+}
+
+/**
+ * The newest ~400 snapshots for the season, ascending. Unlike
+ * `getRecentCutoffSnapshots` this is not bounded by an 8-day time window, so the
+ * frozen-home "final push" view keeps working through the whole off-season. The
+ * DESC + `limit(400)` keeps the response well under PostgREST's 1000-row cap
+ * while still covering several days of pre-lock movement.
+ */
+export async function getTailCutoffSnapshots(
+  mode: Mode,
+  seasonId: string,
+  limit = 400,
+): Promise<StoredCutoff[]> {
+  const supabase = createAnonSupabaseClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("snapshots")
+    .select("captured_at, cutoff_sr, rank1_sr")
+    .eq("mode", mode)
+    .eq("season_id", seasonId)
+    .order("captured_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  return data
+    .map((row) => ({
+      capturedAt: row.captured_at as string,
+      cutoffSr: row.cutoff_sr as number,
+      rank1Sr: row.rank1_sr as number,
+    }))
+    .reverse();
+}
+
+/**
+ * The final 24h of real cutoff climbing before the season locked — the "closing
+ * scramble" shown on the home page while ranked is frozen. Empty result when
+ * there is not a full pre-lock window, so the caller just hides the chart.
+ */
+export async function finalPushWzHistory(
+  seasonId: string,
+  hours = 24,
+): Promise<{ change24h: number | null; series: CutoffPoint[] }> {
+  try {
+    const snapshots = await getTailCutoffSnapshots("wz", seasonId);
+    return finalPushCutoffHistory(snapshots, hours);
+  } catch {
+    return { change24h: null, series: [] };
+  }
 }
 
 export async function liveWzHistoryFor(

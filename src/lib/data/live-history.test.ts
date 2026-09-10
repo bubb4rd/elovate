@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   avgPerDayFromCutoffs,
+  finalPushCutoffHistory,
   windowCutoffHistory,
   type StoredCutoff,
 } from "./cutoff-window";
@@ -223,5 +224,62 @@ assert.ok(
   ),
   "newest snapshot must survive a very-stale live merge",
 );
+
+// --- Frozen home: finalPushCutoffHistory replays the last 24h before the lock ---
+
+// Climb, then a flat plateau once ranked locked. The window must anchor on the
+// start of the plateau (last real movement), not on the newest snapshot.
+const lockSnapshots: StoredCutoff[] = [
+  { capturedAt: "2026-09-09T00:00:00.000Z", cutoffSr: 27000, rank1Sr: 48000 },
+  { capturedAt: "2026-09-09T05:00:00.000Z", cutoffSr: 27100, rank1Sr: 48200 },
+  { capturedAt: "2026-09-09T12:00:00.000Z", cutoffSr: 27400, rank1Sr: 48500 },
+  { capturedAt: "2026-09-10T05:00:00.000Z", cutoffSr: 27870, rank1Sr: 49047 },
+  { capturedAt: "2026-09-10T09:00:00.000Z", cutoffSr: 27870, rank1Sr: 49047 },
+  { capturedAt: "2026-09-10T18:00:00.000Z", cutoffSr: 27870, rank1Sr: 49047 },
+];
+const finalPush = finalPushCutoffHistory(lockSnapshots);
+// anchor = 2026-09-10T05:00 (start of plateau); baseline = 2026-09-09T05:00 @ 27100
+assert.equal(finalPush.change24h, 770);
+assert.equal(finalPush.series[0]?.capturedAt, "2026-09-09T05:00:00.000Z");
+assert.equal(
+  finalPush.series[finalPush.series.length - 1]?.capturedAt,
+  "2026-09-10T05:00:00.000Z",
+);
+// trailing plateau snapshots are not part of the closing-scramble series
+assert.ok(
+  finalPush.series.every(
+    (point) =>
+      Date.parse(point.capturedAt) <= Date.parse("2026-09-10T05:00:00.000Z"),
+  ),
+);
+
+// Still climbing at the last sample → anchor is the newest snapshot.
+const stillClimbing: StoredCutoff[] = [
+  { capturedAt: "2026-09-09T06:00:00.000Z", cutoffSr: 27100, rank1Sr: 48200 },
+  { capturedAt: "2026-09-09T18:00:00.000Z", cutoffSr: 27500, rank1Sr: 48600 },
+  { capturedAt: "2026-09-10T06:00:00.000Z", cutoffSr: 27900, rank1Sr: 49100 },
+];
+const climbing = finalPushCutoffHistory(stillClimbing);
+assert.equal(climbing.change24h, 800);
+assert.equal(climbing.series.length, 3);
+
+// No snapshot a full 24h before the anchor → empty, caller hides the chart.
+const thin: StoredCutoff[] = [
+  { capturedAt: "2026-09-10T04:00:00.000Z", cutoffSr: 27860, rank1Sr: 49000 },
+  { capturedAt: "2026-09-10T05:00:00.000Z", cutoffSr: 27870, rank1Sr: 49047 },
+];
+const thinResult = finalPushCutoffHistory(thin);
+assert.equal(thinResult.change24h, null);
+assert.deepEqual(thinResult.series, []);
+
+// Long past the lock, every snapshot flat → empty.
+const allFlat: StoredCutoff[] = [
+  { capturedAt: "2026-09-12T00:00:00.000Z", cutoffSr: 27870, rank1Sr: 49047 },
+  { capturedAt: "2026-09-13T00:00:00.000Z", cutoffSr: 27870, rank1Sr: 49047 },
+];
+assert.equal(finalPushCutoffHistory(allFlat).change24h, null);
+
+// Single snapshot → empty.
+assert.deepEqual(finalPushCutoffHistory([lockSnapshots[0]!]).series, []);
 
 console.log("live-history tests passed");

@@ -12,9 +12,13 @@ const ease = [0.16, 1, 0.3, 1] as const;
 export function HomeCutoffObject({
   series,
   change24h,
+  unit = "24h",
+  caption = "cutoff gain",
 }: {
   series: CutoffPoint[];
   change24h: number | null;
+  unit?: string;
+  caption?: string;
 }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
@@ -64,10 +68,10 @@ export function HomeCutoffObject({
         >
           <span ref={ref}>{change24h === null ? "—" : formatDelta(change24h)}</span>
           <span className="ml-2 text-lg font-medium tracking-normal text-muted md:text-xl">
-            24h
+            {unit}
           </span>
         </p>
-        <p className="mt-2 text-sm text-muted">cutoff gain</p>
+        <p className="mt-2 text-sm text-muted">{caption}</p>
       </motion.div>
       <motion.div
         className="mt-4"
