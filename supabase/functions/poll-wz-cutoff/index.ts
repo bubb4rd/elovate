@@ -1,6 +1,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import { type DiscordNotifyResult, maybeNotifyDiscordCutoff } from "./discord.ts";
+import { phaseSkipResponse, shouldPollForPhase } from "./phase-guard.ts";
 
 const TOP_250_URL = "https://api.codmunity.gg/website/pages/top-250";
 const MIN_INTERVAL_MS = 12 * 60 * 1000;
@@ -40,17 +41,30 @@ export default {
       return Response.json({ error: "Admin client unavailable" }, { status: 500 });
     }
 
-    const { data: season, error: seasonError } = await admin
-      .from("seasons")
-      .select("id, name")
-      .eq("is_active", true)
-      .maybeSingle();
+    type ActiveSeasonPhaseRow = {
+      season_id: string;
+      season_name: string;
+      phase: string;
+    };
+    const phaseResult = await admin.rpc("active_season_phase");
+    const seasonError = phaseResult.error;
+    const phaseRows = phaseResult.data as ActiveSeasonPhaseRow[] | null;
+    const phaseRow = Array.isArray(phaseRows) ? phaseRows[0] : null;
 
-    if (seasonError || !season) {
+    if (seasonError || !phaseRow) {
       return Response.json(
         { error: seasonError?.message ?? "No active season" },
         { status: 500 },
       );
+    }
+
+    const season = { id: phaseRow.season_id, name: phaseRow.season_name };
+    const phase: string = phaseRow.phase;
+
+    // D1: freeze pauses WRITES ONLY. Bail before the freshness check and before
+    // any CODMunity fetch when we are outside a live regular season.
+    if (!shouldPollForPhase(phase)) {
+      return phaseSkipResponse(phase);
     }
 
     const { data: latest } = await admin

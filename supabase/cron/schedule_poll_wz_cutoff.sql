@@ -2,6 +2,12 @@
 --   1. `supabase secrets set CRON_SECRET=<value>` (Edge Function env)
 --   2. `select vault.create_secret('<same-value>', 'cron_secret');`
 -- Then: `psql` / SQL editor, or `supabase db query -f supabase/cron/schedule_poll_wz_cutoff.sql --linked`
+--
+-- The job is intentionally left on a fixed schedule year-round. The pause
+-- mechanism for the off-season is the season-phase guard inside the Edge
+-- Function (`active_season_phase()` != 'regular_season' -> skip): the cron keeps
+-- firing, cheaply no-ops, and auto-resumes when the phase flips back. See
+-- supabase/migrations/20260910193434_add_season_phase.sql.
 
 create extension if not exists pg_cron with schema pg_catalog;
 create extension if not exists pg_net with schema extensions;

@@ -33,6 +33,7 @@ Launch does **not** require a third-party APM. Uncaught UI crashes log `[ops]` t
 | OCR **503** `"Scan unavailable right now"` without GCP keys | Expected — see `docs/WZ-07-ocr-optional.md` |
 | Climb cloud-sync banner + Retry | Expected — user-visible; local session is kept |
 | `poll-wz-cutoff` `{"skipped":true,"reason":"fresh"}` | Healthy — 12-minute ingest throttle |
+| `poll-wz-cutoff` `{"skipped":true,"reason":"season_phase","phase":"..."}` + `[poll-wz-cutoff] skipped` | Healthy — the season is in `ranked_series` / `preseason`, so writes are paused by design (D1). The cron keeps firing and auto-resumes when the phase returns to `regular_season`. A paused cron here is **not** a broken cron. Control: `supabase/scripts/set_season_phase.sql` |
 | `poll-wz-cutoff` `{"skipped":true,"reason":"short_payload"}` + `[poll-wz-cutoff] short payload` | Warn — CODMunity returned a partial board; ingest correctly skipped. Repeated occurrences = page |
 | `[ops]` in Netlify logs, or 5xx bursts | Page — check the matching deploy and function log |
 | `poll-wz-cutoff` 401 / 502 / insert errors | Page — secret mismatch or CODMunity/DB failure |
