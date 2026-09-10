@@ -1,3 +1,4 @@
+import { validateAvatarFile } from "@/lib/profile/edit-storage";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import type { Database } from "@/lib/supabase/database";
 import type { ProfilePageThemeId } from "./themes";
@@ -6,6 +7,7 @@ export type AccountSettings = {
   userId: string;
   slug: string;
   displayName: string;
+  avatarUrl: string | null;
   email: string | null;
   createdAt: string | null;
   isPrivate: boolean;
@@ -45,4 +47,38 @@ export async function saveAccountSettings(
   const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
   if (error) return { error: error.message };
   return { ok: true };
+}
+
+function avatarExtForType(type: string): string {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  return "jpg";
+}
+
+export async function uploadAccountAvatar(
+  userId: string,
+  file: File,
+): Promise<{ avatarUrl: string } | { error: string }> {
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) return { error: "Sign-in is not configured." };
+
+  const validationError = validateAvatarFile(file);
+  if (validationError) return { error: validationError };
+
+  const path = `${userId}/avatar.${avatarExtForType(file.type)}`;
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadError) return { error: uploadError.message };
+
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  const avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", userId);
+  if (error) return { error: error.message };
+
+  return { avatarUrl };
 }

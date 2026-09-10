@@ -16,7 +16,7 @@ export const getAccountSettings = cache(async function getAccountSettings(
     supabase
       .from("profiles")
       .select(
-        "slug, display_name, is_private, notify_cutoff, notify_climb, created_at, page_theme_id",
+        "slug, display_name, avatar_url, is_private, notify_cutoff, notify_climb, created_at, page_theme_id",
       )
       .eq("id", userId)
       .maybeSingle(),
@@ -33,6 +33,7 @@ export const getAccountSettings = cache(async function getAccountSettings(
     userId,
     slug: profile.slug,
     displayName: profile.display_name,
+    avatarUrl: profile.avatar_url ?? null,
     email: userData.user?.email ?? null,
     createdAt: profile.created_at ?? userData.user?.created_at ?? null,
     isPrivate: profile.is_private,
