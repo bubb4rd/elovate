@@ -74,9 +74,6 @@ export default async function Home() {
                   }
                 />
               ) : null}
-              {phaseNotice ? (
-                <p className="mt-3 text-sm text-muted">{phaseNotice.detail}</p>
-              ) : null}
               {resolved.source === "stored" ? (
                 <p className="mt-3 text-sm text-muted">
                   Live standings unavailable. Showing the last recorded cutoff.
