@@ -45,6 +45,56 @@ export function avgPerDayFromCutoffs(
   };
 }
 
+/**
+ * The final 24h of real cutoff movement from stored snapshots — the "closing
+ * scramble" view for the frozen home page.
+ *
+ * Once ranked locks, the cron stops and the live board flatlines, so the normal
+ * `windowCutoffHistory` (anchored on "now") shows a dead-flat line. This instead
+ * anchors on the last moment the cutoff actually moved: it walks back over the
+ * trailing plateau (snapshots equal to the final value), then takes the `hours`
+ * window ending there. Returns an empty result when there is not a full window
+ * of pre-lock data, so the caller can simply hide the chart.
+ */
+export function finalPushCutoffHistory(
+  snapshots: StoredCutoff[],
+  hours = 24,
+): { change24h: number | null; series: CutoffPoint[] } {
+  if (snapshots.length < 2) return { change24h: null, series: [] };
+
+  // Anchor on the last moment the cutoff actually moved: walk back over any
+  // trailing plateau (snapshots already at the final value).
+  const finalSr = snapshots[snapshots.length - 1]!.cutoffSr;
+  let endIndex = snapshots.length - 1;
+  while (endIndex > 0 && snapshots[endIndex - 1]!.cutoffSr === finalSr) {
+    endIndex -= 1;
+  }
+  const end = snapshots[endIndex]!;
+
+  // Baseline must be at least `hours` before the anchor, so the window really
+  // spans a full day (same rule as `windowCutoffHistory`).
+  const baseline = nearestAtLeastHoursAgo(snapshots, end.capturedAt, hours);
+  if (!baseline) return { change24h: null, series: [] };
+
+  const baseTime = Date.parse(baseline.capturedAt);
+  const endTime = Date.parse(end.capturedAt);
+  const windowed = snapshots.filter((snap) => {
+    const t = Date.parse(snap.capturedAt);
+    return t >= baseTime && t <= endTime;
+  });
+  if (windowed.length < 2) return { change24h: null, series: [] };
+
+  const series: CutoffPoint[] = windowed.map((snap, index) => ({
+    capturedAt: snap.capturedAt,
+    cutoffSr: snap.cutoffSr,
+    rank1Sr: snap.rank1Sr,
+    deltaCutoff:
+      index === 0 ? null : snap.cutoffSr - windowed[index - 1]!.cutoffSr,
+  }));
+
+  return { change24h: end.cutoffSr - baseline.cutoffSr, series };
+}
+
 export function windowCutoffHistory(
   snapshots: StoredCutoff[],
   live: { fetchedAt: string; cutoffSr: number; rank1Sr: number },

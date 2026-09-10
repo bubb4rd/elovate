@@ -6,7 +6,7 @@ import { ModePick } from "@/components/mode-pick";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { getBoardCutoff } from "@/lib/data/board-source";
-import { liveWzHistoryFor } from "@/lib/data/live-history";
+import { finalPushWzHistory, liveWzHistoryFor } from "@/lib/data/live-history";
 import { getHomeSummary, getLiveWzBoard, listSeasons } from "@/lib/data/queries";
 import {
   boardStatusForPhase,
@@ -38,9 +38,17 @@ export default async function Home() {
   const phaseNotice = frozen
     ? seasonPhaseCopy(phaseInfo.phase, phaseInfo.seasonName, phaseInfo.phaseEndsAt)
     : null;
-  // Off-season: the 24h sparkline has no fresh movement to show.
-  const dailySeries =
-    !frozen && history.change24h != null ? history.series : [];
+  // Frozen: the live 24h window is now flat, so replay the last 24h of real
+  // climbing before the season locked — the closing scramble for Top 250.
+  const finalPush = frozen ? await finalPushWzHistory(season.id) : null;
+  const dailySeries = frozen
+    ? (finalPush?.series ?? [])
+    : history.change24h != null
+      ? history.series
+      : [];
+  const dailyChange = frozen
+    ? (finalPush?.change24h ?? null)
+    : (wz?.change24h ?? null);
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -55,7 +63,16 @@ export default async function Home() {
                 showChange={false}
               />
               {dailySeries.length > 0 ? (
-                <HomeCutoffObject series={dailySeries} change24h={wz.change24h} />
+                <HomeCutoffObject
+                  series={dailySeries}
+                  change24h={dailyChange}
+                  unit={frozen ? "final 24h" : "24h"}
+                  caption={
+                    frozen
+                      ? "the last-minute scramble for Top 250"
+                      : "cutoff gain"
+                  }
+                />
               ) : null}
               {phaseNotice ? (
                 <p className="mt-3 text-sm text-muted">{phaseNotice.detail}</p>
