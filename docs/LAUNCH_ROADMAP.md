@@ -288,6 +288,7 @@ RLS sketch: anon/authenticated **insert**; no public **select**; `service_role` 
 | 2026-08-27 | Add elovate Desktop coming-soon + updates/beta opt-in |
 | 2026-08-27 | Timelines/AI = planning artifact (this doc); track work in GitHub Projects Roadmap |
 | 2026-09-04 | Deferred user timezone setting (TZ-01) to post-launch — new feature, not on roadmap, would land inside/after the Sep 5–6 freeze |
+| 2026-09-10 | Adopted a season-phase state machine (`regular_season` / `ranked_series` / `preseason`) via `public.active_season_phase()`. The `poll-wz-cutoff` cron pauses writes outside `regular_season` (reads stay on so the final Top 250 still renders); `season.isActive` stays true through the off-season. Manual control via `supabase/scripts/set_season_phase.sql`. Phase 2 (Ranked Series ladder) deferred. |
 
 ---
 

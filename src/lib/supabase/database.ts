@@ -127,6 +127,17 @@ export type PendingFriendRequestRpcRow = {
   requester_avatar_url: string | null;
 };
 
+export type SeasonPhaseValue = "regular_season" | "ranked_series" | "preseason";
+
+export type ActiveSeasonPhaseRpcRow = {
+  season_id: string;
+  season_name: string;
+  phase: SeasonPhaseValue;
+  is_override: boolean;
+  phase_started_at: string | null;
+  phase_ends_at: string | null;
+};
+
 export type CastProfileVoteResult = {
   ups: number;
   downs: number;
@@ -351,12 +362,17 @@ export type Database = {
         Args: Record<string, never>;
         Returns: PendingFriendRequestRpcRow[];
       };
+      active_season_phase: {
+        Args: Record<string, never>;
+        Returns: ActiveSeasonPhaseRpcRow[];
+      };
     };
     CompositeTypes: Record<string, never>;
     Enums: {
       mode: Mode;
       match_invite_status: MatchInviteStatus;
       friend_request_status: FriendRequestStatus;
+      season_phase: SeasonPhaseValue;
     };
   };
 };

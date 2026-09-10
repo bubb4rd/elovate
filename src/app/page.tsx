@@ -8,6 +8,11 @@ import { SiteNav } from "@/components/site-nav";
 import { getBoardCutoff } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import { getHomeSummary, getLiveWzBoard, listSeasons } from "@/lib/data/queries";
+import {
+  boardStatusForPhase,
+  getActiveSeasonPhase,
+  seasonPhaseCopy,
+} from "@/lib/data/season-phase";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -28,7 +33,14 @@ export default async function Home() {
     history,
   });
   const seasons = listSeasons();
-  const dailySeries = history.change24h != null ? history.series : [];
+  const phaseInfo = await getActiveSeasonPhase();
+  const frozen = boardStatusForPhase(phaseInfo.phase) === "frozen";
+  const phaseNotice = frozen
+    ? seasonPhaseCopy(phaseInfo.phase, phaseInfo.seasonName, phaseInfo.phaseEndsAt)
+    : null;
+  // Off-season: the 24h sparkline has no fresh movement to show.
+  const dailySeries =
+    !frozen && history.change24h != null ? history.series : [];
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -45,6 +57,9 @@ export default async function Home() {
               {dailySeries.length > 0 ? (
                 <HomeCutoffObject series={dailySeries} change24h={wz.change24h} />
               ) : null}
+              {phaseNotice ? (
+                <p className="mt-3 text-sm text-muted">{phaseNotice.detail}</p>
+              ) : null}
               {resolved.source === "stored" ? (
                 <p className="mt-3 text-sm text-muted">
                   Live standings unavailable. Showing the last recorded cutoff.
@@ -57,7 +72,13 @@ export default async function Home() {
         </div>
         <HomeHeroCopy />
       </section>
-      <ModePick mp={mp} wz={wz} />
+      <ModePick
+        mp={mp}
+        wz={wz}
+        wzNote={
+          phaseNotice ? `${phaseNotice.badge} · ${phaseInfo.seasonName} final` : null
+        }
+      />
       <DesktopHomeTeaser />
       <SiteFooter />
     </div>

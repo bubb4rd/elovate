@@ -5,14 +5,17 @@ import type { BoardMetrics } from "@/lib/data/types";
 export function ModePick({
   mp: _mp,
   wz,
+  wzNote = null,
 }: {
   mp: BoardMetrics | null;
   wz: BoardMetrics | null;
+  /** Off-season replacement for the WZ "avg / day (7d)" subtitle. */
+  wzNote?: string | null;
 }) {
   return (
     <section className="grid grid-cols-1 gap-0 border-t border-border md:grid-cols-2">
       <ModeCell href="/mp" title="Multiplayer" comingSoon />
-      <ModeCell href="/wz" title="Warzone" metrics={wz} edge />
+      <ModeCell href="/wz" title="Warzone" metrics={wz} note={wzNote} edge />
     </section>
   );
 }
@@ -21,12 +24,14 @@ function ModeCell({
   href,
   title,
   metrics,
+  note,
   edge,
   comingSoon,
 }: {
   href: string;
   title: string;
   metrics?: BoardMetrics | null;
+  note?: string | null;
   edge?: boolean;
   comingSoon?: boolean;
 }) {
@@ -48,11 +53,15 @@ function ModeCell({
         <p className="mt-4 text-muted">No snapshot for this season yet.</p>
       )}
       <p className="mt-2 text-sm text-muted">
-        {!comingSoon && metrics
-          ? metrics.avgPerDay7d == null
-            ? "avg / day (7d) pending"
-            : `${formatDelta(Math.round(metrics.avgPerDay7d))} avg / day (7d)`
-          : ""}
+        {comingSoon
+          ? ""
+          : note
+            ? note
+            : metrics
+              ? metrics.avgPerDay7d == null
+                ? "avg / day (7d) pending"
+                : `${formatDelta(Math.round(metrics.avgPerDay7d))} avg / day (7d)`
+              : ""}
       </p>
     </Link>
   );

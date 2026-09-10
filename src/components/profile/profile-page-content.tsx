@@ -40,6 +40,7 @@ export function ProfilePageContent({
   isSignedIn,
   friendStatus = "none",
   friendRequestId = null,
+  cutoffNote = null,
 }: {
   profile: ProfileView;
   srDelta: number | null;
@@ -47,6 +48,8 @@ export function ProfilePageContent({
   isSignedIn: boolean;
   friendStatus?: FriendStatus;
   friendRequestId?: string | null;
+  /** "Top 250" qualifier when the season standings are frozen, e.g. "S5 final". */
+  cutoffNote?: string | null;
 }) {
   const [pageThemeId, setPageThemeId] = useState<ProfilePageThemeId>(profile.pageThemeId);
   const [displayName, setDisplayName] = useState(profile.displayName);
@@ -211,7 +214,11 @@ export function ProfilePageContent({
             )}
           </div>
           <div className="min-h-40">
-            <SrProgress currentSr={currentSr} cutoffSr={profile.cutoffSr} />
+            <SrProgress
+              currentSr={currentSr}
+              cutoffSr={profile.cutoffSr}
+              cutoffNote={cutoffNote}
+            />
           </div>
         </div>
         <div className="order-3 lg:col-start-1 lg:row-start-2">

@@ -22,14 +22,19 @@ function filledSegmentCount(fill: number): number {
   return Math.min(SEGMENT_COUNT, Math.max(1, Math.round(fill * SEGMENT_COUNT)));
 }
 
-function roadState(currentSr: number, cutoffSr: number | null) {
+function roadState(
+  currentSr: number,
+  cutoffSr: number | null,
+  cutoffNote?: string | null,
+) {
   const rank = rankFromSr(currentSr, cutoffSr);
   const cutoff =
     cutoffSr != null && cutoffSr > IRIDESCENT_SR ? cutoffSr : IRIDESCENT_SR + 10_000;
+  const top250Label = cutoffNote ? `Top 250 — ${cutoffNote}` : "Top 250";
 
   if (rank.division === "top250") {
     return {
-      goalLabel: "Top 250",
+      goalLabel: top250Label,
       start: IRIDESCENT_SR,
       startLabel: "Iri",
       end: rank.minSr,
@@ -40,7 +45,7 @@ function roadState(currentSr: number, cutoffSr: number | null) {
 
   if (rank.division === "iridescent") {
     return {
-      goalLabel: "Top 250",
+      goalLabel: top250Label,
       start: IRIDESCENT_SR,
       startLabel: "Iri",
       end: cutoff,
@@ -91,11 +96,14 @@ function RemainingSpan({
 export function SrProgress({
   currentSr,
   cutoffSr,
+  cutoffNote = null,
 }: {
   currentSr: number;
   cutoffSr: number | null;
+  /** Qualifier appended to the "Top 250" goal, e.g. "S5 final", when standings are frozen. */
+  cutoffNote?: string | null;
 }) {
-  const road = roadState(currentSr, cutoffSr);
+  const road = roadState(currentSr, cutoffSr, cutoffNote);
   const fill =
     road.end > road.start
       ? Math.min(1, Math.max(0, (currentSr - road.start) / (road.end - road.start)))

@@ -10,6 +10,10 @@ import {
   getLiveWzBoard,
   listSeasons,
 } from "@/lib/data/queries";
+import {
+  boardStatusForPhase,
+  getActiveSeasonPhase,
+} from "@/lib/data/season-phase";
 import { getFriendStatusServer } from "@/lib/friends/server";
 import { getProfile } from "@/lib/profile/queries";
 import { IRIDESCENT_SR } from "@/lib/ranked";
@@ -74,6 +78,13 @@ export default async function PlayerPage({
   const cutoffSr = metrics?.cutoffSr ?? IRIDESCENT_SR;
   const profileWithLive = { ...profile, cutoffSr };
 
+  // Copy only — the SR math is already right because the cutoff stops moving
+  // when the season freezes. Qualify the goal as the season's final cutoff.
+  const phaseInfo = await getActiveSeasonPhase();
+  const frozen =
+    profile.mode === "wz" && boardStatusForPhase(phaseInfo.phase) === "frozen";
+  const cutoffNote = frozen ? `${phaseInfo.seasonName} final` : null;
+
   const firstSr = profileWithLive.series[0]?.cutoffSr;
   const lastSr = profileWithLive.series[profileWithLive.series.length - 1]?.cutoffSr;
   const srDelta =
@@ -87,6 +98,7 @@ export default async function PlayerPage({
         seasonId={season.id}
         cutoffSr={cutoffSr}
         nextUpdateAt={live?.nextUpdateAt}
+        boardStatus={frozen ? "frozen" : "live"}
       />
       <main className="mx-auto w-full max-w-[1400px] flex-1 md:px-4 md:py-6">
         <ProfilePageContent
@@ -97,6 +109,7 @@ export default async function PlayerPage({
           isSignedIn={Boolean(viewer)}
           friendStatus={friend.status}
           friendRequestId={friend.requestId}
+          cutoffNote={cutoffNote}
         />
       </main>
       <SiteFooter />

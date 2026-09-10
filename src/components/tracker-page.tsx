@@ -10,6 +10,11 @@ import { getViewerProfile } from "@/lib/auth/viewer";
 import { getBoardCutoff, resolveBoardRows } from "@/lib/data/board-source";
 import { liveWzHistoryFor } from "@/lib/data/live-history";
 import {
+  boardStatusForPhase,
+  getActiveSeasonPhase,
+  seasonPhaseCopy,
+} from "@/lib/data/season-phase";
+import {
   getBoard,
   getBoardMetrics,
   getCutoffSeries,
@@ -74,10 +79,33 @@ export async function TrackerPage({
   const rows = resolveBoardRows(live?.rows, board?.rows, isLiveBoard);
   const viewer = await getViewerProfile();
 
+  // Season phase is orthogonal to `season.isActive` (that flag stays true through
+  // the off-season). Only the live season's board reflects the phase; archived
+  // boards keep whatever status the caller passed.
+  const phaseInfo = await getActiveSeasonPhase();
+  const isActiveSeason = season?.isActive === true && mode === "wz";
+  const resolvedBoardStatus: BoardFreshnessStatus = isActiveSeason
+    ? boardStatusForPhase(phaseInfo.phase)
+    : boardStatus;
+  const phaseNotice =
+    isActiveSeason && resolvedBoardStatus === "frozen"
+      ? seasonPhaseCopy(
+          phaseInfo.phase,
+          phaseInfo.seasonName,
+          phaseInfo.phaseEndsAt,
+        )
+      : null;
+
   if (!season || !board || !metrics) {
     return (
       <div className="flex min-h-[100dvh] flex-col">
-        <SiteNav mode={mode} seasons={seasons} seasonId={seasonId} tool="board" />
+        <SiteNav
+          mode={mode}
+          seasons={seasons}
+          seasonId={seasonId}
+          tool="board"
+          boardStatus={resolvedBoardStatus}
+        />
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-7 py-10">
           <p>No snapshot for this season yet.</p>
         </main>
@@ -94,6 +122,7 @@ export async function TrackerPage({
         seasons={seasons}
         seasonId={seasonId}
         tool="board"
+        boardStatus={resolvedBoardStatus}
       />
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-7 py-4 lg:min-h-0">
         <ViewerThemeShell themeId={viewer?.pageThemeId}>
@@ -106,6 +135,11 @@ export async function TrackerPage({
             </h1>
             <HeadingMetrics metrics={metrics} showCutoff={false} />
           </div>
+          {phaseNotice ? (
+            <p className="mt-2 shrink-0 text-sm text-muted">
+              {phaseNotice.detail}
+            </p>
+          ) : null}
           {resolved.source === "stored" ? (
             <p className="mt-2 shrink-0 text-sm text-muted">
               Live standings unavailable. Showing the last recorded cutoff.
@@ -117,7 +151,9 @@ export async function TrackerPage({
                 <BoardTable rows={rows} linkPlayers={false} />
               ) : (
                 <p className="text-sm text-muted">
-                  The player standings return when the live feed is back.
+                  {phaseNotice
+                    ? `The ${phaseInfo.seasonName} final Top 250 returns when the feed responds.`
+                    : "The player standings return when the live feed is back."}
                 </p>
               )}
             </div>
@@ -127,7 +163,7 @@ export async function TrackerPage({
                 series={series}
                 liveCutoffSr={metrics.cutoffSr}
                 nextUpdateAt={live?.nextUpdateAt}
-                boardStatus={boardStatus}
+                boardStatus={resolvedBoardStatus}
               />
             </aside>
           </div>
