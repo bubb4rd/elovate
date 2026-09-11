@@ -75,8 +75,8 @@ export function HomeAbout() {
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.45, delay: 0.18, ease }}
             >
-              elovate is a Warzone SR tracker. We follow the live Top 250 cutoff,
-              log the climbs you play, and keep your profile and friends in one
+              elovate is a Warzone SR tracker. We track the Top 250 cutoff, log
+              the climbs you play, and keep your profile and friends in one
               place.
             </motion.p>
 
