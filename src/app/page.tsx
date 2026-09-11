@@ -90,7 +90,7 @@ export default async function Home() {
         mp={mp}
         wz={wz}
         wzNote={
-          phaseNotice ? `${phaseNotice.badge} · ${phaseInfo.seasonName} final` : null
+          phaseNotice ? `${phaseInfo.seasonName} final` : null
         }
       />
       <DesktopHomeTeaser />
