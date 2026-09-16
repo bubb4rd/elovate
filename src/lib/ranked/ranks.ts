@@ -46,47 +46,184 @@ export const DIVISION_TONE: Record<DivisionId, DivisionTone> = {
   top250: { fill: "#4a1570", fill2: "#f2c81d", glow: "#f2c81d", text: "#f7dd4d" },
 };
 
-type DivisionDef = {
+export type SrFeeTriplet = readonly [number, number, number];
+
+export type SrDivisionSchedule = {
   id: Exclude<DivisionId, "top250">;
   label: string;
   minSr: number;
   nextSr: number | null;
-  fees: [number, number, number] | null;
+  fees: SrFeeTriplet | null;
   tiers: 1 | 3;
+  /**
+   * Explicit tier-start SR values for this division under this schedule.
+   * When omitted, tier starts are interpolated evenly across [minSr, nextSr)
+   * via `tierStarts()`. Diamond/Crimson pin the official breakpoints here
+   * (Crimson's even interpolation drifts to 8333/9167 instead of the real
+   * 8300/9100). Bronze/Silver/Gold/Platinum breakpoints are unconfirmed by
+   * any patch notes we have, so they keep the legacy interpolation.
+   */
+  tierStartsOverride?: SrFeeTriplet;
 };
 
-export const DIVISIONS: readonly DivisionDef[] = [
-  { id: "bronze", label: "Bronze", minSr: 0, nextSr: 900, fees: [0, 0, 0], tiers: 3 },
-  { id: "silver", label: "Silver", minSr: 900, nextSr: 2100, fees: [20, 25, 30], tiers: 3 },
-  { id: "gold", label: "Gold", minSr: 2100, nextSr: 3600, fees: [35, 40, 45], tiers: 3 },
-  { id: "platinum", label: "Platinum", minSr: 3600, nextSr: 5400, fees: [50, 55, 60], tiers: 3 },
-  { id: "diamond", label: "Diamond", minSr: 5400, nextSr: 7500, fees: [65, 70, 75], tiers: 3 },
-  { id: "crimson", label: "Crimson", minSr: 7500, nextSr: IRIDESCENT_SR, fees: [85, 95, 110], tiers: 3 },
-  { id: "iridescent", label: "Iridescent", minSr: IRIDESCENT_SR, nextSr: null, fees: null, tiers: 1 },
-] as const;
+export type IridescentFeeStep = {
+  readonly minSr: number;
+  readonly fee: number;
+};
+
+export type SrSchedule = {
+  id: string;
+  divisions: readonly SrDivisionSchedule[];
+  /** Ascending step table: fee in effect once SR reaches `minSr`, until the next step. */
+  iridescentFees: readonly IridescentFeeStep[];
+};
+
+/** Legacy / pre-Season 6 fee schedule. Kept verbatim so historical replay of old seasons stays reproducible. */
+export const SCHEDULE_PRE_S06: SrSchedule = {
+  id: "pre_s06",
+  divisions: [
+    { id: "bronze", label: "Bronze", minSr: 0, nextSr: 900, fees: [0, 0, 0], tiers: 3 },
+    { id: "silver", label: "Silver", minSr: 900, nextSr: 2100, fees: [20, 25, 30], tiers: 3 },
+    { id: "gold", label: "Gold", minSr: 2100, nextSr: 3600, fees: [35, 40, 45], tiers: 3 },
+    { id: "platinum", label: "Platinum", minSr: 3600, nextSr: 5400, fees: [50, 55, 60], tiers: 3 },
+    {
+      id: "diamond",
+      label: "Diamond",
+      minSr: 5400,
+      nextSr: 7500,
+      fees: [65, 70, 75],
+      tiers: 3,
+      tierStartsOverride: [5400, 6100, 6800],
+    },
+    {
+      id: "crimson",
+      label: "Crimson",
+      minSr: 7500,
+      nextSr: IRIDESCENT_SR,
+      fees: [85, 95, 110],
+      tiers: 3,
+      tierStartsOverride: [7500, 8300, 9100],
+    },
+    { id: "iridescent", label: "Iridescent", minSr: IRIDESCENT_SR, nextSr: null, fees: null, tiers: 1 },
+  ],
+  iridescentFees: [
+    { minSr: 10_000, fee: 120 },
+    { minSr: 10_500, fee: 130 },
+    { minSr: 11_000, fee: 140 },
+    { minSr: 11_500, fee: 150 },
+    { minSr: 12_000, fee: 160 },
+    { minSr: 12_500, fee: 170 },
+    { minSr: 13_000, fee: 180 },
+    { minSr: 13_500, fee: 190 },
+    { minSr: 14_000, fee: 200 },
+    { minSr: 14_500, fee: 210 },
+    { minSr: 15_000, fee: 220 },
+  ],
+};
+
+/**
+ * Season 6 fee schedule. Deployment fees increase in Diamond and above,
+ * compressing max-earnable SR per match (275 - fee). SR division breakpoints
+ * are unchanged from prior seasons. SR Challenges are removed entirely in
+ * S06 — this codebase never modeled that feature, so there's nothing to change.
+ */
+export const SCHEDULE_S06: SrSchedule = {
+  id: "s06",
+  divisions: [
+    { id: "bronze", label: "Bronze", minSr: 0, nextSr: 900, fees: [0, 0, 0], tiers: 3 },
+    { id: "silver", label: "Silver", minSr: 900, nextSr: 2100, fees: [20, 25, 30], tiers: 3 },
+    { id: "gold", label: "Gold", minSr: 2100, nextSr: 3600, fees: [35, 40, 45], tiers: 3 },
+    { id: "platinum", label: "Platinum", minSr: 3600, nextSr: 5400, fees: [50, 55, 60], tiers: 3 },
+    {
+      id: "diamond",
+      label: "Diamond",
+      minSr: 5400,
+      nextSr: 7500,
+      fees: [75, 85, 95],
+      tiers: 3,
+      tierStartsOverride: [5400, 6100, 6800],
+    },
+    {
+      id: "crimson",
+      label: "Crimson",
+      minSr: 7500,
+      nextSr: IRIDESCENT_SR,
+      fees: [130, 135, 140],
+      tiers: 3,
+      tierStartsOverride: [7500, 8300, 9100],
+    },
+    { id: "iridescent", label: "Iridescent", minSr: IRIDESCENT_SR, nextSr: null, fees: null, tiers: 1 },
+  ],
+  iridescentFees: [
+    { minSr: 10_000, fee: 170 },
+    { minSr: 10_500, fee: 190 },
+    { minSr: 11_000, fee: 200 },
+    { minSr: 11_500, fee: 210 },
+    { minSr: 12_000, fee: 220 },
+    { minSr: 12_500, fee: 230 },
+    { minSr: 13_000, fee: 240 },
+    { minSr: 13_500, fee: 255 },
+    { minSr: 14_000, fee: 260 },
+    { minSr: 14_500, fee: 265 },
+    { minSr: 15_000, fee: 270 },
+  ],
+};
+
+/** Season currently live. Update this when rolling over to a new SR economy. */
+export const ACTIVE_SCHEDULE: SrSchedule = SCHEDULE_S06;
+
+function seasonNumber(seasonId: string): number | null {
+  const match = /^s(\d+)$/i.exec(seasonId.trim());
+  if (!match) return null;
+  const n = Number(match[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Resolve the fee schedule that applied for a given season id (e.g. "s5", "s6"). Defaults to the active schedule. */
+export function srScheduleForSeason(seasonId?: string | null): SrSchedule {
+  if (seasonId) {
+    const n = seasonNumber(seasonId);
+    if (n != null && n < 6) return SCHEDULE_PRE_S06;
+  }
+  return ACTIVE_SCHEDULE;
+}
+
+/** Back-compat view over the active schedule's divisions, in the shape older call sites expect. */
+export const DIVISIONS: readonly SrDivisionSchedule[] = ACTIVE_SCHEDULE.divisions;
 
 export function clampSr(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.floor(value));
 }
 
-export function iridescentFee(sr: number): number {
-  const steps = Math.max(0, Math.floor((clampSr(sr) - IRIDESCENT_SR) / 500));
-  return Math.min(220, 120 + 10 * steps);
+export function iridescentFee(sr: number, schedule: SrSchedule = ACTIVE_SCHEDULE): number {
+  const value = clampSr(sr);
+  const steps = schedule.iridescentFees;
+  let fee = steps[0]?.fee ?? 0;
+  for (const step of steps) {
+    if (value >= step.minSr) fee = step.fee;
+    else break;
+  }
+  return fee;
 }
 
 export function tierStarts(minSr: number, nextSr: number, tiers: number): number[] {
   return Array.from({ length: tiers }, (_, i) => minSr + Math.round(((nextSr - minSr) * i) / tiers));
 }
 
-function divisionById(id: Exclude<DivisionId, "top250">): DivisionDef {
-  const found = DIVISIONS.find((d) => d.id === id);
+function divisionTierStarts(div: SrDivisionSchedule): readonly number[] {
+  if (div.tierStartsOverride) return div.tierStartsOverride;
+  if (div.tiers === 3 && div.nextSr != null) return tierStarts(div.minSr, div.nextSr, 3);
+  return [div.minSr];
+}
+
+function divisionById(id: Exclude<DivisionId, "top250">, schedule: SrSchedule): SrDivisionSchedule {
+  const found = schedule.divisions.find((d) => d.id === id);
   if (!found) throw new Error(`Unknown division ${id}`);
   return found;
 }
 
-function tierIndex(sr: number, minSr: number, nextSr: number, tiers: number): number {
-  const starts = tierStarts(minSr, nextSr, tiers);
+function tierIndex(starts: readonly number[], sr: number): number {
   for (let i = starts.length - 1; i >= 0; i--) {
     if (sr >= starts[i]!) return i;
   }
@@ -105,11 +242,11 @@ export type RankThreshold = {
   tier: Tier | null;
 };
 
-export function rankThresholds(cutoffSr?: number | null): RankThreshold[] {
+export function rankThresholds(cutoffSr?: number | null, schedule: SrSchedule = ACTIVE_SCHEDULE): RankThreshold[] {
   const out: RankThreshold[] = [];
-  for (const div of DIVISIONS) {
+  for (const div of schedule.divisions) {
     if (div.tiers === 3 && div.nextSr != null) {
-      const starts = tierStarts(div.minSr, div.nextSr, 3);
+      const starts = divisionTierStarts(div);
       starts.forEach((sr, i) => {
         const tier = (i + 1) as Tier;
         out.push({
@@ -139,7 +276,11 @@ export function rankThresholds(cutoffSr?: number | null): RankThreshold[] {
   return out;
 }
 
-export function rankFromSr(sr: number, cutoffSr?: number | null): RankInfo {
+export function rankFromSr(
+  sr: number,
+  cutoffSr?: number | null,
+  schedule: SrSchedule = ACTIVE_SCHEDULE,
+): RankInfo {
   const value = clampSr(sr);
   const cutoff =
     cutoffSr != null && Number.isFinite(cutoffSr) ? Math.max(IRIDESCENT_SR, Math.floor(cutoffSr)) : null;
@@ -154,12 +295,12 @@ export function rankFromSr(sr: number, cutoffSr?: number | null): RankInfo {
       nextTierSr: null,
       nextDivisionSr: null,
       floorSr: cutoff,
-      fee: iridescentFee(value),
+      fee: iridescentFee(value, schedule),
     };
   }
 
   if (value >= IRIDESCENT_SR) {
-    const iri = divisionById("iridescent");
+    const iri = divisionById("iridescent", schedule);
     return {
       division: "iridescent",
       divisionLabel: iri.label,
@@ -169,19 +310,19 @@ export function rankFromSr(sr: number, cutoffSr?: number | null): RankInfo {
       nextTierSr: cutoff != null && cutoff > value ? cutoff : null,
       nextDivisionSr: cutoff != null && cutoff > value ? cutoff : null,
       floorSr: IRIDESCENT_SR,
-      fee: iridescentFee(value),
+      fee: iridescentFee(value, schedule),
     };
   }
 
-  let div = DIVISIONS[0]!;
-  for (const candidate of DIVISIONS) {
+  let div = schedule.divisions[0]!;
+  for (const candidate of schedule.divisions) {
     if (value >= candidate.minSr) div = candidate;
   }
 
   const nextDivisionSr = div.nextSr;
   if (div.tiers === 3 && div.nextSr != null && div.fees) {
-    const starts = tierStarts(div.minSr, div.nextSr, 3);
-    const index = tierIndex(value, div.minSr, div.nextSr, 3);
+    const starts = divisionTierStarts(div);
+    const index = tierIndex(starts, value);
     const tier = (index + 1) as Tier;
     const nextTierSr = index < 2 ? starts[index + 1]! : div.nextSr;
     return {
@@ -210,8 +351,12 @@ export function rankFromSr(sr: number, cutoffSr?: number | null): RankInfo {
   };
 }
 
-export function deploymentFee(sr: number, cutoffSr?: number | null): number {
-  return rankFromSr(sr, cutoffSr).fee;
+export function deploymentFee(
+  sr: number,
+  cutoffSr?: number | null,
+  schedule: SrSchedule = ACTIVE_SCHEDULE,
+): number {
+  return rankFromSr(sr, cutoffSr, schedule).fee;
 }
 
 export function gamesToTarget(remaining: number, net: number): number | null {

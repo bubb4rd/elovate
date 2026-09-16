@@ -1,4 +1,4 @@
-import { DIVISIONS } from "@/lib/ranked";
+import { SCHEDULE_PRE_S06, SCHEDULE_S06, type SrSchedule } from "@/lib/ranked";
 import { isValidPlacementSr } from "./placement-from-sr";
 import type { ParseCoreFields } from "./types";
 import { OcrHardFailure } from "./types";
@@ -8,19 +8,29 @@ import type { ParsedSrBreakdown } from "./types";
 const SIGNED_DELTA = /(?<![A-Za-z0-9])[+-]\d{1,4}(?![A-Za-z0-9])/g;
 const BARE_VALUE = /^[+-]?\d{1,4}(?:\s*sr)?$/i;
 const SR_DELTA_CAP = 300;
-const FEE_MAX = 220;
 
+/**
+ * Union of every fee value that has ever been valid, across every schedule we
+ * know about (not just the active one) — an old screenshot from a prior
+ * season must still parse correctly even after the active schedule changes.
+ */
 const VALID_WZ_FEES: ReadonlySet<number> = (() => {
   const fees = new Set<number>();
-  for (const div of DIVISIONS) {
-    if (!div.fees) continue;
-    for (const fee of div.fees) fees.add(fee);
+  const schedules: readonly SrSchedule[] = [SCHEDULE_PRE_S06, SCHEDULE_S06];
+  for (const schedule of schedules) {
+    for (const div of schedule.divisions) {
+      if (!div.fees) continue;
+      for (const fee of div.fees) fees.add(fee);
+    }
+    for (const step of schedule.iridescentFees) fees.add(step.fee);
   }
-  for (let fee = 120; fee <= FEE_MAX; fee += 10) fees.add(fee);
   return fees;
 })();
 
+const FEE_MAX = Math.max(...VALID_WZ_FEES);
+
 function isValidWzFee(n: number): boolean {
+  if (n > FEE_MAX) return false;
   return VALID_WZ_FEES.has(n);
 }
 

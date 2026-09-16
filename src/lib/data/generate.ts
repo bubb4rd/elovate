@@ -137,6 +137,13 @@ export function generateDatabase(): Database {
       id: "s5",
       name: "Season 5",
       startsAt: isoAtUtc(2026, 6, 24),
+      endsAt: isoAtUtc(2026, 8, 16),
+      isActive: false,
+    },
+    {
+      id: "s6",
+      name: "Season 6",
+      startsAt: isoAtUtc(2026, 8, 16),
       endsAt: null,
       isActive: true,
     },
