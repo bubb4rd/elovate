@@ -246,4 +246,33 @@ assert.equal(vision.yourElimSr, 88);
 assert.equal(vision.squadElimSr, 33);
 assert.equal(vision.fee, 110);
 
+// --- Season 6 fee schedule: deployment fees increase in Diamond+, and the
+// old fixed cap of 220 no longer holds (Iridescent tops out at 270) ---
+
+const S06_FEES = [135, 255, 265, 270] as const;
+for (const fee of S06_FEES) {
+  const s06Sample = `
+Deployment Fee
+-${fee}
+Placement
++100
+Eliminations
++45
+Total
++87
+`;
+  const s06Fields = parseSrFieldsFromText(s06Sample);
+  assert.equal(s06Fields.fee, fee, `S06 fee ${fee} should parse`);
+
+  const s06Overlay = `
+MATCH TOTAL +61 SR
+Placement +50 SR
+Eliminations +88 SR
+Eliminations by Squad +33 SR
+Deployment Fee -${fee} SR
+`;
+  const s06OverlayFields = parseSrFieldsFromText(s06Overlay);
+  assert.equal(s06OverlayFields.fee, fee, `S06 overlay fee ${fee} should parse`);
+}
+
 console.log("ocr parse/validate ok");
