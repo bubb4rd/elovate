@@ -3,9 +3,11 @@ import { DesktopHomeTeaser } from "@/components/desktop-home-teaser";
 import { HomeCutoffObject } from "@/components/home-cutoff-object";
 import { HomeHeroCopy } from "@/components/home-hero-copy";
 import { ModePick } from "@/components/mode-pick";
+import { RankedRampBalls } from "@/components/ranked-ramp-balls";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { getBoardCutoff } from "@/lib/data/board-source";
+import { getLiveIridescentCount } from "@/lib/data/codmunity";
 import {
   finalPushWzHistory,
   getLatestStoredCutoff,
@@ -52,12 +54,18 @@ export default async function Home() {
   // numbers, so the fallback has to be another season's real recorded data).
   const pending = !frozen && !wz;
   const previousSeason = pending ? getPreviousSeason() : undefined;
-  const [previousStored, finalPush] = pending && previousSeason
+  // Day-zero ramp-up: while pending, prefer a real live headcount of players
+  // above Iridescent SR (however small — see getLiveIridescentCount) over the
+  // previous-season fallback. Fall back further to previous-season data only
+  // if CODMunity is fully unreachable (rampCount stays null).
+  const [previousStored, finalPush, rampCount] = pending
     ? await Promise.all([
-        getLatestStoredCutoff("wz", previousSeason.id),
-        finalPushWzHistory(previousSeason.id),
+        previousSeason ? getLatestStoredCutoff("wz", previousSeason.id) : Promise.resolve(null),
+        previousSeason ? finalPushWzHistory(previousSeason.id) : Promise.resolve(null),
+        getLiveIridescentCount(),
       ])
-    : [null, frozen ? await finalPushWzHistory(season.id) : null];
+    : [null, frozen ? await finalPushWzHistory(season.id) : null, null];
+  const showRamp = pending && rampCount != null;
 
   const displayWz =
     pending && previousStored
@@ -73,25 +81,50 @@ export default async function Home() {
 
   const phaseNotice = frozen
     ? seasonPhaseCopy(phaseInfo.phase, phaseInfo.seasonName, phaseInfo.phaseEndsAt)
-    : pending && previousSeason
+    : pending && !showRamp && previousSeason
       ? pendingSeasonCopy(phaseInfo.seasonName, previousSeason.name)
       : null;
   const dailySeries =
-    frozen || pending
+    frozen || (pending && !showRamp)
       ? (finalPush?.series ?? [])
       : history.change24h != null
         ? history.series
         : [];
   const dailyChange =
-    frozen || pending ? (finalPush?.change24h ?? null) : (wz?.change24h ?? null);
+    frozen || (pending && !showRamp) ? (finalPush?.change24h ?? null) : (wz?.change24h ?? null);
   const wzNoteSeasonName = pending && previousSeason ? previousSeason.name : phaseInfo.seasonName;
+  const wzTileMetrics = showRamp
+    ? {
+        cutoffSr: rampCount!,
+        change24h: null,
+        avgPerDaySeason: null,
+        avgPerDay7d: null,
+        playersSampled: rampCount!,
+        capturedAt: new Date().toISOString(),
+      }
+    : displayWz;
+  const wzNote = showRamp
+    ? "in Top 250 so far this season"
+    : phaseNotice
+      ? `${wzNoteSeasonName} final`
+      : null;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <SiteNav seasons={seasons} />
       <section className="mx-auto grid w-full max-w-[1400px] flex-1 grid-cols-1 items-center gap-10 px-4 pt-16 pb-12 md:grid-cols-2 md:pt-20 md:pb-0">
         <div className="text-right">
-          {displayWz ? (
+          {showRamp ? (
+            <>
+              <CutoffNumeral
+                sr={rampCount!}
+                change24h={null}
+                label="in Top 250"
+                showChange={false}
+              />
+              <RankedRampBalls count={rampCount!} height={300} />
+            </>
+          ) : displayWz ? (
             <>
               <CutoffNumeral
                 sr={displayWz.cutoffSr}
@@ -124,8 +157,8 @@ export default async function Home() {
       </section>
       <ModePick
         mp={mp}
-        wz={displayWz}
-        wzNote={phaseNotice ? `${wzNoteSeasonName} final` : null}
+        wz={wzTileMetrics}
+        wzNote={wzNote}
       />
       <DesktopHomeTeaser />
       <SiteFooter />
