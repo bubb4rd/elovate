@@ -106,15 +106,18 @@ assert.equal(
   null,
 );
 
-// Active WZ, live but no seed metrics to overlay: nothing.
-assert.equal(
-  currentCutoffMetrics({
-    seed: null,
-    resolved: resolveCutoff(live, null),
-    isLiveBoard: true,
-  }),
-  null,
-);
+// Active WZ, live but no seed metrics to overlay (a brand-new season has none
+// — see the season-rollover incident this guards against): render the live
+// numbers anyway. `seed` was only ever a spread base, never load-bearing data.
+const noSeedLiveMetrics = currentCutoffMetrics({
+  seed: null,
+  resolved: resolveCutoff(live, null),
+  isLiveBoard: true,
+  history: { change24h: 300, avgPerDaySeason: 110, avgPerDay7d: 95 },
+});
+assert.equal(noSeedLiveMetrics?.cutoffSr, 23796);
+assert.equal(noSeedLiveMetrics?.change24h, 300);
+assert.equal(noSeedLiveMetrics?.playersSampled, live.rows.length);
 
 // --- getBoardCutoff: orchestration with an injected stored fetcher ---
 

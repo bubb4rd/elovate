@@ -154,3 +154,20 @@ export function seasonPhaseCopy(
     badge: "Off-season",
   };
 }
+
+/**
+ * Copy for a live `regular_season` that has rolled over but has no reported
+ * cutoff yet (CODMunity hasn't returned a reliable Top 250 for it). Distinct
+ * from `seasonPhaseCopy`'s off-season/Ranked Series copy — ranked has already
+ * resumed here, the feed just hasn't caught up.
+ */
+export function pendingSeasonCopy(
+  newSeasonName: string,
+  previousSeasonName: string,
+): SeasonPhaseCopy {
+  return {
+    headline: `${newSeasonName} is live`,
+    detail: `${newSeasonName} standings haven't reported yet. Showing ${previousSeasonName}'s final Top 250 until they do.`,
+    badge: "Syncing",
+  };
+}
