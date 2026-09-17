@@ -88,17 +88,19 @@ function seriesFromMatches(matches: ProfileMatch[]): CutoffPoint[] {
   }));
 }
 
-function climbPeaks(
+export function climbPeaks(
   sessions: ClimbSessionRow[],
   matches: ClimbMatchRow[],
   currentSr: number,
   cutoffSr: number | null,
+  seasonStartsAt: string,
 ): ProfilePeaks {
   if (sessions.length === 0 && matches.length === 0) {
+    const peak = currentSr > 0 ? currentSr : null;
     return {
-      seasonPeakSr: currentSr > 0 ? currentSr : null,
-      allTimePeakSr: null,
-      peakRankLabel: currentSr > 0 ? rankFromSr(currentSr, cutoffSr).label : null,
+      seasonPeakSr: peak,
+      allTimePeakSr: peak,
+      peakRankLabel: peak != null ? rankFromSr(peak, cutoffSr).label : null,
       peakBoardRank: null,
       bestSession: null,
     };
@@ -107,11 +109,30 @@ function climbPeaks(
   const parsedMatches = matches
     .map(rowToMatch)
     .filter((match): match is NonNullable<typeof match> => match != null);
-  const seasonPeakSr = Math.max(
+  // allTimePeakSr feeds header-unlock logic (peakSrForHeaders) — a header
+  // earned last season must stay earned after a reset, so this stays
+  // unscoped. seasonPeakSr below is the one that resets with the season.
+  const allTimePeakSr = Math.max(
     currentSr,
     ...parsedMatches.map((match) => match.srAfter),
     ...sessions.map((session) => session.start_sr),
   );
+  const inSeasonMatches = parsedMatches.filter((match) =>
+    isInSeason(match.createdAt, seasonStartsAt),
+  );
+  const inSeasonSessions = sessions.filter((session) =>
+    isInSeason(session.started_at, seasonStartsAt),
+  );
+  const seasonPeakSr =
+    inSeasonMatches.length === 0 && inSeasonSessions.length === 0
+      ? currentSr > 0
+        ? currentSr
+        : null
+      : Math.max(
+          currentSr,
+          ...inSeasonMatches.map((match) => match.srAfter),
+          ...inSeasonSessions.map((session) => session.start_sr),
+        );
   const summaries = sessions.map((row) => {
     const session = rowToSession(row);
     const owned = parsedMatches.filter((match) => match.sessionId === session.id);
@@ -135,8 +156,8 @@ function climbPeaks(
 
   return {
     seasonPeakSr,
-    allTimePeakSr: null,
-    peakRankLabel: rankFromSr(seasonPeakSr, cutoffSr).label,
+    allTimePeakSr,
+    peakRankLabel: seasonPeakSr != null ? rankFromSr(seasonPeakSr, cutoffSr).label : null,
     peakBoardRank: null,
     bestSession,
   };
@@ -220,7 +241,7 @@ function viewFromUser(
       };
     }),
   );
-  const peaks = climbPeaks(sessions, matches, currentSr, cutoffSr);
+  const peaks = climbPeaks(sessions, matches, currentSr, cutoffSr, seasonStartsAt);
   const headerId = isProfileHeaderId(profile.equipped_header_id)
     ? profile.equipped_header_id
     : "default";
