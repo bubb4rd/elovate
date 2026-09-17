@@ -189,6 +189,9 @@ export function ProfilePageContent({
                 <p className="mt-1 text-[10px] font-medium tracking-[0.18em] text-muted uppercase">
                   Current SR
                 </p>
+                {profile.srResetNote ? (
+                  <p className="mt-0.5 text-[10px] text-muted">{profile.srResetNote}</p>
+                ) : null}
               </div>
             </div>
             {series.length < 2 ? (

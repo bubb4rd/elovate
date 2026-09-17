@@ -53,6 +53,8 @@ export type ProfileView = {
   avatarUrl: string;
   mode: Mode;
   currentSr: number;
+  /** Set when currentSr is still profile.current_sr from a season's rank reset (WZ-18), not a real in-season match. */
+  srResetNote: string | null;
   cutoffSr: number | null;
   boardRank: number | null;
   seasonName: string | null;

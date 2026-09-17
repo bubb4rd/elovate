@@ -27,6 +27,30 @@ import type {
   ReputationVotes,
 } from "./types";
 
+export type DisplaySrResolution = {
+  currentSr: number;
+  /** True when profile.current_sr is being shown rather than a real in-season match. */
+  usingResetValue: boolean;
+};
+
+/**
+ * A profile's live current SR: the latest logged match's srAfter, unless
+ * that match predates the active season. A season's ranked reset breaks the
+ * SR chain in-game, so a match from a prior season is stale, not "current" —
+ * profile.current_sr (freshly reset by apply_season_rank_reset(), WZ-18) is
+ * the more honest number until the player logs a real match this season.
+ */
+export function resolveDisplaySr(
+  latest: { srAfter: number; createdAt: string } | null | undefined,
+  profileCurrentSr: number,
+  activeSeasonStartsAt: string,
+): DisplaySrResolution {
+  if (latest && latest.createdAt >= activeSeasonStartsAt) {
+    return { currentSr: latest.srAfter, usingResetValue: false };
+  }
+  return { currentSr: profileCurrentSr, usingResetValue: true };
+}
+
 function utcDateString(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
 }
@@ -138,6 +162,8 @@ function viewFromUser(
   matches: ClimbMatchRow[],
   cutoffSr: number | null,
   seasonName: string | null,
+  seasonId: string,
+  seasonStartsAt: string,
   reputation: Pick<ProfileView, "votes" | "viewerVote" | "canChangeVote">,
 ): ProfileView {
   const parsed = matches
@@ -146,7 +172,15 @@ function viewFromUser(
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const latest = parsed[parsed.length - 1];
   const mode = latest?.mode ?? profile.preferred_mode ?? "wz";
-  const currentSr = latest?.srAfter ?? profile.current_sr ?? 0;
+  const { currentSr, usingResetValue } = resolveDisplaySr(
+    latest,
+    profile.current_sr ?? 0,
+    seasonStartsAt,
+  );
+  const srResetNote =
+    usingResetValue && profile.sr_reset_season_id === seasonId
+      ? `Adjusted for the ${seasonName ?? "this season"} reset`
+      : null;
   const modeMatches = parsed.filter((match) => match.mode === mode);
   const displayMatches = profileMatchesFromRows(matches);
   const series = seriesFromMatches(
@@ -197,6 +231,7 @@ function viewFromUser(
     avatarUrl: avatarOrDefault(profile.avatar_url),
     mode,
     currentSr,
+    srResetNote,
     cutoffSr,
     boardRank: null,
     seasonName,
@@ -270,6 +305,8 @@ async function getUserProfile(
     matchRows ?? [],
     cutoffSr,
     season.name,
+    season.id,
+    season.startsAt,
     { votes, viewerVote, canChangeVote },
   );
 }

@@ -13,6 +13,8 @@ export type ProfileRow = {
   preferred_mode: Mode;
   climb_goals: ClimbTarget[];
   current_sr: number;
+  /** Season id whose rank reset current_sr was auto-adjusted for, or null. */
+  sr_reset_season_id: string | null;
   is_private: boolean;
   notify_cutoff: boolean;
   notify_climb: boolean;
