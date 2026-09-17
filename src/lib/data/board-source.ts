@@ -95,8 +95,20 @@ export function currentCutoffMetrics(params: {
 
   if (!isLiveBoard) return seed;
 
-  if (resolved.source === "live" && resolved.live && seed) {
-    return overlayLiveMetrics(seed, resolved.live, history?.change24h ?? null, {
+  if (resolved.source === "live" && resolved.live) {
+    // A brand-new season has no `generate.ts` seed entry (there's nothing to
+    // seed a real new season with), so `seed` is legitimately null here.
+    // Every field below already comes from `live`/`history` — `seed` was only
+    // ever a spread base, never load-bearing data.
+    const base: BoardMetrics = seed ?? {
+      cutoffSr: 0,
+      change24h: null,
+      avgPerDaySeason: null,
+      avgPerDay7d: null,
+      playersSampled: 0,
+      capturedAt: resolved.live.fetchedAt,
+    };
+    return overlayLiveMetrics(base, resolved.live, history?.change24h ?? null, {
       avgPerDaySeason: history?.avgPerDaySeason ?? null,
       avgPerDay7d: history?.avgPerDay7d ?? null,
     });

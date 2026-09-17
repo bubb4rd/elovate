@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { zIndex } from "@/lib/z-index";
 import { cn } from "@/lib/utils";
 
-export type BoardFreshnessStatus = "live" | "frozen";
+export type BoardFreshnessStatus = "live" | "frozen" | "pending";
 
 function remainingMs(nextUpdateAt: string): number {
   return Date.parse(nextUpdateAt) - Date.now();
@@ -29,10 +29,11 @@ export function LiveStatus({
   const refreshedFor = useRef<string | null>(null);
   const [msLeft, setMsLeft] = useState<number | null>(null);
   const [updating, setUpdating] = useState(false);
+  const live = status === "live";
   const frozen = status === "frozen";
 
   useEffect(() => {
-    if (frozen) return;
+    if (!live) return;
 
     const tick = () => {
       const left = remainingMs(nextUpdateAt);
@@ -50,32 +51,34 @@ export function LiveStatus({
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [frozen, nextUpdateAt, router]);
+  }, [live, nextUpdateAt, router]);
 
-  const expired = !frozen && msLeft !== null && msLeft <= 0;
+  const expired = live && msLeft !== null && msLeft <= 0;
   const label = frozen
     ? "Standings frozen until ranked resumes"
-    : msLeft === null
-      ? "Next update in --:--"
-      : expired || updating
-        ? "Updating…"
-        : `Next update in ${formatCountdown(msLeft)}`;
+    : status === "pending"
+      ? "Season standings syncing — showing last season's final Top 250"
+      : msLeft === null
+        ? "Next update in --:--"
+        : expired || updating
+          ? "Updating…"
+          : `Next update in ${formatCountdown(msLeft)}`;
 
-  const badge = frozen ? "Frozen" : "Live";
+  const badge = frozen ? "Frozen" : status === "pending" ? "Syncing" : "Live";
 
   return (
     <span className="group relative inline-flex">
       <span
         className={cn(
           "inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.12em]",
-          frozen
+          !live
             ? "border-border bg-surface text-muted"
             : "border-accent/40 bg-accent/10 text-accent",
         )}
         aria-label={`${badge}. ${label}`}
       >
         <span
-          className={cn("live-dot", frozen && "live-dot-frozen")}
+          className={cn("live-dot", !live && "live-dot-frozen")}
           aria-hidden
         />
         {badge}
@@ -88,7 +91,7 @@ export function LiveStatus({
         )}
         style={{ zIndex: zIndex.overlay }}
       >
-        <span className={cn(!frozen && "numeric")} aria-live="polite">
+        <span className={cn(live && "numeric")} aria-live="polite">
           {label}
         </span>
       </span>

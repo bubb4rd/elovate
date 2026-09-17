@@ -8,10 +8,15 @@ import { SiteNav } from "@/components/site-nav";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { getBoardCutoff, resolveBoardRows } from "@/lib/data/board-source";
-import { liveWzHistoryFor } from "@/lib/data/live-history";
+import {
+  finalPushWzHistory,
+  getLatestStoredCutoff,
+  liveWzHistoryFor,
+} from "@/lib/data/live-history";
 import {
   boardStatusForPhase,
   getActiveSeasonPhase,
+  pendingSeasonCopy,
   seasonPhaseCopy,
 } from "@/lib/data/season-phase";
 import {
@@ -19,11 +24,12 @@ import {
   getBoardMetrics,
   getCutoffSeries,
   getLiveWzBoard,
+  getPreviousSeason,
   getSeason,
   isLiveWzBoard,
   listSeasons,
 } from "@/lib/data/queries";
-import type { Mode } from "@/lib/data/types";
+import type { BoardMetrics, Mode } from "@/lib/data/types";
 
 export async function TrackerPage({
   mode,
@@ -43,13 +49,46 @@ export async function TrackerPage({
   const isLiveBoard = season != null && isLiveWzBoard(mode, seasonId);
   const live = isLiveBoard ? await getLiveWzBoard() : null;
   const history = await liveWzHistoryFor(live, seasonId);
-  const { resolved, metrics } = await getBoardCutoff({
+  const { resolved, metrics: liveMetrics } = await getBoardCutoff({
     mode,
     seasonId,
     live,
     seed: seedMetrics,
     history,
   });
+
+  // Season phase is orthogonal to `season.isActive` (that flag stays true through
+  // the off-season). Only the live season's board reflects the phase; archived
+  // boards keep whatever status the caller passed.
+  const phaseInfo = await getActiveSeasonPhase();
+  const isActiveSeason = season?.isActive === true && mode === "wz";
+
+  // A season can roll over before CODMunity has a reliable Top 250 for it —
+  // regular_season is "live" by phase, but there's nothing to show yet. Fall
+  // back to the previous season's real final cutoff/chart rather than a blank
+  // page until this one reports (WZ-12: never fabricate the active season's
+  // numbers, so the fallback has to be another season's real recorded data).
+  const pending = isActiveSeason && phaseInfo.phase === "regular_season" && !liveMetrics;
+  const previousSeason = pending ? getPreviousSeason() : undefined;
+  const [previousStored, previousFinalPush] = pending && previousSeason
+    ? await Promise.all([
+        getLatestStoredCutoff("wz", previousSeason.id),
+        finalPushWzHistory(previousSeason.id),
+      ])
+    : [null, null];
+
+  const metrics: BoardMetrics | null =
+    pending && previousStored
+      ? {
+          cutoffSr: previousStored.cutoffSr,
+          change24h: previousFinalPush?.change24h ?? null,
+          avgPerDaySeason: null,
+          avgPerDay7d: null,
+          playersSampled: seedMetrics?.playersSampled ?? 250,
+          capturedAt: previousStored.capturedAt,
+        }
+      : liveMetrics;
+
   const pointSeries =
     resolved.source === "live" && resolved.live
       ? [
@@ -71,32 +110,36 @@ export async function TrackerPage({
           ]
         : [];
   const series =
-    history.series.length > 0
-      ? history.series
-      : isLiveBoard
-        ? pointSeries
-        : seedSeries;
-  const rows = resolveBoardRows(live?.rows, board?.rows, isLiveBoard);
+    pending && previousFinalPush
+      ? previousFinalPush.series
+      : history.series.length > 0
+        ? history.series
+        : isLiveBoard
+          ? pointSeries
+          : seedSeries;
+  // No real per-player roster exists for a previous season's exact final
+  // moment (only the aggregate cutoff/rank1 line is persisted — see WZ-12),
+  // so pending keeps the roster empty rather than guessing at rows.
+  const rows = pending ? null : resolveBoardRows(live?.rows, board?.rows, isLiveBoard);
   const viewer = await getViewerProfile();
 
-  // Season phase is orthogonal to `season.isActive` (that flag stays true through
-  // the off-season). Only the live season's board reflects the phase; archived
-  // boards keep whatever status the caller passed.
-  const phaseInfo = await getActiveSeasonPhase();
-  const isActiveSeason = season?.isActive === true && mode === "wz";
   const resolvedBoardStatus: BoardFreshnessStatus = isActiveSeason
-    ? boardStatusForPhase(phaseInfo.phase)
+    ? pending
+      ? "pending"
+      : boardStatusForPhase(phaseInfo.phase)
     : boardStatus;
   const phaseNotice =
-    isActiveSeason && resolvedBoardStatus === "frozen"
-      ? seasonPhaseCopy(
-          phaseInfo.phase,
-          phaseInfo.seasonName,
-          phaseInfo.phaseEndsAt,
-        )
-      : null;
+    pending && previousSeason
+      ? pendingSeasonCopy(phaseInfo.seasonName, previousSeason.name)
+      : isActiveSeason && resolvedBoardStatus === "frozen"
+        ? seasonPhaseCopy(
+            phaseInfo.phase,
+            phaseInfo.seasonName,
+            phaseInfo.phaseEndsAt,
+          )
+        : null;
 
-  if (!season || !board || !metrics) {
+  if (!season || (!isLiveBoard && !board) || !metrics) {
     return (
       <div className="flex min-h-[100dvh] flex-col">
         <SiteNav
@@ -151,9 +194,11 @@ export async function TrackerPage({
                 <BoardTable rows={rows} linkPlayers={false} />
               ) : (
                 <p className="text-sm text-muted">
-                  {phaseNotice
-                    ? `The ${phaseInfo.seasonName} final Top 250 returns when the feed responds.`
-                    : "The player standings return when the live feed is back."}
+                  {pending
+                    ? `${phaseInfo.seasonName} standings return once this season starts reporting.`
+                    : phaseNotice
+                      ? `The ${phaseInfo.seasonName} final Top 250 returns when the feed responds.`
+                      : "The player standings return when the live feed is back."}
                 </p>
               )}
             </div>

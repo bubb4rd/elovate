@@ -28,6 +28,19 @@ export function getSeason(id: string): Season | undefined {
   return db().seasons.find((s) => s.id === id);
 }
 
+/**
+ * The season immediately before the active one (by `startsAt`) — the one to
+ * fall back to while a brand-new season has no live/stored cutoff yet.
+ * `listSeasons()` is already sorted newest-first, so this is just the entry
+ * right after the active one.
+ */
+export function getPreviousSeason(): Season | undefined {
+  const sorted = listSeasons();
+  const activeIndex = sorted.findIndex((s) => s.isActive);
+  if (activeIndex === -1) return undefined;
+  return sorted[activeIndex + 1];
+}
+
 export function getPlayerById(id: string): Player | undefined {
   return db().players.find((p) => p.id === id);
 }

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { IRIDESCENT_SR } from "@/lib/ranked/ranks";
 import type { BoardRow, BoardRung, LiveWzBoard, Player } from "./types";
 
 export const LIVE_POLL_MS = 15 * 60 * 1000;
@@ -107,7 +108,7 @@ export function mapRankedPlayers(
   };
 }
 
-async function fetchLiveWzBoard(): Promise<LiveWzBoard> {
+async function fetchRankedPlayersRaw(): Promise<RankedPlayerPayload[]> {
   const response = await fetch(TOP_250_URL, {
     headers: { accept: "application/json" },
     next: { revalidate: LIVE_POLL_SECONDS },
@@ -120,9 +121,13 @@ async function fetchLiveWzBoard(): Promise<LiveWzBoard> {
   if (!isRecord(payload) || !Array.isArray(payload.rankedPlayers)) {
     throw new Error("CODMunity Top 250 payload missing rankedPlayers");
   }
+  return payload.rankedPlayers as RankedPlayerPayload[];
+}
 
+async function fetchLiveWzBoard(): Promise<LiveWzBoard> {
+  const raw = await fetchRankedPlayersRaw();
   const fetchedAt = new Date().toISOString();
-  const mapped = mapRankedPlayers(payload.rankedPlayers as RankedPlayerPayload[], fetchedAt);
+  const mapped = mapRankedPlayers(raw, fetchedAt);
   lastGood = mapped;
   return mapped;
 }
@@ -138,5 +143,46 @@ export async function getLiveWzBoard(): Promise<LiveWzBoard | null> {
     return live;
   } catch {
     return lastGood;
+  }
+}
+
+let lastGoodAboveThresholdCount: number | null = null;
+
+/**
+ * Count of players with sr >= threshold, straight off the same CODMunity
+ * response `getLiveWzBoard` uses — but with NO `MIN_PLAYER_COUNT` reliability
+ * floor. A season's early ramp-up can genuinely have far fewer than 240
+ * players above `IRIDESCENT_SR`, and that small real count is exactly what
+ * the day-zero ramp-up view needs; `getLiveWzBoard`'s floor exists to protect
+ * the *cutoff SR* number specifically, and stays unchanged. Next dedupes the
+ * underlying `fetch(TOP_250_URL)` by URL+revalidate window, so this doesn't
+ * add a second real request to CODMunity alongside `getLiveWzBoard`.
+ */
+async function fetchLiveAboveThresholdCount(threshold: number): Promise<number> {
+  const raw = await fetchRankedPlayersRaw();
+  let count = 0;
+  for (const row of raw) {
+    const sr = asNumber(row.skillRating);
+    const gamertag = asString(row.gamertag);
+    if (sr === null || !gamertag) continue;
+    if (sr >= threshold) count += 1;
+  }
+  return count;
+}
+
+const getCachedAboveThresholdCount = unstable_cache(
+  (threshold: number) => fetchLiveAboveThresholdCount(threshold),
+  ["codmunity-above-threshold-count"],
+  { revalidate: LIVE_POLL_SECONDS },
+);
+
+/** Players currently at or above Iridescent SR (10,000) — see the note above. */
+export async function getLiveIridescentCount(): Promise<number | null> {
+  try {
+    const count = await getCachedAboveThresholdCount(IRIDESCENT_SR);
+    lastGoodAboveThresholdCount = count;
+    return count;
+  } catch {
+    return lastGoodAboveThresholdCount;
   }
 }
