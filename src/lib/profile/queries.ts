@@ -51,6 +51,11 @@ export function resolveDisplaySr(
   return { currentSr: profileCurrentSr, usingResetValue: true };
 }
 
+/** True when a match's timestamp falls inside the active season — same boundary resolveDisplaySr uses. */
+export function isInSeason(createdAt: string, activeSeasonStartsAt: string): boolean {
+  return createdAt >= activeSeasonStartsAt;
+}
+
 function utcDateString(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
 }
@@ -183,8 +188,14 @@ function viewFromUser(
       : null;
   const modeMatches = parsed.filter((match) => match.mode === mode);
   const displayMatches = profileMatchesFromRows(matches);
+  // The trend chart only shows this season's climb — a match from before the
+  // reset would otherwise plot a line ending at a since-reset SR, drawing a
+  // discontinuous "climb" straight through the reset boundary. Match History
+  // below (displayMatches) still shows real past matches; only the chart is
+  // season-scoped.
+  const seasonMatches = modeMatches.filter((match) => isInSeason(match.createdAt, seasonStartsAt));
   const series = seriesFromMatches(
-    modeMatches.map((match) => {
+    seasonMatches.map((match) => {
       if (match.mode === "wz") {
         return {
           id: match.id,

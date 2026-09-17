@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { resolveDisplaySr } from "./queries";
+import { isInSeason, resolveDisplaySr } from "./queries";
 
 const SEASON_STARTS_AT = "2026-09-16T00:00:00.000Z";
 
@@ -37,5 +37,11 @@ const SEASON_STARTS_AT = "2026-09-16T00:00:00.000Z";
   assert.equal(result.currentSr, 4200);
   assert.equal(result.usingResetValue, false);
 }
+
+// --- isInSeason: same boundary resolveDisplaySr uses, exposed for the trend-chart filter ---
+
+assert.equal(isInSeason("2026-09-10T20:45:01.235Z", SEASON_STARTS_AT), false, "pre-season match");
+assert.equal(isInSeason(SEASON_STARTS_AT, SEASON_STARTS_AT), true, "exact boundary counts as in-season");
+assert.equal(isInSeason("2026-09-17T09:00:00.000Z", SEASON_STARTS_AT), true, "in-season match");
 
 console.log("profile queries tests passed");
