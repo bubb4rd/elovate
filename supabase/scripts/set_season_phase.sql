@@ -46,3 +46,19 @@ where is_active;
 
 -- 5. CONFIRM.
 select * from public.active_season_phase();
+
+-- 6. ROLLOVER — manual season handoff (SQL-only fallback for the /season
+--    rollover command in elovate-bot, a separate Discord bot project).
+--    Deactivates the current season and activates/creates the next one
+--    atomically; see supabase/migrations/20260913160000_add_rollover_season.sql
+--    for the safety checks (refuses unless exactly one season is active,
+--    refuses a self-rollover, refuses reusing an id that's already active).
+
+-- 6a. PREVIEW before rolling over.
+select * from public.active_season_phase();
+
+-- 6b. ROLL OVER. ends_at is optional (null = unknown yet).
+select * from public.rollover_season('s6', 'Season 6', timestamptz '2026-11-01 00:00:00+00', null);
+
+-- 6c. CONFIRM after rolling over.
+select * from public.active_season_phase();
