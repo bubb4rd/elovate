@@ -230,11 +230,6 @@ export async function TrackerPage({
               {phaseNotice.detail}
             </p>
           ) : null}
-          {showRamp && rampCount! > 0 ? (
-            <p className="mt-2 shrink-0 text-sm text-muted">
-              {`Racing to Top 250 — ${rampCount} player${rampCount === 1 ? "" : "s"} past 10k SR so far this season.`}
-            </p>
-          ) : null}
           {resolved.source === "stored" ? (
             <p className="mt-2 shrink-0 text-sm text-muted">
               Live standings unavailable. Showing the last recorded cutoff.
