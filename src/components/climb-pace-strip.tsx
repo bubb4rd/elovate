@@ -12,6 +12,7 @@ import {
 } from "@/lib/ranked";
 import { allSummaries, openSummary, type HistoryDocument } from "@/lib/history";
 import { IRIDESCENT_GRADIENT_STOPS } from "@/lib/profile/themes";
+import { TickerNumeral } from "@/components/ticker-numeral";
 import { cn } from "@/lib/utils";
 
 type PaceScope = "session" | "overall";
@@ -170,14 +171,15 @@ export function ClimbPaceStrip({
           <div className="flex items-center gap-3 text-md">
             <span className="numeric inline-flex items-center gap-1">
               <GameController weight="bold" className="size-5 text-muted" aria-hidden />
-              {games}
+              <TickerNumeral value={games} />
             </span>
             <span className="numeric inline-flex items-center gap-1">
-              <span className="font-bold text-muted">SR</span> {formatDelta(net)}
+              <span className="font-bold text-muted">SR</span>
+              <TickerNumeral value={net} format={formatDelta} />
             </span>
             <span className="numeric inline-flex items-center gap-1">
               <Gauge weight="bold" className="size-5 text-muted" aria-hidden />
-              {formatDelta(Math.round(srPerGame))}
+              <TickerNumeral value={Math.round(srPerGame)} format={formatDelta} />
             </span>
           </div>
         ) : (
