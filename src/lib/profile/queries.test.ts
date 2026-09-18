@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { ClimbMatchRow, ClimbSessionRow } from "@/lib/supabase/database";
-import { climbPeaks, isInSeason, resolveDisplaySr } from "./queries";
+import { climbPeaks, isInSeason, resolveDisplaySr, resolveTrendMatches } from "./queries";
 
 const SEASON_STARTS_AT = "2026-09-16T00:00:00.000Z";
 
@@ -115,6 +115,55 @@ assert.equal(isInSeason("2026-09-17T09:00:00.000Z", SEASON_STARTS_AT), true, "in
   const peaks = climbPeaks([], [oldMatch, newMatch], 5400, null, SEASON_STARTS_AT);
   assert.equal(peaks.allTimePeakSr, 8200);
   assert.equal(peaks.seasonPeakSr, 6000, "picks up the real in-season match, above the reset floor");
+}
+
+// --- resolveTrendMatches: enough in-season matches -> no fallback needed ---
+
+{
+  const a = { createdAt: "2026-09-16T01:00:00.000Z", srAfter: 100, net: 10 };
+  const b = { createdAt: "2026-09-17T01:00:00.000Z", srAfter: 120, net: 20 };
+  const result = resolveTrendMatches([a, b], SEASON_STARTS_AT, undefined);
+  assert.equal(result.matches.length, 2);
+  assert.equal(result.note, null);
+}
+
+// --- resolveTrendMatches: brand-new season, no previous season on record -> stays empty, no note ---
+
+{
+  const preSeason = { createdAt: "2026-09-10T00:00:00.000Z", srAfter: 8200, net: 50 };
+  const result = resolveTrendMatches([preSeason], SEASON_STARTS_AT, undefined);
+  assert.equal(result.matches.length, 0);
+  assert.equal(result.note, null);
+}
+
+// --- resolveTrendMatches: brand-new season, previous season's final 24h has enough matches -> fallback ---
+
+{
+  const previousSeason = {
+    name: "Season 5",
+    startsAt: "2026-06-24T00:00:00.000Z",
+    endsAt: "2026-09-15T23:59:59.000Z",
+  };
+  const early = { createdAt: "2026-07-01T00:00:00.000Z", srAfter: 3000, net: 10 };
+  const finalA = { createdAt: "2026-09-15T20:00:00.000Z", srAfter: 8000, net: 30 };
+  const finalB = { createdAt: "2026-09-15T23:00:00.000Z", srAfter: 8200, net: 20 };
+  const result = resolveTrendMatches([early, finalA, finalB], SEASON_STARTS_AT, previousSeason);
+  assert.equal(result.matches.length, 2, "only the final 24h window, not the early match");
+  assert.equal(result.note, "Season 5 final 24h");
+}
+
+// --- resolveTrendMatches: previous season's final 24h is also too sparse -> stays empty, no note ---
+
+{
+  const previousSeason = {
+    name: "Season 5",
+    startsAt: "2026-06-24T00:00:00.000Z",
+    endsAt: "2026-09-15T23:59:59.000Z",
+  };
+  const onlyOne = { createdAt: "2026-09-15T23:00:00.000Z", srAfter: 8200, net: 20 };
+  const result = resolveTrendMatches([onlyOne], SEASON_STARTS_AT, previousSeason);
+  assert.equal(result.matches.length, 0);
+  assert.equal(result.note, null);
 }
 
 console.log("profile queries tests passed");

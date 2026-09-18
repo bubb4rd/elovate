@@ -63,6 +63,8 @@ export type ProfileView = {
   canChangeVote: boolean;
   matches: ProfileMatch[];
   series: CutoffPoint[];
+  /** Set when `series` is a previous-season final-24h fallback rather than this season's real trend. */
+  seriesNote: string | null;
   peaks: ProfilePeaks;
   /** Capability grants (e.g. `elovate-staff`) — unlock exclusive headers. */
   grantedHeaderIds: ProfileGrantId[];
