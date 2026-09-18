@@ -94,9 +94,14 @@ export default async function Home() {
   const dailyChange =
     frozen || (pending && !showRamp) ? (finalPush?.change24h ?? null) : (wz?.change24h ?? null);
   const wzNoteSeasonName = pending && previousSeason ? previousSeason.name : phaseInfo.seasonName;
+  // Same "lead with the 10k cutoff, not the headcount" treatment as the hero
+  // numeral above — the tile's big number is a Top 250 *cutoff*, so during
+  // ramp-up it should read 10k (consistent with the hero and nav) rather than
+  // the small live headcount, which otherwise looks like an already-populated
+  // board when the board itself has nothing to show yet.
   const wzTileMetrics = showRamp
     ? {
-        cutoffSr: rampCount!,
+        cutoffSr: IRIDESCENT_SR,
         change24h: null,
         avgPerDaySeason: null,
         avgPerDay7d: null,
@@ -105,7 +110,9 @@ export default async function Home() {
       }
     : displayWz;
   const wzNote = showRamp
-    ? "in Top 250 so far this season"
+    ? rampCount! > 0
+      ? `${rampCount} in Top 250 so far this season`
+      : "Standings return once players start climbing"
     : phaseNotice
       ? `${wzNoteSeasonName} final`
       : null;
