@@ -125,7 +125,7 @@ export function RankedRampBalls({
     return (
       <div
         style={{ height }}
-        className="mt-4 flex w-full items-center justify-center rounded-[10px] border border-border bg-surface text-sm text-muted"
+        className="mt-4 flex w-full items-center justify-center rounded-[10px] text-sm text-muted"
       >
         No one has reached Top 250 yet this season.
       </div>
@@ -136,7 +136,7 @@ export function RankedRampBalls({
     <div
       ref={containerRef}
       style={{ height }}
-      className="relative mt-4 w-full overflow-hidden rounded-[10px] border border-border bg-surface"
+      className="relative mt-4 w-full overflow-hidden"
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
     </div>
