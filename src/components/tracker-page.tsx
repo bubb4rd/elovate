@@ -10,7 +10,7 @@ import { SiteNav } from "@/components/site-nav";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { getBoardCutoff, resolveBoardRows } from "@/lib/data/board-source";
-import { getLiveIridescentCount } from "@/lib/data/codmunity";
+import { getLiveIridescentRoster } from "@/lib/data/codmunity";
 import { IRIDESCENT_SR } from "@/lib/ranked";
 import {
   finalPushWzHistory,
@@ -74,17 +74,19 @@ export async function TrackerPage({
   // numbers, so the fallback has to be another season's real recorded data).
   const pending = isActiveSeason && phaseInfo.phase === "regular_season" && !liveMetrics;
   const previousSeason = pending ? getPreviousSeason() : undefined;
-  // Day-zero ramp-up: while pending, prefer a real live headcount of players
-  // above Iridescent SR (however small — see getLiveIridescentCount) over the
-  // previous-season fallback, matching the homepage's hero treatment.
-  const [previousStored, previousFinalPush, rampCount] = pending
+  // Day-zero ramp-up: while pending, prefer the real live roster of players
+  // above Iridescent SR (however small — see getLiveIridescentRoster) over
+  // the previous-season fallback. Unlike the homepage hero (a headcount is
+  // enough there), the board shows the actual racers as they cross 10k.
+  const [previousStored, previousFinalPush, rampRoster] = pending
     ? await Promise.all([
         previousSeason ? getLatestStoredCutoff("wz", previousSeason.id) : Promise.resolve(null),
         previousSeason ? finalPushWzHistory(previousSeason.id) : Promise.resolve(null),
-        getLiveIridescentCount(),
+        getLiveIridescentRoster(),
       ])
     : [null, null, null];
-  const showRamp = pending && rampCount != null;
+  const showRamp = pending && rampRoster != null;
+  const rampCount = rampRoster?.length ?? null;
 
   const metrics: BoardMetrics | null = showRamp
     ? {
@@ -146,8 +148,15 @@ export async function TrackerPage({
           : seedSeries;
   // No real per-player roster exists for a previous season's exact final
   // moment (only the aggregate cutoff/rank1 line is persisted — see WZ-12),
-  // so pending keeps the roster empty rather than guessing at rows.
-  const rows = pending ? null : resolveBoardRows(live?.rows, board?.rows, isLiveBoard);
+  // so that fallback keeps the roster empty rather than guessing at rows —
+  // but the ramp roster itself is real per-player data, so it renders like
+  // any other populated board.
+  const rows =
+    showRamp && rampRoster!.length > 0
+      ? rampRoster
+      : pending
+        ? null
+        : resolveBoardRows(live?.rows, board?.rows, isLiveBoard);
   const viewer = await getViewerProfile();
 
   const resolvedBoardStatus: BoardFreshnessStatus = isActiveSeason
@@ -221,6 +230,11 @@ export async function TrackerPage({
               {phaseNotice.detail}
             </p>
           ) : null}
+          {showRamp && rampCount! > 0 ? (
+            <p className="mt-2 shrink-0 text-sm text-muted">
+              {`Racing to Top 250 — ${rampCount} player${rampCount === 1 ? "" : "s"} past 10k SR so far this season.`}
+            </p>
+          ) : null}
           {resolved.source === "stored" ? (
             <p className="mt-2 shrink-0 text-sm text-muted">
               Live standings unavailable. Showing the last recorded cutoff.
@@ -235,7 +249,9 @@ export async function TrackerPage({
                   icon={<BoardPodiumIcon className="size-6" />}
                   label={
                     pending
-                      ? `${phaseInfo.seasonName} standings return once this season starts reporting.`
+                      ? showRamp
+                        ? "No one has reached Top 250 yet this season."
+                        : `${phaseInfo.seasonName} standings return once this season starts reporting.`
                       : phaseNotice
                         ? `The ${phaseInfo.seasonName} final Top 250 returns when the feed responds.`
                         : "The player standings return when the live feed is back."

@@ -54,30 +54,40 @@ function slugify(name: string): string {
   return slug || "player";
 }
 
-export function mapRankedPlayers(
-  rawPlayers: RankedPlayerPayload[],
-  fetchedAt: string,
-): LiveWzBoard {
-  const sorted = [...rawPlayers]
-    .map((raw) => {
+type MappedPlayer = {
+  sr: number;
+  player: Player;
+  deltaSr: number | null;
+  deltaRank: number | null;
+};
+
+function mapAndSortPlayers(rawPlayers: RankedPlayerPayload[]): MappedPlayer[] {
+  return [...rawPlayers]
+    .map((raw): MappedPlayer | null => {
       const sr = asNumber(raw.skillRating);
       const gamertag = asString(raw.gamertag);
       if (sr === null || !gamertag) return null;
       const stableId = asString(raw.player?._id) ?? asString(raw._id) ?? slugify(gamertag);
-      const player: Player = {
-        id: `wz-live-${stableId}`,
-        slug: slugify(gamertag),
-        displayName: gamertag,
-      };
       return {
         sr,
-        player,
+        player: {
+          id: `wz-live-${stableId}`,
+          slug: slugify(gamertag),
+          displayName: gamertag,
+        },
         deltaSr: asNumber(raw.deltaSkillRating),
         deltaRank: asNumber(raw.deltaRank),
       };
     })
-    .filter((row): row is NonNullable<typeof row> => row !== null)
+    .filter((row): row is MappedPlayer => row !== null)
     .sort((a, b) => b.sr - a.sr);
+}
+
+export function mapRankedPlayers(
+  rawPlayers: RankedPlayerPayload[],
+  fetchedAt: string,
+): LiveWzBoard {
+  const sorted = mapAndSortPlayers(rawPlayers);
 
   if (sorted.length === 0) {
     throw new Error("CODMunity Top 250 payload had no ranked players");
@@ -117,6 +127,33 @@ export function mapRankedPlayers(
     fetchedAt,
     nextUpdateAt: new Date(Date.parse(fetchedAt) + LIVE_POLL_MS).toISOString(),
   };
+}
+
+/**
+ * Real per-player rows for everyone currently at or above `threshold` SR —
+ * same shape and sort as `mapRankedPlayers`' rows, but with NO
+ * `MIN_PLAYER_COUNT` floor (see `fetchLiveAboveThresholdCount` below): a
+ * genuinely small day-zero racing field is exactly what this is for. `rank`
+ * is the player's position within this qualifying set (1 = highest SR
+ * above the threshold), which is also their true overall Top 250 rank,
+ * since nobody below the threshold can outrank them.
+ */
+export function mapAboveThresholdRows(
+  rawPlayers: RankedPlayerPayload[],
+  fetchedAt: string,
+  threshold: number,
+): BoardRow[] {
+  return mapAndSortPlayers(rawPlayers)
+    .filter((row) => row.sr >= threshold)
+    .map((row, index) => ({
+      rank: index + 1,
+      player: row.player,
+      sr: row.sr,
+      deltaSr: row.deltaSr,
+      deltaRank: row.deltaRank,
+      lastSeen: fetchedAt,
+      isCutoff: false,
+    }));
 }
 
 async function fetchRankedPlayersRaw(): Promise<RankedPlayerPayload[]> {
@@ -207,6 +244,44 @@ export async function getLiveIridescentCount(): Promise<number | null> {
       Date.now() - lastGoodAboveThresholdCountAt <= LAST_GOOD_MAX_AGE_MS
     ) {
       return lastGoodAboveThresholdCount;
+    }
+    return null;
+  }
+}
+
+let lastGoodAboveThresholdRoster: BoardRow[] | null = null;
+let lastGoodAboveThresholdRosterAt: number | null = null;
+
+async function fetchLiveAboveThresholdRoster(threshold: number): Promise<BoardRow[]> {
+  const raw = await fetchRankedPlayersRaw();
+  return mapAboveThresholdRows(raw, new Date().toISOString(), threshold);
+}
+
+const getCachedAboveThresholdRoster = unstable_cache(
+  (threshold: number) => fetchLiveAboveThresholdRoster(threshold),
+  ["codmunity-above-threshold-roster"],
+  { revalidate: LIVE_POLL_SECONDS },
+);
+
+/**
+ * Real rows (not just a count) for players currently at or above
+ * Iridescent SR — the day-zero "who's racing to Top 250" board. Same raw
+ * fetch as `getLiveIridescentCount` (Next dedupes it), so this doesn't add
+ * a second live request.
+ */
+export async function getLiveIridescentRoster(): Promise<BoardRow[] | null> {
+  try {
+    const roster = await getCachedAboveThresholdRoster(IRIDESCENT_SR);
+    lastGoodAboveThresholdRoster = roster;
+    lastGoodAboveThresholdRosterAt = Date.now();
+    return roster;
+  } catch {
+    if (
+      lastGoodAboveThresholdRoster != null &&
+      lastGoodAboveThresholdRosterAt != null &&
+      Date.now() - lastGoodAboveThresholdRosterAt <= LAST_GOOD_MAX_AGE_MS
+    ) {
+      return lastGoodAboveThresholdRoster;
     }
     return null;
   }
