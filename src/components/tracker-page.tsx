@@ -223,13 +223,18 @@ export async function TrackerPage({
               {showRamp ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 overflow-hidden px-4 text-center">
                   <CutoffNumeral
-                    sr={rampCount!}
+                    sr={IRIDESCENT_SR}
                     change24h={null}
-                    label="in Top 250 so far this season"
+                    label="Cutoff"
                     size="panel"
                     showChange={false}
                   />
                   <RankedRampBalls count={rampCount!} height={220} />
+                  {rampCount! > 0 ? (
+                    <p className="text-sm text-muted">
+                      {rampCount} in Top 250 so far this season
+                    </p>
+                  ) : null}
                 </div>
               ) : rows ? (
                 <BoardTable rows={rows} linkPlayers={false} />
