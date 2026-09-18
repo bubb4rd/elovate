@@ -1,6 +1,10 @@
 import { BoardTable } from "@/components/board-table";
 import { CutoffChart } from "@/components/cutoff-chart";
+import { CutoffNumeral } from "@/components/cutoff-numeral";
+import { EmptyState } from "@/components/empty-state";
 import { HeadingMetrics } from "@/components/heading-metrics";
+import { BoardPodiumIcon } from "@/components/icons";
+import { RankedRampBalls } from "@/components/ranked-ramp-balls";
 import { RememberMode } from "@/components/remember-mode";
 import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { SiteFooter } from "@/components/site-footer";
@@ -8,6 +12,7 @@ import { SiteNav } from "@/components/site-nav";
 import type { BoardFreshnessStatus } from "@/components/live-status";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { getBoardCutoff, resolveBoardRows } from "@/lib/data/board-source";
+import { getLiveIridescentCount } from "@/lib/data/codmunity";
 import {
   finalPushWzHistory,
   getLatestStoredCutoff,
@@ -70,15 +75,28 @@ export async function TrackerPage({
   // numbers, so the fallback has to be another season's real recorded data).
   const pending = isActiveSeason && phaseInfo.phase === "regular_season" && !liveMetrics;
   const previousSeason = pending ? getPreviousSeason() : undefined;
-  const [previousStored, previousFinalPush] = pending && previousSeason
+  // Day-zero ramp-up: while pending, prefer a real live headcount of players
+  // above Iridescent SR (however small — see getLiveIridescentCount) over the
+  // previous-season fallback, matching the homepage's hero treatment.
+  const [previousStored, previousFinalPush, rampCount] = pending
     ? await Promise.all([
-        getLatestStoredCutoff("wz", previousSeason.id),
-        finalPushWzHistory(previousSeason.id),
+        previousSeason ? getLatestStoredCutoff("wz", previousSeason.id) : Promise.resolve(null),
+        previousSeason ? finalPushWzHistory(previousSeason.id) : Promise.resolve(null),
+        getLiveIridescentCount(),
       ])
-    : [null, null];
+    : [null, null, null];
+  const showRamp = pending && rampCount != null;
 
-  const metrics: BoardMetrics | null =
-    pending && previousStored
+  const metrics: BoardMetrics | null = showRamp
+    ? {
+        cutoffSr: rampCount!,
+        change24h: null,
+        avgPerDaySeason: null,
+        avgPerDay7d: null,
+        playersSampled: rampCount!,
+        capturedAt: new Date().toISOString(),
+      }
+    : pending && previousStored
       ? {
           cutoffSr: previousStored.cutoffSr,
           change24h: previousFinalPush?.change24h ?? null,
@@ -150,7 +168,10 @@ export async function TrackerPage({
           boardStatus={resolvedBoardStatus}
         />
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-7 py-10">
-          <p>No snapshot for this season yet.</p>
+          <EmptyState
+            icon={<BoardPodiumIcon className="size-6" />}
+            label="No snapshot for this season yet."
+          />
         </main>
         <SiteFooter className="px-7" />
       </div>
@@ -190,23 +211,37 @@ export async function TrackerPage({
           ) : null}
           <div className="mt-4 grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:grid-rows-1 lg:gap-10 lg:overflow-hidden">
             <div className="order-2 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
-              {rows ? (
+              {showRamp ? (
+                <div className="flex h-full flex-col items-center justify-center gap-4 overflow-hidden px-4 text-center">
+                  <CutoffNumeral
+                    sr={rampCount!}
+                    change24h={null}
+                    label="in Top 250 so far this season"
+                    size="panel"
+                    showChange={false}
+                  />
+                  <RankedRampBalls count={rampCount!} height={220} />
+                </div>
+              ) : rows ? (
                 <BoardTable rows={rows} linkPlayers={false} />
               ) : (
-                <p className="text-sm text-muted">
-                  {pending
-                    ? `${phaseInfo.seasonName} standings return once this season starts reporting.`
-                    : phaseNotice
-                      ? `The ${phaseInfo.seasonName} final Top 250 returns when the feed responds.`
-                      : "The player standings return when the live feed is back."}
-                </p>
+                <EmptyState
+                  icon={<BoardPodiumIcon className="size-6" />}
+                  label={
+                    pending
+                      ? `${phaseInfo.seasonName} standings return once this season starts reporting.`
+                      : phaseNotice
+                        ? `The ${phaseInfo.seasonName} final Top 250 returns when the feed responds.`
+                        : "The player standings return when the live feed is back."
+                  }
+                />
               )}
             </div>
 
             <aside className="order-1 h-52 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
               <CutoffChart
                 series={series}
-                liveCutoffSr={metrics.cutoffSr}
+                liveCutoffSr={showRamp ? undefined : metrics.cutoffSr}
                 nextUpdateAt={live?.nextUpdateAt}
                 boardStatus={resolvedBoardStatus}
               />

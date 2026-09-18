@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, ChartLineUp } from "@phosphor-icons/react";
 import Link from "next/link";
 import { CutoffChart } from "@/components/cutoff-chart";
+import { EmptyState } from "@/components/empty-state";
 import { MATCH_HIGHLIGHT_MS, MATCH_LIMIT, MatchHistory } from "@/components/profile/match-history";
 import { ProfileHero, ProfileIdentity } from "@/components/profile/profile-hero";
 import { ProfileThemeProvider } from "@/components/profile/profile-theme-provider";
@@ -195,17 +196,23 @@ export function ProfilePageContent({
               </div>
             </div>
             {series.length < 2 ? (
-              <div className="flex flex-col gap-2 py-4 text-sm text-muted">
-                <p>No SR history yet.</p>
-                {canEdit ? (
-                  <Link
-                    href={`/${profile.mode}/calc`}
-                    className="w-fit font-medium text-accent transition-colors hover:text-accent/80"
-                  >
-                    Log matches in Climb to start tracking →
-                  </Link>
-                ) : null}
-              </div>
+              <EmptyState
+                icon={<ChartLineUp size={20} weight="regular" />}
+                label={
+                  <>
+                    No SR history yet.
+                    {canEdit ? (
+                      <Link
+                        href={`/${profile.mode}/calc`}
+                        className="mt-1 block w-fit font-medium text-accent transition-colors hover:text-accent/80"
+                      >
+                        Log matches in Climb to start tracking →
+                      </Link>
+                    ) : null}
+                  </>
+                }
+                className="py-4"
+              />
             ) : (
               <CutoffChart
                 series={series}
