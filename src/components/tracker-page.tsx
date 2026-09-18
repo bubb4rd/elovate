@@ -13,6 +13,7 @@ import type { BoardFreshnessStatus } from "@/components/live-status";
 import { getViewerProfile } from "@/lib/auth/viewer";
 import { getBoardCutoff, resolveBoardRows } from "@/lib/data/board-source";
 import { getLiveIridescentCount } from "@/lib/data/codmunity";
+import { IRIDESCENT_SR } from "@/lib/ranked";
 import {
   finalPushWzHistory,
   getLatestStoredCutoff,
@@ -156,6 +157,11 @@ export async function TrackerPage({
             phaseInfo.phaseEndsAt,
           )
         : null;
+  // The Top 250 cutoff can never fall below the Iridescent floor (10k) — a
+  // season that hasn't produced a real cutoff yet (or whose "cutoff" is
+  // actually the day-zero ramp headcount) still has a known floor to show,
+  // same fallback every other nav on the site already uses.
+  const navCutoffSr = showRamp ? IRIDESCENT_SR : (metrics?.cutoffSr ?? IRIDESCENT_SR);
 
   if (!season || (!isLiveBoard && !board) || !metrics) {
     return (
@@ -166,6 +172,7 @@ export async function TrackerPage({
           seasonId={seasonId}
           tool="board"
           boardStatus={resolvedBoardStatus}
+          cutoffSr={navCutoffSr}
         />
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-7 py-10">
           <EmptyState
@@ -187,6 +194,8 @@ export async function TrackerPage({
         seasonId={seasonId}
         tool="board"
         boardStatus={resolvedBoardStatus}
+        cutoffSr={navCutoffSr}
+        nextUpdateAt={live?.nextUpdateAt}
       />
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col px-7 py-4 lg:min-h-0">
         <ViewerThemeShell themeId={viewer?.pageThemeId}>
