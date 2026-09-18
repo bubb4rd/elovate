@@ -22,6 +22,16 @@ export type ResolvedCutoff = {
   stored: StoredCutoff | null;
 };
 
+// How long a stored snapshot is trusted as a stand-in for a down live feed.
+// The `snapshots` table is fed by a periodic poller (see
+// supabase/functions/poll-wz-cutoff), so a reasonably long outage still
+// resolves to real recorded data — but a season that has genuinely reset
+// also looks like "the poller can't get a reliable board" indefinitely.
+// Without a bound, the last mature-season snapshot would be served forever,
+// masking the reset instead of falling through to `none` (which lets the
+// day-zero ramp-up view take over).
+export const STORED_CUTOFF_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
 type HistoryAvgs = {
   change24h: number | null;
   avgPerDaySeason: number | null;
@@ -47,6 +57,7 @@ export function resolveBoardRows<T>(
 export function resolveCutoff(
   live: LiveWzBoard | null,
   stored: StoredCutoff | null,
+  now: number,
 ): ResolvedCutoff {
   if (live) {
     return {
@@ -58,7 +69,7 @@ export function resolveCutoff(
       stored,
     };
   }
-  if (stored) {
+  if (stored && now - Date.parse(stored.capturedAt) <= STORED_CUTOFF_MAX_AGE_MS) {
     return {
       source: "stored",
       cutoffSr: stored.cutoffSr,
@@ -74,7 +85,7 @@ export function resolveCutoff(
     rank1Sr: null,
     capturedAt: null,
     live: null,
-    stored: null,
+    stored,
   };
 }
 
@@ -141,14 +152,16 @@ export async function getBoardCutoff(params: {
   seed: BoardMetrics | null;
   history?: HistoryAvgs;
   fetchStored?: (mode: Mode, seasonId: string) => Promise<StoredCutoff | null>;
+  now?: number;
 }): Promise<{ resolved: ResolvedCutoff; metrics: BoardMetrics | null }> {
   const { mode, seasonId, live, seed, history } = params;
   const fetchStored = params.fetchStored ?? getLatestStoredCutoff;
+  const now = params.now ?? Date.now();
   const isLiveBoard = isLiveWzBoard(mode, seasonId);
 
   const stored =
     !live && isLiveBoard ? await fetchStored(mode, seasonId) : null;
-  const resolved = resolveCutoff(live, stored);
+  const resolved = resolveCutoff(live, stored, now);
   const metrics = currentCutoffMetrics({ seed, resolved, isLiveBoard, history });
 
   return { resolved, metrics };
