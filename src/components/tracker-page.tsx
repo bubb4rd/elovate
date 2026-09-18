@@ -1,10 +1,8 @@
 import { BoardTable } from "@/components/board-table";
 import { CutoffChart } from "@/components/cutoff-chart";
-import { CutoffNumeral } from "@/components/cutoff-numeral";
 import { EmptyState } from "@/components/empty-state";
 import { HeadingMetrics } from "@/components/heading-metrics";
 import { BoardPodiumIcon } from "@/components/icons";
-import { RankedRampBalls } from "@/components/ranked-ramp-balls";
 import { RememberMode } from "@/components/remember-mode";
 import { ViewerThemeShell } from "@/components/profile/profile-theme-provider";
 import { SiteFooter } from "@/components/site-footer";
@@ -128,8 +126,18 @@ export async function TrackerPage({
             },
           ]
         : [];
-  const series =
-    pending && previousFinalPush
+  // The ramp view's cutoff is always the Iridescent floor, not wherever the
+  // previous season's curve happened to end up — reusing that curve made the
+  // chart look like a sharp drop from last season's final cutoff down to 10k.
+  const rampSeries = showRamp
+    ? [
+        { capturedAt: season.startsAt, cutoffSr: IRIDESCENT_SR, rank1Sr: IRIDESCENT_SR, deltaCutoff: null },
+        { capturedAt: new Date().toISOString(), cutoffSr: IRIDESCENT_SR, rank1Sr: IRIDESCENT_SR, deltaCutoff: null },
+      ]
+    : null;
+  const series = rampSeries
+    ? rampSeries
+    : pending && previousFinalPush
       ? previousFinalPush.series
       : history.series.length > 0
         ? history.series
@@ -148,7 +156,7 @@ export async function TrackerPage({
       : boardStatusForPhase(phaseInfo.phase)
     : boardStatus;
   const phaseNotice =
-    pending && previousSeason
+    pending && !showRamp && previousSeason
       ? pendingSeasonCopy(phaseInfo.seasonName, previousSeason.name)
       : isActiveSeason && resolvedBoardStatus === "frozen"
         ? seasonPhaseCopy(
@@ -220,23 +228,7 @@ export async function TrackerPage({
           ) : null}
           <div className="mt-4 grid grid-cols-1 gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:grid-rows-1 lg:gap-10 lg:overflow-hidden">
             <div className="order-2 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
-              {showRamp ? (
-                <div className="flex h-full flex-col items-center justify-center gap-4 overflow-hidden px-4 text-center">
-                  <CutoffNumeral
-                    sr={IRIDESCENT_SR}
-                    change24h={null}
-                    label="Cutoff"
-                    size="panel"
-                    showChange={false}
-                  />
-                  <RankedRampBalls count={rampCount!} height={220} />
-                  {rampCount! > 0 ? (
-                    <p className="text-sm text-muted">
-                      {rampCount} in Top 250 so far this season
-                    </p>
-                  ) : null}
-                </div>
-              ) : rows ? (
+              {rows ? (
                 <BoardTable rows={rows} linkPlayers={false} />
               ) : (
                 <EmptyState
@@ -255,7 +247,7 @@ export async function TrackerPage({
             <aside className="order-1 h-52 min-h-0 lg:order-none lg:h-full lg:overflow-hidden">
               <CutoffChart
                 series={series}
-                liveCutoffSr={showRamp ? undefined : metrics.cutoffSr}
+                liveCutoffSr={showRamp ? IRIDESCENT_SR : metrics.cutoffSr}
                 nextUpdateAt={live?.nextUpdateAt}
                 boardStatus={resolvedBoardStatus}
               />

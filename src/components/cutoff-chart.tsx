@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import { EmptyState } from "@/components/empty-state";
 import { LiveStatus, type BoardFreshnessStatus } from "@/components/live-status";
-import { formatChartTime, formatDay, formatSlashDateTime, formatSr } from "@/lib/format";
+import { formatDay, formatSlashDateTime, formatSr } from "@/lib/format";
 import { parseTimestamp, toSortedRows } from "@/lib/chart/time-series";
 import { readTimeZoneCookie, UTC_TIME_ZONE } from "@/lib/time-preference";
 import { cn } from "@/lib/utils";
@@ -266,7 +266,7 @@ export function CutoffChart({
   const formatXTick = (value: number) => {
     if (!Number.isFinite(value)) return "";
     const iso = new Date(value).toISOString();
-    return shortSeries ? formatChartTime(iso) : formatDay(iso);
+    return formatDay(iso);
   };
   const gradientId = useId().replace(/:/g, "");
   const delta = seriesDelta(series);
