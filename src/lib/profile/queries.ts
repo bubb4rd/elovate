@@ -1,7 +1,8 @@
-import type { CutoffPoint } from "@/lib/data/types";
+import type { CutoffPoint, Season } from "@/lib/data/types";
 import {
   getActiveSeason,
   getBoardMetrics,
+  getPreviousSeason,
 } from "@/lib/data/queries";
 import { rowToMatch, rowToSession } from "@/lib/history/map";
 import type { WzHistoryMatch } from "@/lib/history";
@@ -54,6 +55,51 @@ export function resolveDisplaySr(
 /** True when a match's timestamp falls inside the active season — same boundary resolveDisplaySr uses. */
 export function isInSeason(createdAt: string, activeSeasonStartsAt: string): boolean {
   return createdAt >= activeSeasonStartsAt;
+}
+
+const TREND_FALLBACK_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export type PreviousSeasonWindow = {
+  name: string;
+  startsAt: string;
+  endsAt: string | null;
+};
+
+/** Matches within 24h of the latest timestamp in `matches` (must be sorted ascending). */
+function withinLastDay<T extends { createdAt: string }>(matches: T[]): T[] {
+  if (matches.length === 0) return matches;
+  const lastMs = new Date(matches[matches.length - 1]!.createdAt).getTime();
+  const cutoffMs = lastMs - TREND_FALLBACK_WINDOW_MS;
+  return matches.filter((match) => new Date(match.createdAt).getTime() >= cutoffMs);
+}
+
+/**
+ * Which matches feed the profile trend chart, plus an optional caption. A
+ * brand-new season with fewer than 2 in-season matches falls back to the
+ * previous season's final 24 hours (mirrors the board's day-zero/final-push
+ * treatment) rather than going blank the moment a season resets.
+ */
+export function resolveTrendMatches<
+  T extends { createdAt: string; srAfter: number; net: number },
+>(
+  modeMatches: T[],
+  seasonStartsAt: string,
+  previousSeason: PreviousSeasonWindow | undefined,
+): { matches: T[]; note: string | null } {
+  const seasonMatches = modeMatches.filter((match) => isInSeason(match.createdAt, seasonStartsAt));
+  if (seasonMatches.length >= 2 || !previousSeason) {
+    return { matches: seasonMatches, note: null };
+  }
+  const previousSeasonMatches = modeMatches.filter(
+    (match) =>
+      match.createdAt >= previousSeason.startsAt &&
+      (previousSeason.endsAt == null || match.createdAt <= previousSeason.endsAt),
+  );
+  const fallback = withinLastDay(previousSeasonMatches);
+  if (fallback.length < 2) {
+    return { matches: seasonMatches, note: null };
+  }
+  return { matches: fallback, note: `${previousSeason.name} final 24h` };
 }
 
 function utcDateString(iso: string): string {
@@ -190,6 +236,7 @@ function viewFromUser(
   seasonName: string | null,
   seasonId: string,
   seasonStartsAt: string,
+  previousSeason: Season | undefined,
   reputation: Pick<ProfileView, "votes" | "viewerVote" | "canChangeVote">,
 ): ProfileView {
   const parsed = matches
@@ -211,12 +258,20 @@ function viewFromUser(
   const displayMatches = profileMatchesFromRows(matches);
   // The trend chart only shows this season's climb — a match from before the
   // reset would otherwise plot a line ending at a since-reset SR, drawing a
-  // discontinuous "climb" straight through the reset boundary. Match History
-  // below (displayMatches) still shows real past matches; only the chart is
-  // season-scoped.
-  const seasonMatches = modeMatches.filter((match) => isInSeason(match.createdAt, seasonStartsAt));
+  // discontinuous "climb" straight through the reset boundary. A brand-new
+  // season with fewer than 2 in-season matches falls back to last season's
+  // final 24 hours instead (see resolveTrendMatches) rather than going blank
+  // the moment the season resets. Match History below (displayMatches) still
+  // shows real past matches regardless; only the chart is season-scoped.
+  const { matches: trendMatches, note: seriesNote } = resolveTrendMatches(
+    modeMatches,
+    seasonStartsAt,
+    previousSeason
+      ? { name: previousSeason.name, startsAt: previousSeason.startsAt, endsAt: previousSeason.endsAt }
+      : undefined,
+  );
   const series = seriesFromMatches(
-    seasonMatches.map((match) => {
+    trendMatches.map((match) => {
       if (match.mode === "wz") {
         return {
           id: match.id,
@@ -272,6 +327,7 @@ function viewFromUser(
     canChangeVote: reputation.canChangeVote,
     matches: displayMatches,
     series,
+    seriesNote,
     peaks,
     grantedHeaderIds: grants,
     ownedHeaderIds: headers.ownedHeaderIds,
@@ -328,6 +384,7 @@ async function getUserProfile(
     .map((row) => row.grant_id)
     .filter(isProfileGrantId);
   const season = getActiveSeason();
+  const previousSeason = getPreviousSeason();
   const latestMode = (matchRows ?? []).at(-1)?.mode ?? "wz";
   const cutoffSr = getBoardMetrics(latestMode, season.id)?.cutoffSr ?? null;
   return viewFromUser(
@@ -339,6 +396,7 @@ async function getUserProfile(
     season.name,
     season.id,
     season.startsAt,
+    previousSeason,
     { votes, viewerVote, canChangeVote },
   );
 }

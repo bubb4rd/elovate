@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import { CaretDown, CaretUp, ChartLineUp } from "@phosphor-icons/react";
 import Link from "next/link";
 import { CutoffChart } from "@/components/cutoff-chart";
+import { EmptyState } from "@/components/empty-state";
 import { MATCH_HIGHLIGHT_MS, MATCH_LIMIT, MatchHistory } from "@/components/profile/match-history";
 import { ProfileHero, ProfileIdentity } from "@/components/profile/profile-hero";
 import { ProfileThemeProvider } from "@/components/profile/profile-theme-provider";
@@ -58,6 +59,11 @@ export function ProfilePageContent({
   const [matches, setMatches] = useState<ProfileMatch[]>(profile.matches);
   const [currentSr, setCurrentSr] = useState(profile.currentSr);
   const [series, setSeries] = useState<CutoffPoint[]>(profile.series);
+  const [seriesNote, setSeriesNote] = useState<string | null>(profile.seriesNote);
+  // True while `series` is the previous-season final-24h fallback (see
+  // resolveTrendMatches) rather than this season's real trend — the first
+  // live match of the new season should replace it, not extend it.
+  const usingFallbackSeries = useRef(profile.seriesNote != null);
   const [enteredId, setEnteredId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -78,19 +84,33 @@ export function ProfilePageContent({
           setEnteredId(profileMatch.id);
         }
         setCurrentSr(payload.srAfter);
-        setSeries((current) => {
-          if (current.some((point) => point.capturedAt === payload.match.createdAt)) {
-            return current;
-          }
-          return [
-            ...current,
+        if (usingFallbackSeries.current) {
+          // First real match of the new season — replace the previous
+          // season's fallback trend rather than appending onto it.
+          usingFallbackSeries.current = false;
+          setSeriesNote(null);
+          setSeries([
             seriesPointFromAccept({
               createdAt: payload.match.createdAt,
               srAfter: payload.srAfter,
               net: payload.match.net,
             }),
-          ];
-        });
+          ]);
+        } else {
+          setSeries((current) => {
+            if (current.some((point) => point.capturedAt === payload.match.createdAt)) {
+              return current;
+            }
+            return [
+              ...current,
+              seriesPointFromAccept({
+                createdAt: payload.match.createdAt,
+                srAfter: payload.srAfter,
+                net: payload.match.net,
+              }),
+            ];
+          });
+        }
         return;
       }
 
@@ -195,25 +215,36 @@ export function ProfilePageContent({
               </div>
             </div>
             {series.length < 2 ? (
-              <div className="flex flex-col gap-2 py-4 text-sm text-muted">
-                <p>No SR history yet.</p>
-                {canEdit ? (
-                  <Link
-                    href={`/${profile.mode}/calc`}
-                    className="w-fit font-medium text-accent transition-colors hover:text-accent/80"
-                  >
-                    Log matches in Climb to start tracking →
-                  </Link>
-                ) : null}
-              </div>
-            ) : (
-              <CutoffChart
-                series={series}
-                showRank1={false}
-                valueLabel="SR"
-                bare
-                height={220}
+              <EmptyState
+                icon={<ChartLineUp size={20} weight="regular" />}
+                label={
+                  <>
+                    No SR history yet.
+                    {canEdit ? (
+                      <Link
+                        href={`/${profile.mode}/calc`}
+                        className="mt-1 block w-fit font-medium text-accent transition-colors hover:text-accent/80"
+                      >
+                        Log matches in Climb to start tracking →
+                      </Link>
+                    ) : null}
+                  </>
+                }
+                className="py-4"
               />
+            ) : (
+              <>
+                {seriesNote ? (
+                  <p className="mb-2 text-xs text-muted">{seriesNote}</p>
+                ) : null}
+                <CutoffChart
+                  series={series}
+                  showRank1={false}
+                  valueLabel="SR"
+                  bare
+                  height={220}
+                />
+              </>
             )}
           </div>
           <div className="min-h-40">

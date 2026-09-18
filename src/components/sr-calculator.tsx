@@ -5,6 +5,7 @@ import { useLayoutEffect, useCallback, useEffect, useRef, useState, useSyncExter
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ClimbPaceStrip } from "@/components/climb-pace-strip";
 import { RankPlate } from "@/components/rank-plate";
 import { RankTimeline } from "@/components/rank-timeline";
 import { SessionPanel } from "@/components/session-panel";
@@ -789,14 +790,6 @@ export function SrCalculator({
               {wzScenarios.map((row) => {
                 const selected = row.placement.id === placementId;
                 const mutedNegative = progressivePreview && row.net < 0;
-                const subline =
-                  resolved.reached
-                    ? "At target"
-                    : row.games != null
-                      ? `${row.games} game${row.games === 1 ? "" : "s"}`
-                      : row.breakEvenElims != null
-                        ? `${row.breakEvenElims} elim${row.breakEvenElims === 1 ? "" : "s"} to go positive`
-                        : "Cannot climb";
 
                 return (
                   <button
@@ -830,9 +823,6 @@ export function SrCalculator({
                     >
                       {formatDelta(row.net)}
                     </p>
-                    {subline ? (
-                      <p className="mt-2 text-[11px] text-muted">{subline}</p>
-                    ) : null}
                   </button>
                 );
               })}
@@ -868,6 +858,7 @@ export function SrCalculator({
         rank={displayRank}
         skip={editingSr || !hydrated}
       />
+      <ClimbPaceStrip sr={sr} cutoffSr={cutoffSr} rank={rank} doc={historyDoc} signedIn={signedIn} />
       <SessionPanel
         doc={historyDoc}
         currentSr={sr}

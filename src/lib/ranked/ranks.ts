@@ -42,8 +42,13 @@ export const DIVISION_TONE: Record<DivisionId, DivisionTone> = {
   platinum: { fill: "#2f6d7d", fill2: "#8ed4e6", glow: "#7ecadf", text: "#bfeaf4" },
   diamond: { fill: "#155a88", fill2: "#5ec8f5", glow: "#4ab8ea", text: "#b8e8ff" },
   crimson: { fill: "#6e1224", fill2: "#e23a4a", glow: "#e23a4a", text: "#ff8a96" },
-  iridescent: { fill: "#6a1b9a", fill2: "#ff4fc4", glow: "#e84dff", text: "#ff9adf" },
-  top250: { fill: "#4a1570", fill2: "#f2c81d", glow: "#f2c81d", text: "#f7dd4d" },
+  // Matches the app's canonical pastel iridescent look (see IRIDESCENT_GRADIENT
+  // in lib/profile/themes.ts) — the old #6a1b9a/#ff4fc4 saturated purple/pink
+  // read as the unrelated "Nebula" theme instead.
+  iridescent: { fill: "#CED9EF", fill2: "#E2C6EE", glow: "#F5C7E8", text: "#E2C6EE" },
+  // Top 250 uses the same tone as Gold by design (was previously a
+  // purple/gold blend via a different `fill`, mismatched with the rest).
+  top250: { fill: "#9c620c", fill2: "#f2c81d", glow: "#f2c81d", text: "#f7dd4d" },
 };
 
 export type SrFeeTriplet = readonly [number, number, number];

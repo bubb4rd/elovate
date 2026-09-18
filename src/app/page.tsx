@@ -25,6 +25,7 @@ import {
   pendingSeasonCopy,
   seasonPhaseCopy,
 } from "@/lib/data/season-phase";
+import { IRIDESCENT_SR } from "@/lib/ranked";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -117,12 +118,17 @@ export default async function Home() {
           {showRamp ? (
             <>
               <CutoffNumeral
-                sr={rampCount!}
+                sr={IRIDESCENT_SR}
                 change24h={null}
-                label="in Top 250"
+                label="Cutoff"
                 showChange={false}
               />
               <RankedRampBalls count={rampCount!} height={300} />
+              {rampCount! > 0 ? (
+                <p className="mt-3 text-sm text-muted">
+                  {rampCount} in Top 250 so far this season
+                </p>
+              ) : null}
             </>
           ) : displayWz ? (
             <>

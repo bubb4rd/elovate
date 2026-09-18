@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, ChartLineUp } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   Area,
@@ -15,8 +15,9 @@ import {
   YAxis,
   useCartesianScale,
 } from "recharts";
+import { EmptyState } from "@/components/empty-state";
 import { LiveStatus, type BoardFreshnessStatus } from "@/components/live-status";
-import { formatChartTime, formatDay, formatSlashDateTime, formatSr } from "@/lib/format";
+import { formatDay, formatSlashDateTime, formatSr } from "@/lib/format";
 import { parseTimestamp, toSortedRows } from "@/lib/chart/time-series";
 import { readTimeZoneCookie, UTC_TIME_ZONE } from "@/lib/time-preference";
 import { cn } from "@/lib/utils";
@@ -265,7 +266,7 @@ export function CutoffChart({
   const formatXTick = (value: number) => {
     if (!Number.isFinite(value)) return "";
     const iso = new Date(value).toISOString();
-    return shortSeries ? formatChartTime(iso) : formatDay(iso);
+    return formatDay(iso);
   };
   const gradientId = useId().replace(/:/g, "");
   const delta = seriesDelta(series);
@@ -297,15 +298,12 @@ export function CutoffChart({
 
   if (series.length === 0) {
     return (
-      <div
-        className={cn(
-          "flex items-center px-4 text-sm text-muted",
-          fill && "h-full min-h-0",
-        )}
+      <EmptyState
+        icon={<ChartLineUp size={20} weight="regular" />}
+        label="No snapshot for this season yet."
+        className={cn(fill && "h-full min-h-0")}
         style={height ? { height } : undefined}
-      >
-        No snapshot for this season yet.
-      </div>
+      />
     );
   }
 

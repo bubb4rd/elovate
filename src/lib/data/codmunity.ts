@@ -9,6 +9,16 @@ export const LIVE_POLL_SECONDS = LIVE_POLL_MS / 1000;
 // truncated CODMunity payload would otherwise produce a wildly wrong cutoff.
 export const MIN_PLAYER_COUNT = 240;
 
+// How long a "last good" board/count is trusted as a stand-in for a failed
+// fetch. This rides out a brief CODMunity outage (a few missed polls) without
+// showing a blank board — but a REAL season reset also makes every fetch
+// "fail" (too few/zero players), and that state persists. Without an expiry,
+// the last mature board from before the reset would be served forever,
+// permanently masking the reset instead of falling through to the day-zero
+// ramp-up view. Comfortably longer than a poll interval, short enough that a
+// real reset is recognized well within the same session.
+const LAST_GOOD_MAX_AGE_MS = LIVE_POLL_MS * 4;
+
 const TOP_250_URL = "https://api.codmunity.gg/website/pages/top-250";
 
 type RankedPlayerPayload = {
@@ -22,6 +32,7 @@ type RankedPlayerPayload = {
 };
 
 let lastGood: LiveWzBoard | null = null;
+let lastGoodAt: number | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -129,6 +140,7 @@ async function fetchLiveWzBoard(): Promise<LiveWzBoard> {
   const fetchedAt = new Date().toISOString();
   const mapped = mapRankedPlayers(raw, fetchedAt);
   lastGood = mapped;
+  lastGoodAt = Date.now();
   return mapped;
 }
 
@@ -140,13 +152,18 @@ export async function getLiveWzBoard(): Promise<LiveWzBoard | null> {
   try {
     const live = await getCachedLiveWzBoard();
     lastGood = live;
+    lastGoodAt = Date.now();
     return live;
   } catch {
-    return lastGood;
+    if (lastGood && lastGoodAt != null && Date.now() - lastGoodAt <= LAST_GOOD_MAX_AGE_MS) {
+      return lastGood;
+    }
+    return null;
   }
 }
 
 let lastGoodAboveThresholdCount: number | null = null;
+let lastGoodAboveThresholdCountAt: number | null = null;
 
 /**
  * Count of players with sr >= threshold, straight off the same CODMunity
@@ -181,8 +198,16 @@ export async function getLiveIridescentCount(): Promise<number | null> {
   try {
     const count = await getCachedAboveThresholdCount(IRIDESCENT_SR);
     lastGoodAboveThresholdCount = count;
+    lastGoodAboveThresholdCountAt = Date.now();
     return count;
   } catch {
-    return lastGoodAboveThresholdCount;
+    if (
+      lastGoodAboveThresholdCount != null &&
+      lastGoodAboveThresholdCountAt != null &&
+      Date.now() - lastGoodAboveThresholdCountAt <= LAST_GOOD_MAX_AGE_MS
+    ) {
+      return lastGoodAboveThresholdCount;
+    }
+    return null;
   }
 }

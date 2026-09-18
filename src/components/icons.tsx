@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { DIVISION_TONE, type DivisionId } from "@/lib/ranked";
+import { IRIDESCENT_GRADIENT_STOPS } from "@/lib/profile/themes";
 import { cn } from "@/lib/utils";
 
 export function BoardPodiumIcon({ className }: { className?: string }) {
@@ -62,6 +64,41 @@ export function ClimbMark({ className }: { className?: string }) {
   return (
     <svg aria-hidden viewBox="0 0 256 256" className={cn("shrink-0", className)}>
       <path fill="currentColor" d={CLIMB_MARK_PATH} />
+    </svg>
+  );
+}
+
+/**
+ * The elovate mark, filled with a given division's rank gradient. Iridescent
+ * uses the app's canonical pastel iridescent gradient (same as the profile
+ * page theme and banner) rather than `DIVISION_TONE.iridescent`, whose
+ * saturated purple/magenta reads as the unrelated "Nebula" theme instead.
+ */
+export function RankMark({
+  division,
+  className,
+}: {
+  division: DivisionId;
+  className?: string;
+}) {
+  const gradientId = `rank-mark-${useId().replace(/:/g, "")}`;
+  const stops =
+    division === "iridescent"
+      ? IRIDESCENT_GRADIENT_STOPS
+      : [
+          { offset: "0%", color: DIVISION_TONE[division].fill2 },
+          { offset: "100%", color: DIVISION_TONE[division].fill },
+        ];
+  return (
+    <svg aria-hidden viewBox="0 0 256 256" className={cn("shrink-0", className)}>
+      <defs>
+        <linearGradient id={gradientId} x1="20%" y1="0%" x2="80%" y2="100%">
+          {stops.map((stop) => (
+            <stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+          ))}
+        </linearGradient>
+      </defs>
+      <path fill={`url(#${gradientId})`} d={CLIMB_MARK_PATH} />
     </svg>
   );
 }
