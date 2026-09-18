@@ -14,8 +14,16 @@ export const PROFILE_PAGE_THEME_IDS = [
 export type ProfilePageThemeId = (typeof PROFILE_PAGE_THEME_IDS)[number];
 
 /** Four-stop pastel gradient — periwinkle → lavender → pink → mauve. */
-export const IRIDESCENT_GRADIENT =
-  "linear-gradient(90deg, #CED9EF 0%, #CFC7FB 50%, #F5C7E8 75%, #E2C6EE 100%)";
+export const IRIDESCENT_GRADIENT_STOPS: readonly { offset: string; color: string }[] = [
+  { offset: "0%", color: "#CED9EF" },
+  { offset: "50%", color: "#CFC7FB" },
+  { offset: "75%", color: "#F5C7E8" },
+  { offset: "100%", color: "#E2C6EE" },
+];
+
+export const IRIDESCENT_GRADIENT = `linear-gradient(90deg, ${IRIDESCENT_GRADIENT_STOPS.map(
+  (s) => `${s.color} ${s.offset}`,
+).join(", ")})`;
 
 export type ProfilePageTheme = {
   id: ProfilePageThemeId;
