@@ -1,4 +1,4 @@
-import { ChartLineUp } from "@phosphor-icons/react";
+import { ChartLineUp } from "@phosphor-icons/react/dist/ssr";
 import { CutoffNumeral } from "@/components/cutoff-numeral";
 import { DesktopHomeTeaser } from "@/components/desktop-home-teaser";
 import { EmptyState } from "@/components/empty-state";
