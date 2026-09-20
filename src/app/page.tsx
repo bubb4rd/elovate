@@ -1,5 +1,7 @@
+import { ChartLineUp } from "@phosphor-icons/react";
 import { CutoffNumeral } from "@/components/cutoff-numeral";
 import { DesktopHomeTeaser } from "@/components/desktop-home-teaser";
+import { EmptyState } from "@/components/empty-state";
 import { HomeCutoffObject } from "@/components/home-cutoff-object";
 import { HomeHeroCopy } from "@/components/home-hero-copy";
 import { ModePick } from "@/components/mode-pick";
@@ -155,7 +157,13 @@ export default async function Home() {
                       : "cutoff gain"
                   }
                 />
-              ) : null}
+              ) : (
+                <EmptyState
+                  icon={<ChartLineUp size={20} weight="regular" />}
+                  label="Cutoff history returns once a full day of data is in."
+                  className="mt-8"
+                />
+              )}
               {resolved.source === "stored" ? (
                 <p className="mt-3 text-sm text-muted">
                   Live standings unavailable. Showing the last recorded cutoff.
