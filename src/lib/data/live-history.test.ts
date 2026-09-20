@@ -282,4 +282,63 @@ assert.equal(finalPushCutoffHistory(allFlat).change24h, null);
 // Single snapshot → empty.
 assert.deepEqual(finalPushCutoffHistory([lockSnapshots[0]!]).series, []);
 
+// Mid-season SR-tier reset (e.g. a rank compression event): the cutoff drops
+// by thousands of SR in a single poll, all under the same season_id. The 24h
+// window must not bridge that drop and report it as a real "cutoff loss".
+const resetSnapshots: StoredCutoff[] = [
+  { capturedAt: "2026-09-17T10:00:00.000Z", cutoffSr: 27700, rank1Sr: 48000 },
+  { capturedAt: "2026-09-17T22:00:00.000Z", cutoffSr: 27870, rank1Sr: 48200 },
+  // The reset lands here — a single-poll drop far beyond organic play.
+  { capturedAt: "2026-09-18T09:00:00.000Z", cutoffSr: 10000, rank1Sr: 15000 },
+  { capturedAt: "2026-09-18T22:00:00.000Z", cutoffSr: 10050, rank1Sr: 15100 },
+];
+const resetWindow = windowCutoffHistory(resetSnapshots, {
+  fetchedAt: "2026-09-19T09:00:00.000Z",
+  cutoffSr: 10087,
+  rank1Sr: 15200,
+});
+// The reset-point snapshot (09-18T09:00, 10000 SR) is itself exactly 24h
+// before "now" and is on the post-reset side, so it's a valid baseline:
+// change24h is the small, real +87, never the pre-reset-era -17,783.
+assert.equal(resetWindow.change24h, 87);
+assert.ok(resetWindow.series.every((point) => point.cutoffSr < 20000));
+
+// Once enough post-reset history exists, change24h resumes working — anchored
+// only to snapshots on the new side of the reset.
+const resetSnapshotsLater: StoredCutoff[] = [
+  ...resetSnapshots,
+  { capturedAt: "2026-09-19T09:00:00.000Z", cutoffSr: 10087, rank1Sr: 15200 },
+];
+const resetWindowLater = windowCutoffHistory(resetSnapshotsLater, {
+  fetchedAt: "2026-09-19T10:00:00.000Z",
+  cutoffSr: 10120,
+  rank1Sr: 15250,
+});
+assert.equal(resetWindowLater.change24h, 120);
+assert.ok(resetWindowLater.series.every((point) => point.cutoffSr < 20000));
+
+// A reset that happened after the last poll (not written to `snapshots` yet)
+// must also be caught — the live board itself is the only post-reset point.
+const preResetOnly: StoredCutoff[] = [
+  { capturedAt: "2026-09-17T10:00:00.000Z", cutoffSr: 27700, rank1Sr: 48000 },
+  { capturedAt: "2026-09-17T22:00:00.000Z", cutoffSr: 27870, rank1Sr: 48200 },
+];
+const justReset = windowCutoffHistory(preResetOnly, {
+  fetchedAt: "2026-09-19T00:00:00.000Z",
+  cutoffSr: 10087,
+  rank1Sr: 15200,
+});
+assert.equal(justReset.change24h, null);
+assert.deepEqual(justReset.series, []);
+
+// avgPerDayFromCutoffs must not bridge the same reset, including via the
+// season anchor row (which is even older than the recent-snapshots window).
+const resetAvgs = avgPerDayFromCutoffs(
+  resetSnapshotsLater,
+  { fetchedAt: "2026-09-19T10:00:00.000Z", cutoffSr: 10120 },
+  { capturedAt: "2026-09-01T00:00:00.000Z", cutoffSr: 8000, rank1Sr: 12000 },
+);
+assert.ok(resetAvgs.avgPerDaySeason != null && resetAvgs.avgPerDaySeason > 0);
+assert.ok(resetAvgs.avgPerDay7d != null && resetAvgs.avgPerDay7d > 0);
+
 console.log("live-history tests passed");

@@ -9,6 +9,35 @@ export type StoredCutoff = {
 
 const HOUR_MS = 3_600_000;
 
+// A single-step cutoff drop this large can only be an external SR-tier reset
+// (e.g. a mid-season rank compression, same real-world class of event as
+// apply_season_rank_reset) — the Top 250 cutoff never loses four-digit SR
+// between two polls, or between the last poll and the live board, from real
+// climbing. Below this, small dips are normal cutoff-player churn.
+const RESET_DROP_SR = 1000;
+
+/**
+ * Index into `snapshots` right after the most recent reset — everything
+ * before it is a different SR era and must never be used as a change/average
+ * baseline. `liveCutoffSr` is checked against the newest stored snapshot too,
+ * so a reset that happened after the last poll (and hasn't been written to
+ * `snapshots` yet) is still caught. Returns `snapshots.length` when even the
+ * newest stored snapshot predates the reset (no usable post-reset history
+ * yet), and `0` when no reset is found.
+ */
+function resetCutIndex(snapshots: StoredCutoff[], liveCutoffSr: number): number {
+  const last = snapshots.length - 1;
+  if (last >= 0 && snapshots[last]!.cutoffSr - liveCutoffSr >= RESET_DROP_SR) {
+    return snapshots.length;
+  }
+  for (let i = last; i > 0; i -= 1) {
+    if (snapshots[i - 1]!.cutoffSr - snapshots[i]!.cutoffSr >= RESET_DROP_SR) {
+      return i;
+    }
+  }
+  return 0;
+}
+
 function nearestAtLeastHoursAgo(
   snapshots: StoredCutoff[],
   liveAt: string,
@@ -25,7 +54,12 @@ export function avgPerDayFromCutoffs(
   live: { fetchedAt: string; cutoffSr: number },
   anchor: StoredCutoff | null = null,
 ): { avgPerDaySeason: number | null; avgPerDay7d: number | null } {
-  const first = anchor ?? snapshots[0];
+  const cutIndex = resetCutIndex(snapshots, live.cutoffSr);
+  const usable = snapshots.slice(cutIndex);
+  // A detected reset invalidates the season anchor too — "since the season
+  // began" has to mean since the reset, not the season's literal first
+  // snapshot, once that snapshot is a different SR era.
+  const first = cutIndex === 0 ? (anchor ?? usable[0]) : usable[0];
   if (!first) {
     return { avgPerDaySeason: null, avgPerDay7d: null };
   }
@@ -33,7 +67,7 @@ export function avgPerDayFromCutoffs(
   const seasonDays = daysBetween(first.capturedAt, live.fetchedAt);
   const avgPerDaySeason = (live.cutoffSr - first.cutoffSr) / seasonDays;
 
-  const weekAgo = nearestAtLeastHoursAgo(snapshots, live.fetchedAt, 24 * 7);
+  const weekAgo = nearestAtLeastHoursAgo(usable, live.fetchedAt, 24 * 7);
   if (!weekAgo) {
     return { avgPerDaySeason, avgPerDay7d: avgPerDaySeason };
   }
@@ -100,12 +134,15 @@ export function windowCutoffHistory(
   live: { fetchedAt: string; cutoffSr: number; rank1Sr: number },
   hours = 24,
 ): { change24h: number | null; series: CutoffPoint[] } {
-  const baseline = nearestAtLeastHoursAgo(snapshots, live.fetchedAt, hours);
+  // Never bridge a mid-season SR reset: a baseline from before it isn't "this
+  // season's cutoff climbing", it's a different SR era. See RESET_DROP_SR.
+  const usable = snapshots.slice(resetCutIndex(snapshots, live.cutoffSr));
+  const baseline = nearestAtLeastHoursAgo(usable, live.fetchedAt, hours);
   if (!baseline) {
     return { change24h: null, series: [] };
   }
 
-  const fromBaseline = snapshots.filter(
+  const fromBaseline = usable.filter(
     (snap) => Date.parse(snap.capturedAt) >= Date.parse(baseline.capturedAt),
   );
   const series: CutoffPoint[] = fromBaseline.map((snap, index) => ({
